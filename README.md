@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # lifeline
 
 A new Flutter project.
@@ -18,4 +17,3 @@ samples, guidance on mobile development, and a full API reference.
 =======
 # LifeLine
 LifeLine is an app for emergencies and medical help, made using Flutter. It gives users quick access to important services and information when they need it most.
->>>>>>> 2e8934508b711a7aea5d8875360988f5f79fffc4
