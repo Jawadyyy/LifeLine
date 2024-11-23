@@ -15,7 +15,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final TextEditingController _passwordController = TextEditingController();
   bool _isPasswordVisible = false;
 
-  // Email regex pattern
   final RegExp _emailRegex = RegExp(
     r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
   );
@@ -67,7 +66,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 const SizedBox(height: 20),
                 Center(
                   child: Image.asset(
-                    'assets/images/placeholders/signup.png', // Placeholder for the illustration
+                    'assets/images/placeholders/signup.png',
                     width: MediaQuery.of(context).size.width * 0.8,
                     fit: BoxFit.cover,
                   ),
