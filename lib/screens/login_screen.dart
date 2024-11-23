@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'signup_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -216,7 +217,12 @@ class _LoginScreenState extends State<LoginScreen> {
                       style: GoogleFonts.nunito(),
                     ),
                     GestureDetector(
-                      onTap: () {},
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const SignUpScreen()),
+                        );
+                      },
                       child: Text(
                         "Sign In",
                         style: GoogleFonts.nunito(
