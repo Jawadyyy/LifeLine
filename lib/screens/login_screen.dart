@@ -20,7 +20,7 @@ class LoginScreen extends StatelessWidget {
                   fontSize: 40,
                 ),
               ),
-              const SizedBox(height: 40),
+              const SizedBox(height: 15),
               const TextField(
                 decoration: InputDecoration(
                   prefixIcon: Icon(Icons.email),
