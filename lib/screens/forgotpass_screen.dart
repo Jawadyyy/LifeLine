@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:lifeline/screens/otp_screen.dart';
 
 class ForgotpassScreen extends StatefulWidget {
   const ForgotpassScreen({super.key});
@@ -36,6 +37,13 @@ class _ForgotpassScreenState extends State<ForgotpassScreen> {
         duration: Duration(seconds: 2),
       ),
     );
+
+    Future.delayed(const Duration(seconds: 1), () {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const OTPScreen()),
+      );
+    });
   }
 
   @override
