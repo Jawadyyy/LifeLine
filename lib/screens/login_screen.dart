@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lifeline/screens/forgotpass_screen.dart';
+import 'package:lifeline/screens/homePage.dart';
 import 'signup_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -39,6 +40,11 @@ class _LoginScreenState extends State<LoginScreen> {
         backgroundColor: Colors.green,
         duration: Duration(seconds: 2),
       ),
+    );
+
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => const HomePage()),
     );
   }
 
