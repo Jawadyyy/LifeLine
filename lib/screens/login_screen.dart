@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:lifeline/screens/forgotpass_screen.dart';
 import 'signup_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -88,7 +89,8 @@ class _LoginScreenState extends State<LoginScreen> {
                     hintStyle: GoogleFonts.nunito(),
                     border: const UnderlineInputBorder(),
                     focusedBorder: const UnderlineInputBorder(
-                      borderSide: BorderSide(color: Color(0xFF1565C0), width: 2),
+                      borderSide:
+                          BorderSide(color: Color(0xFF1565C0), width: 2),
                     ),
                   ),
                 ),
@@ -115,7 +117,9 @@ class _LoginScreenState extends State<LoginScreen> {
                       child: Padding(
                         padding: const EdgeInsets.all(10.0),
                         child: Image.asset(
-                          _isPasswordVisible ? 'assets/images/icons/show.png' : 'assets/images/icons/hide.png',
+                          _isPasswordVisible
+                              ? 'assets/images/icons/show.png'
+                              : 'assets/images/icons/hide.png',
                           width: 24,
                           height: 24,
                         ),
@@ -125,7 +129,8 @@ class _LoginScreenState extends State<LoginScreen> {
                     hintStyle: GoogleFonts.nunito(),
                     border: const UnderlineInputBorder(),
                     focusedBorder: const UnderlineInputBorder(
-                      borderSide: BorderSide(color: Color(0xFF1565C0), width: 2),
+                      borderSide:
+                          BorderSide(color: Color(0xFF1565C0), width: 2),
                     ),
                   ),
                 ),
@@ -133,7 +138,13 @@ class _LoginScreenState extends State<LoginScreen> {
                 Align(
                   alignment: Alignment.centerRight,
                   child: TextButton(
-                    onPressed: () {},
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) => const ForgotpassScreen()),
+                      );
+                    },
                     child: Text(
                       "Forgot Password?",
                       style: GoogleFonts.nunito(
@@ -220,11 +231,12 @@ class _LoginScreenState extends State<LoginScreen> {
                       onTap: () {
                         Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (context) => const SignUpScreen()),
+                          MaterialPageRoute(
+                              builder: (context) => const SignUpScreen()),
                         );
                       },
                       child: Text(
-                        "Sign In",
+                        "Sign Up",
                         style: GoogleFonts.nunito(
                           color: Colors.blue,
                           fontWeight: FontWeight.bold,
