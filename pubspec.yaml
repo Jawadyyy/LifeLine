@@ -68,9 +68,11 @@ flutter:
   - assets/images/icons/show.png
   - assets/images/icons/password.png
   - assets/images/icons/user.png
+  - assets/images/icons/back.png
   - assets/images/placeholders/login.png
   - assets/images/placeholders/signup.png
-  - assets\images\placeholders\forgotpass.png
+  - assets/images/placeholders/forgotpass.png
+  - assets/images/placeholders/changepass.png
 
 
   # An image asset can refer to one or more resolution-specific "variants", see

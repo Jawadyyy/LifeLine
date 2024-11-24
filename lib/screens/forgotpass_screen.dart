@@ -56,11 +56,14 @@ class _ForgotpassScreenState extends State<ForgotpassScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: 10),
-              IconButton(
-                icon: const Icon(Icons.arrow_back, color: Colors.black),
-                onPressed: () {
-                  Navigator.pop(context);
-                },
+              Padding(
+                padding: const EdgeInsets.only(left: 10.0),
+                child: IconButton(
+                  icon: const Icon(Icons.arrow_back, color: Colors.black),
+                  onPressed: () {
+                    Navigator.pop(context);
+                  },
+                ),
               ),
               const SizedBox(height: 20),
               Padding(
@@ -113,8 +116,7 @@ class _ForgotpassScreenState extends State<ForgotpassScreen> {
                         hintStyle: GoogleFonts.nunito(),
                         border: const UnderlineInputBorder(),
                         focusedBorder: const UnderlineInputBorder(
-                          borderSide:
-                              BorderSide(color: Color(0xFF1565C0), width: 2),
+                          borderSide: BorderSide(color: Color(0xFF1565C0), width: 2),
                         ),
                       ),
                     ),
