@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lifeline/screens/login_screen.dart'; // Ensure the LoginScreen is imported
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -34,7 +35,7 @@ class _HomePageState extends State<HomePage> {
               ),
             ),
             Text(
-              "4th Mound road, California", //location add kerni hai yahan pe
+              "4th Mound road, California", // Add your location dynamically if needed
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
@@ -52,8 +53,7 @@ class _HomePageState extends State<HomePage> {
             padding: EdgeInsets.only(right: 8.0),
             child: CircleAvatar(
               radius: 20,
-              backgroundImage: NetworkImage(
-                  "https://via.placeholder.com/150"), //user Profile image add kerni hai
+              backgroundImage: NetworkImage("https://via.placeholder.com/150"), // Add user profile image
             ),
           ),
         ],
@@ -82,7 +82,7 @@ class _HomePageState extends State<HomePage> {
             const SizedBox(height: 40),
             GestureDetector(
               onTap: () {
-                // emergency button
+                // Emergency button functionality
               },
               child: Container(
                 height: 150,
@@ -98,8 +98,26 @@ class _HomePageState extends State<HomePage> {
                     ),
                   ],
                 ),
-                child:
-                    const Icon(Icons.touch_app, size: 40, color: Colors.white),
+                child: const Icon(Icons.touch_app, size: 40, color: Colors.white),
+              ),
+            ),
+            const SizedBox(height: 30),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => const LoginScreen()),
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color.fromARGB(255, 32, 34, 160),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+              child: const Text(
+                "Go Back to Login",
+                style: TextStyle(color: Colors.white),
               ),
             ),
           ],

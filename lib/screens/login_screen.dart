@@ -1,7 +1,9 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lifeline/screens/forgotpass_screen.dart';
 import 'package:lifeline/screens/homePage.dart';
+import 'package:lifeline/services/auth_service.dart';
 import 'signup_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -20,9 +22,11 @@ class _LoginScreenState extends State<LoginScreen> {
     r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
   );
 
-  void _validateAndLogin() {
+  void _validateAndLogin() async {
     final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
 
+    // Validate email format
     if (!_emailRegex.hasMatch(email)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -34,18 +38,70 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text("Login successful"),
-        backgroundColor: Colors.green,
-        duration: Duration(seconds: 2),
-      ),
-    );
+    // Validate password
+    if (password.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Password cannot be empty"),
+          backgroundColor: Colors.red,
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
 
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => const HomePage()),
-    );
+    try {
+      // Call the login method from AuthService
+      bool isSuccess = await AuthService().login(
+        email: email,
+        password: password,
+        username: '',
+      );
+
+      // Check if login was successful
+      if (isSuccess) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Login successful"),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
+          ),
+        );
+
+        // Navigate to the home page
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const HomePage()),
+        );
+      }
+    } on FirebaseAuthException catch (e) {
+      // Show a snackbar with FirebaseAuthException-specific error messages
+      String message = '';
+      if (e.code == 'user-not-found') {
+        message = 'No User exists with that Email';
+      } else if (e.code == 'wrong-password') {
+        message = 'Wrong Password provided for that User';
+      } else {
+        message = 'Error: ${e.message}';
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    } catch (e) {
+      // Handle unexpected errors
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Error: ${e.toString()}"),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
   }
 
   @override
@@ -95,8 +151,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     hintStyle: GoogleFonts.nunito(),
                     border: const UnderlineInputBorder(),
                     focusedBorder: const UnderlineInputBorder(
-                      borderSide:
-                          BorderSide(color: Color(0xFF1565C0), width: 2),
+                      borderSide: BorderSide(color: Color(0xFF1565C0), width: 2),
                     ),
                   ),
                 ),
@@ -123,9 +178,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       child: Padding(
                         padding: const EdgeInsets.all(10.0),
                         child: Image.asset(
-                          _isPasswordVisible
-                              ? 'assets/images/icons/show.png'
-                              : 'assets/images/icons/hide.png',
+                          _isPasswordVisible ? 'assets/images/icons/show.png' : 'assets/images/icons/hide.png',
                           width: 24,
                           height: 24,
                         ),
@@ -135,8 +188,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     hintStyle: GoogleFonts.nunito(),
                     border: const UnderlineInputBorder(),
                     focusedBorder: const UnderlineInputBorder(
-                      borderSide:
-                          BorderSide(color: Color(0xFF1565C0), width: 2),
+                      borderSide: BorderSide(color: Color(0xFF1565C0), width: 2),
                     ),
                   ),
                 ),
@@ -147,8 +199,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     onPressed: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(
-                            builder: (context) => const ForgotpassScreen()),
+                        MaterialPageRoute(builder: (context) => const ForgotpassScreen()),
                       );
                     },
                     child: Text(
@@ -201,27 +252,63 @@ class _LoginScreenState extends State<LoginScreen> {
                 SizedBox(
                   width: double.infinity,
                   height: 50,
-                  child: OutlinedButton.icon(
-                    onPressed: () {},
-                    icon: Image.asset(
-                      'assets/images/icons/google.png',
-                      width: 24,
-                      height: 24,
-                    ),
-                    label: Text(
-                      "Login With Google",
-                      style: GoogleFonts.nunito(
-                        color: Colors.black,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    style: OutlinedButton.styleFrom(
-                      backgroundColor: const Color(0xFFE0E0E0),
+                  child: ElevatedButton(
+                    onPressed: () async {
+                      try {
+                        // Trigger Google sign-in
+                        final userCredential = await AuthService().signInWithGoogle();
+
+                        if (userCredential != null) {
+                          // If successful, show a success message
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text("Google Sign-In Successful"),
+                              backgroundColor: Colors.green,
+                              duration: Duration(seconds: 2),
+                            ),
+                          );
+
+                          // Navigate to the home page
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(builder: (context) => const HomePage()),
+                          );
+                        }
+                      } catch (e) {
+                        // Handle error if Google sign-in fails
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text("Google Sign-In Failed: ${e.toString()}"),
+                            backgroundColor: Colors.red,
+                            duration: const Duration(seconds: 2),
+                          ),
+                        );
+                      }
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFE0E0E0), // Button background color
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(30),
+                        borderRadius: BorderRadius.circular(30), // Rounded corners
                       ),
-                      side: BorderSide.none,
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Image.asset(
+                          'assets/images/icons/google.png',
+                          width: 24,
+                          height: 24,
+                        ),
+                        const SizedBox(width: 10),
+                        Text(
+                          "Login With Google",
+                          style: GoogleFonts.nunito(
+                            color: Colors.black,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -237,8 +324,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       onTap: () {
                         Navigator.push(
                           context,
-                          MaterialPageRoute(
-                              builder: (context) => const SignUpScreen()),
+                          MaterialPageRoute(builder: (context) => const SignUpScreen()),
                         );
                       },
                       child: Text(
