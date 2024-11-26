@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'dart:math';
 import 'package:lifeline/screens/otp_screen.dart';
 
 class ForgotpassScreen extends StatefulWidget {
@@ -11,10 +13,47 @@ class ForgotpassScreen extends StatefulWidget {
 
 class _ForgotpassScreenState extends State<ForgotpassScreen> {
   final TextEditingController _emailController = TextEditingController();
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   final RegExp _emailRegex = RegExp(
     r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
   );
+
+  Future<void> _sendOTP(String email) async {
+    try {
+      final otp = Random().nextInt(900000) + 100000;
+
+      await _firestore.collection('otps').doc(email).set({
+        'otp': otp,
+        'timestamp': FieldValue.serverTimestamp(),
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("OTP sent to $email"),
+          backgroundColor: Colors.green,
+          duration: const Duration(seconds: 2),
+        ),
+      );
+
+      Future.delayed(const Duration(seconds: 1), () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => OTPScreen(email: email, otp: otp),
+          ),
+        );
+      });
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Error: $e"),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
+  }
 
   void _validateAndSend() {
     final email = _emailController.text.trim();
@@ -30,20 +69,7 @@ class _ForgotpassScreenState extends State<ForgotpassScreen> {
       return;
     }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text("Reset link sent to your email"),
-        backgroundColor: Colors.green,
-        duration: Duration(seconds: 2),
-      ),
-    );
-
-    Future.delayed(const Duration(seconds: 1), () {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (context) => const OTPScreen()),
-      );
-    });
+    _sendOTP(email);
   }
 
   @override

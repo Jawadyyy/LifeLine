@@ -26,7 +26,6 @@ class _LoginScreenState extends State<LoginScreen> {
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
 
-    // Validate email format
     if (!_emailRegex.hasMatch(email)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -38,7 +37,6 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
-    // Validate password
     if (password.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -51,14 +49,11 @@ class _LoginScreenState extends State<LoginScreen> {
     }
 
     try {
-      // Call the login method from AuthService
       bool isSuccess = await AuthService().login(
         email: email,
         password: password,
-        username: '',
       );
 
-      // Check if login was successful
       if (isSuccess) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -68,14 +63,12 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         );
 
-        // Navigate to the home page
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => const HomePage()),
         );
       }
     } on FirebaseAuthException catch (e) {
-      // Show a snackbar with FirebaseAuthException-specific error messages
       String message = '';
       if (e.code == 'user-not-found') {
         message = 'No User exists with that Email';
@@ -93,7 +86,6 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
       );
     } catch (e) {
-      // Handle unexpected errors
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text("Error: ${e.toString()}"),
@@ -255,11 +247,9 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: ElevatedButton(
                     onPressed: () async {
                       try {
-                        // Trigger Google sign-in
                         final userCredential = await AuthService().signInWithGoogle();
 
                         if (userCredential != null) {
-                          // If successful, show a success message
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
                               content: Text("Google Sign-In Successful"),
@@ -268,14 +258,12 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                           );
 
-                          // Navigate to the home page
                           Navigator.pushReplacement(
                             context,
                             MaterialPageRoute(builder: (context) => const HomePage()),
                           );
                         }
                       } catch (e) {
-                        // Handle error if Google sign-in fails
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text("Google Sign-In Failed: ${e.toString()}"),
@@ -286,9 +274,9 @@ class _LoginScreenState extends State<LoginScreen> {
                       }
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFE0E0E0), // Button background color
+                      backgroundColor: const Color(0xFFE0E0E0),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(30), // Rounded corners
+                        borderRadius: BorderRadius.circular(30),
                       ),
                     ),
                     child: Row(

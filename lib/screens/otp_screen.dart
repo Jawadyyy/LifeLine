@@ -3,7 +3,10 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:lifeline/screens/change_password.dart';
 
 class OTPScreen extends StatefulWidget {
-  const OTPScreen({super.key});
+  final String email;
+  final int otp;
+
+  const OTPScreen({super.key, required this.email, required this.otp});
 
   @override
   State<OTPScreen> createState() => _OTPScreenState();
@@ -19,6 +22,39 @@ class _OTPScreenState extends State<OTPScreen> {
       }
     }
     return true;
+  }
+
+  String _getEnteredOTP() {
+    return _otpControllers.map((controller) => controller.text).join();
+  }
+
+  void _verifyOTP() {
+    if (!_isOTPFilled()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Please enter the full OTP."),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    final enteredOTP = int.tryParse(_getEnteredOTP());
+    if (enteredOTP == widget.otp) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const ChangePasswordScreen(),
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Invalid OTP. Please try again."),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   @override
@@ -105,21 +141,7 @@ class _OTPScreenState extends State<OTPScreen> {
                       width: double.infinity,
                       height: 50,
                       child: ElevatedButton(
-                        onPressed: () {
-                          if (_isOTPFilled()) {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(builder: (context) => const ChangePasswordScreen()),
-                            );
-                          } else {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text("Please enter the full OTP."),
-                                backgroundColor: Colors.red,
-                              ),
-                            );
-                          }
-                        },
+                        onPressed: _verifyOTP,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF1565C0),
                           shape: RoundedRectangleBorder(
@@ -127,7 +149,7 @@ class _OTPScreenState extends State<OTPScreen> {
                           ),
                         ),
                         child: Text(
-                          "Send",
+                          "Verify",
                           style: GoogleFonts.nunito(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
