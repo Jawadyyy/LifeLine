@@ -1,7 +1,9 @@
+// signup_screen.dart
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lifeline/screens/login_screen.dart';
 import 'package:lifeline/services/auth_service.dart';
+import 'package:lifeline/components/phone_field.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -14,6 +16,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final TextEditingController _fullNameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  String _phone = ''; // Store phone number here
   bool _isPasswordVisible = false;
 
   final RegExp _emailRegex = RegExp(
@@ -60,7 +63,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
     }
 
     try {
-      await AuthService().signup(email: email, password: password, username: fullName);
+      await AuthService().signup(
+        email: email,
+        password: password,
+        username: fullName,
+        phone: _phone, // Pass the phone number
+      );
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -106,7 +114,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const SizedBox(height: 20),
                 Center(
                   child: Image.asset(
                     'assets/images/placeholders/signup.png',
@@ -202,6 +209,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   ),
                 ),
                 const SizedBox(height: 30),
+                PhoneForm(onPhoneChanged: (phone) {
+                  setState(() {
+                    _phone = phone; // Store the phone number
+                  });
+                }),
+                const SizedBox(height: 20),
                 Text(
                   "By registering, you agree to the applicable terms & conditions as well as privacy regulations.",
                   style: GoogleFonts.nunito(fontSize: 12),
@@ -228,7 +241,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 30),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [

@@ -18,6 +18,7 @@ class AuthService {
     required String email,
     required String password,
     required String username,
+    required String phone,
   }) async {
     try {
       UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
@@ -35,6 +36,7 @@ class AuthService {
         await _firestore.collection('users').doc(user.uid).set({
           'username': username,
           'email': email,
+          'phone': phone,
           'password': encryptedPassword.base64,
           'created_at': FieldValue.serverTimestamp(),
         });
@@ -130,6 +132,7 @@ class AuthService {
           await _firestore.collection('users').doc(user.uid).set({
             'username': user.displayName ?? 'No name',
             'email': user.email,
+            'phone': '',
             'created_at': FieldValue.serverTimestamp(),
           });
         }
