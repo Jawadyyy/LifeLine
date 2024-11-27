@@ -142,7 +142,8 @@ class _ForgotpassScreenState extends State<ForgotpassScreen> {
                         hintStyle: GoogleFonts.nunito(),
                         border: const UnderlineInputBorder(),
                         focusedBorder: const UnderlineInputBorder(
-                          borderSide: BorderSide(color: Color(0xFF1565C0), width: 2),
+                          borderSide:
+                              BorderSide(color: Color(0xFF1565C0), width: 2),
                         ),
                       ),
                     ),

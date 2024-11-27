@@ -1,6 +1,6 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'package:lifeline/firebase_options.dart';
+import 'package:lifeline/firebase/firebase_options.dart';
 import 'screens/loading_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
 

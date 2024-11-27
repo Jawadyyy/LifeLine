@@ -13,7 +13,8 @@ class OTPScreen extends StatefulWidget {
 }
 
 class _OTPScreenState extends State<OTPScreen> {
-  final List<TextEditingController> _otpControllers = List.generate(6, (_) => TextEditingController());
+  final List<TextEditingController> _otpControllers =
+      List.generate(6, (_) => TextEditingController());
 
   bool _isOTPFilled() {
     for (var controller in _otpControllers) {
@@ -115,8 +116,8 @@ class _OTPScreenState extends State<OTPScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: List.generate(6, (index) {
                         return Container(
-                          height: 55,
-                          width: 55,
+                          height: 50,
+                          width: 50,
                           decoration: BoxDecoration(
                             color: const Color.fromARGB(255, 212, 212, 212),
                             borderRadius: BorderRadius.circular(8),
