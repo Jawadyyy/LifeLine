@@ -46,7 +46,7 @@ class _OTPScreenState extends State<OTPScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text("Please enter the full OTP."),
-          backgroundColor: Colors.red,
+          backgroundColor: Color.fromARGB(255, 228, 56, 44),
         ),
       );
       return;
