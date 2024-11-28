@@ -3,18 +3,30 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:lifeline/screens/change_password.dart';
 
 class OTPScreen extends StatefulWidget {
-  final String email;
+  final String phone;
   final int otp;
 
-  const OTPScreen({super.key, required this.email, required this.otp});
+  const OTPScreen({super.key, required this.phone, required this.otp});
 
   @override
   State<OTPScreen> createState() => _OTPScreenState();
 }
 
 class _OTPScreenState extends State<OTPScreen> {
-  final List<TextEditingController> _otpControllers =
-      List.generate(6, (_) => TextEditingController());
+  final List<TextEditingController> _otpControllers = List.generate(6, (_) => TextEditingController());
+  final List<FocusNode> _focusNodes = List.generate(6, (_) => FocusNode());
+
+  @override
+  void dispose() {
+    // Dispose controllers and focus nodes
+    for (var controller in _otpControllers) {
+      controller.dispose();
+    }
+    for (var node in _focusNodes) {
+      node.dispose();
+    }
+    super.dispose();
+  }
 
   bool _isOTPFilled() {
     for (var controller in _otpControllers) {
@@ -94,7 +106,7 @@ class _OTPScreenState extends State<OTPScreen> {
                     Padding(
                       padding: const EdgeInsets.only(left: 10.0),
                       child: Text(
-                        "Send OTP",
+                        "Verify OTP",
                         style: GoogleFonts.nunito(
                           fontWeight: FontWeight.bold,
                           fontSize: 30,
@@ -105,7 +117,7 @@ class _OTPScreenState extends State<OTPScreen> {
                     Padding(
                       padding: const EdgeInsets.only(left: 10.0),
                       child: Text(
-                        "Enter the OTP code that has been sent to your account.",
+                        "Enter the OTP code sent to ${widget.phone}.",
                         style: GoogleFonts.nunito(
                           fontSize: 17,
                         ),
@@ -125,6 +137,7 @@ class _OTPScreenState extends State<OTPScreen> {
                           child: Center(
                             child: TextField(
                               controller: _otpControllers[index],
+                              focusNode: _focusNodes[index],
                               textAlign: TextAlign.center,
                               keyboardType: TextInputType.number,
                               maxLength: 1,
@@ -132,6 +145,15 @@ class _OTPScreenState extends State<OTPScreen> {
                                 border: InputBorder.none,
                                 counterText: '',
                               ),
+                              onChanged: (value) {
+                                if (value.isNotEmpty && index < 5) {
+                                  // Move focus to the next field
+                                  _focusNodes[index + 1].requestFocus();
+                                } else if (value.isEmpty && index > 0) {
+                                  // Move focus to the previous field if backspace is pressed
+                                  _focusNodes[index - 1].requestFocus();
+                                }
+                              },
                             ),
                           ),
                         );

@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:math';
 import 'package:lifeline/screens/otp_screen.dart';
+import 'package:lifeline/components/phone_field.dart';
 
 class ForgotpassScreen extends StatefulWidget {
   const ForgotpassScreen({super.key});
@@ -12,25 +13,22 @@ class ForgotpassScreen extends StatefulWidget {
 }
 
 class _ForgotpassScreenState extends State<ForgotpassScreen> {
-  final TextEditingController _emailController = TextEditingController();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  final RegExp _emailRegex = RegExp(
-    r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
-  );
+  String _phoneNumber = ""; // Store the selected phone number
 
-  Future<void> _sendOTP(String email) async {
+  Future<void> _sendOTP(String phone) async {
     try {
-      final otp = Random().nextInt(900000) + 100000;
+      final otp = Random().nextInt(900000) + 100000; // Generate a 6-digit OTP
 
-      await _firestore.collection('otps').doc(email).set({
+      await _firestore.collection('otps').doc(phone).set({
         'otp': otp,
         'timestamp': FieldValue.serverTimestamp(),
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text("OTP sent to $email"),
+          content: Text("OTP sent to $phone"),
           backgroundColor: Colors.green,
           duration: const Duration(seconds: 2),
         ),
@@ -40,7 +38,7 @@ class _ForgotpassScreenState extends State<ForgotpassScreen> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => OTPScreen(email: email, otp: otp),
+            builder: (context) => OTPScreen(phone: phone, otp: otp),
           ),
         );
       });
@@ -56,12 +54,10 @@ class _ForgotpassScreenState extends State<ForgotpassScreen> {
   }
 
   void _validateAndSend() {
-    final email = _emailController.text.trim();
-
-    if (!_emailRegex.hasMatch(email)) {
+    if (_phoneNumber.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text("Wrong email format"),
+          content: Text("Please enter a valid phone number"),
           backgroundColor: Colors.red,
           duration: Duration(seconds: 2),
         ),
@@ -69,7 +65,7 @@ class _ForgotpassScreenState extends State<ForgotpassScreen> {
       return;
     }
 
-    _sendOTP(email);
+    _sendOTP(_phoneNumber);
   }
 
   @override
@@ -119,33 +115,19 @@ class _ForgotpassScreenState extends State<ForgotpassScreen> {
                     Padding(
                       padding: const EdgeInsets.only(left: 10.0),
                       child: Text(
-                        "Don't worry, enter the email associated with your account.",
+                        "Don't worry, enter your phone number to reset your password.",
                         style: GoogleFonts.nunito(
                           fontSize: 17,
                         ),
                       ),
                     ),
                     const SizedBox(height: 50),
-                    TextField(
-                      controller: _emailController,
-                      style: GoogleFonts.nunito(),
-                      decoration: InputDecoration(
-                        prefixIcon: Padding(
-                          padding: const EdgeInsets.all(10.0),
-                          child: Image.asset(
-                            'assets/images/icons/email.png',
-                            width: 24,
-                            height: 24,
-                          ),
-                        ),
-                        hintText: 'E-mail',
-                        hintStyle: GoogleFonts.nunito(),
-                        border: const UnderlineInputBorder(),
-                        focusedBorder: const UnderlineInputBorder(
-                          borderSide:
-                              BorderSide(color: Color(0xFF1565C0), width: 2),
-                        ),
-                      ),
+                    PhoneForm(
+                      onPhoneChanged: (phone) {
+                        setState(() {
+                          _phoneNumber = phone; // Update the phone number
+                        });
+                      },
                     ),
                     const SizedBox(height: 30),
                     SizedBox(
@@ -160,7 +142,7 @@ class _ForgotpassScreenState extends State<ForgotpassScreen> {
                           ),
                         ),
                         child: Text(
-                          "Send",
+                          "Send OTP",
                           style: GoogleFonts.nunito(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
