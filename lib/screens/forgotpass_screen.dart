@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:math';
 import 'package:lifeline/screens/otp_screen.dart';
 import 'package:lifeline/components/phone_field.dart';
+import 'package:lifeline/services/api_service.dart';
 
 class ForgotpassScreen extends StatefulWidget {
   const ForgotpassScreen({super.key});
@@ -15,33 +16,40 @@ class ForgotpassScreen extends StatefulWidget {
 class _ForgotpassScreenState extends State<ForgotpassScreen> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  String _phoneNumber = ""; // Store the selected phone number
+  final String _phoneNumber = "+923045583284"; // Store the selected phone number
 
   Future<void> _sendOTP(String phone) async {
     try {
       final otp = Random().nextInt(900000) + 100000; // Generate a 6-digit OTP
 
-      await _firestore.collection('otps').doc(phone).set({
-        'otp': otp,
-        'timestamp': FieldValue.serverTimestamp(),
-      });
+      // Send OTP via InfoBip API
+      bool success = await ApiService.sendOTP(phone, otp);
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text("OTP sent to $phone"),
-          backgroundColor: Colors.green,
-          duration: const Duration(seconds: 2),
-        ),
-      );
+      if (success) {
+        await _firestore.collection('otps').doc(phone).set({
+          'otp': otp,
+          'timestamp': FieldValue.serverTimestamp(),
+        });
 
-      Future.delayed(const Duration(seconds: 1), () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => OTPScreen(phone: phone, otp: otp),
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("OTP sent to $phone"),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 2),
           ),
         );
-      });
+
+        Future.delayed(const Duration(seconds: 1), () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => OTPScreen(phone: phone, otp: otp),
+            ),
+          );
+        });
+      } else {
+        throw 'Failed to send OTP';
+      }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -122,13 +130,13 @@ class _ForgotpassScreenState extends State<ForgotpassScreen> {
                       ),
                     ),
                     const SizedBox(height: 50),
-                    PhoneForm(
+                    /*PhoneForm(
                       onPhoneChanged: (phone) {
                         setState(() {
                           _phoneNumber = phone; // Update the phone number
                         });
                       },
-                    ),
+                    ),*/
                     const SizedBox(height: 30),
                     SizedBox(
                       width: double.infinity,

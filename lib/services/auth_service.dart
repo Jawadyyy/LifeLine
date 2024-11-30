@@ -5,6 +5,7 @@ import 'package:fluttertoast/fluttertoast.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:encrypt/encrypt.dart' as encrypt;
+import 'package:lifeline/screens/change_password.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -161,5 +162,64 @@ class AuthService {
   Future<bool> isLoggedIn() async {
     User? user = _auth.currentUser;
     return user != null;
+  }
+
+  Future<void> sendOTP(String phoneNumber, Function(String) onCodeSent) async {
+    try {
+      await _auth.verifyPhoneNumber(
+        phoneNumber: phoneNumber,
+        timeout: const Duration(seconds: 60),
+        verificationCompleted: (PhoneAuthCredential credential) async {
+          // Automatically sign in after successful verification
+          await _auth.signInWithCredential(credential);
+          Fluttertoast.showToast(msg: "Phone number automatically verified!");
+        },
+        verificationFailed: (FirebaseAuthException e) {
+          Fluttertoast.showToast(
+            msg: 'Failed to verify phone number. Please try again.',
+            backgroundColor: Colors.red,
+          );
+        },
+        codeSent: (String verificationId, int? resendToken) {
+          // Call the provided function with the verification ID
+          onCodeSent(verificationId);
+        },
+        codeAutoRetrievalTimeout: (String verificationId) {
+          // You can use this callback if needed to manage timeout
+        },
+      );
+    } catch (e) {
+      Fluttertoast.showToast(
+        msg: 'Error during OTP send: $e',
+        backgroundColor: Colors.red,
+      );
+    }
+  }
+
+  Future<void> verifyOTP(String verificationId, String otp, BuildContext context) async {
+    try {
+      final PhoneAuthCredential credential = PhoneAuthProvider.credential(
+        verificationId: verificationId,
+        smsCode: otp,
+      );
+
+      final UserCredential userCredential = await _auth.signInWithCredential(credential);
+
+      if (userCredential.user != null) {
+        // Proceed with changing password or any other actions here
+        Fluttertoast.showToast(msg: "OTP verified successfully!");
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const ChangePasswordScreen()),
+        );
+      } else {
+        Fluttertoast.showToast(msg: "Invalid OTP. Please try again.");
+      }
+    } catch (e) {
+      Fluttertoast.showToast(
+        msg: 'Error during OTP verification: $e',
+        backgroundColor: Colors.red,
+      );
+    }
   }
 }
