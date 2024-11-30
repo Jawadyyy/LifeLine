@@ -16,7 +16,7 @@ class ForgotpassScreen extends StatefulWidget {
 class _ForgotpassScreenState extends State<ForgotpassScreen> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  final String _phoneNumber = "+923045583284"; // Store the selected phone number
+  String _phoneNumber = ""; // Store the selected phone number
 
   Future<void> _sendOTP(String phone) async {
     try {
@@ -130,13 +130,13 @@ class _ForgotpassScreenState extends State<ForgotpassScreen> {
                       ),
                     ),
                     const SizedBox(height: 50),
-                    /*PhoneForm(
+                    PhoneForm(
                       onPhoneChanged: (phone) {
                         setState(() {
                           _phoneNumber = phone; // Update the phone number
                         });
                       },
-                    ),*/
+                    ),
                     const SizedBox(height: 30),
                     SizedBox(
                       width: double.infinity,

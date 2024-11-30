@@ -25,13 +25,13 @@ class ApiService {
     final Map<String, dynamic> requestBody = {
       "messages": [
         {
-          "from": "HealthCare",
+          "from": "LifeLine",
           "destinations": [
             {
               "to": formattedPhoneNumber
             }
           ],
-          "text": "GoodMorning Dosto",
+          "text": "Your OTP Code is: $otp",
         }
       ]
     };
