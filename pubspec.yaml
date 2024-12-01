@@ -44,6 +44,8 @@ dependencies:
   encrypt: ^5.0.3
   intl_phone_field: ^3.2.0
   http: ^1.2.2
+  geolocator: ^13.0.2
+  geocoding: ^3.0.0
 
 dev_dependencies:
   flutter_test:
