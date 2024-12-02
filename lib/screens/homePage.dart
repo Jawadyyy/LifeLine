@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lifeline/screens/login_screen.dart';
+import 'package:lifeline/screens/map_screen.dart';
 import 'package:lifeline/services/location_handler.dart';
 
 class HomePage extends StatefulWidget {
@@ -168,9 +169,16 @@ class _HomePageState extends State<HomePage> {
           ),
         ],
         onTap: (index) {
-          setState(() {
-            _selectedIndex = index;
-          });
+          if (index == 2) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const MapScreen()),
+            );
+          } else {
+            setState(() {
+              _selectedIndex = index;
+            });
+          }
         },
         selectedItemColor: const Color.fromARGB(255, 32, 34, 160),
         unselectedItemColor: Colors.grey,
