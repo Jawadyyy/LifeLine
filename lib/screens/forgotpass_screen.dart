@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'dart:math';
 import 'package:lifeline/screens/otp_screen.dart';
 import 'package:lifeline/components/phone_field.dart';
-import 'package:lifeline/services/api_service.dart';
 
 class ForgotpassScreen extends StatefulWidget {
   const ForgotpassScreen({super.key});
@@ -15,40 +15,34 @@ class ForgotpassScreen extends StatefulWidget {
 
 class _ForgotpassScreenState extends State<ForgotpassScreen> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-
   String _phoneNumber = ""; // Store the selected phone number
 
   Future<void> _sendOTP(String phone) async {
     try {
       final otp = Random().nextInt(900000) + 100000; // Generate a 6-digit OTP
 
-      // Send OTP via InfoBip API
-      bool success = await ApiService.sendOTP(phone, otp);
+      // WhatsApp URL to send OTP
+      final whatsappUrl = "whatsapp://send?phone=$phone&text=Your OTP is $otp";
 
-      if (success) {
-        await _firestore.collection('otps').doc(phone).set({
-          'otp': otp,
-          'timestamp': FieldValue.serverTimestamp(),
-        });
+      // Save OTP in Firestore
+      await _firestore.collection('otps').doc(phone).set({
+        'otp': otp,
+        'timestamp': FieldValue.serverTimestamp(),
+      });
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("OTP sent to $phone"),
-            backgroundColor: Colors.green,
-            duration: const Duration(seconds: 2),
+      // Open WhatsApp
+      if (await canLaunchUrl(Uri.parse(Uri.encodeFull(whatsappUrl)))) {
+        await launchUrl(Uri.parse(Uri.encodeFull(whatsappUrl)));
+
+        // Navigate to OTP Screen
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => OTPScreen(phone: phone, otp: otp),
           ),
         );
-
-        Future.delayed(const Duration(seconds: 1), () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => OTPScreen(phone: phone, otp: otp),
-            ),
-          );
-        });
       } else {
-        throw 'Failed to send OTP';
+        throw 'Could not launch WhatsApp';
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -150,7 +144,7 @@ class _ForgotpassScreenState extends State<ForgotpassScreen> {
                           ),
                         ),
                         child: Text(
-                          "Send OTP",
+                          "Send OTP via WhatsApp",
                           style: GoogleFonts.nunito(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
