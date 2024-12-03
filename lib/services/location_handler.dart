@@ -8,20 +8,16 @@ abstract class LocationHandler {
 
     serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
-      // Location services are disabled. Please enable the services
       return false;
     }
     permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
       if (permission == LocationPermission.denied) {
-        // Location permissions are denied
         return false;
       }
     }
     if (permission == LocationPermission.deniedForever) {
-      // Location permissions are permanently denied, we cannot request permissions.
-
       return false;
     }
     return true;
@@ -41,8 +37,7 @@ abstract class LocationHandler {
 
   static Future<String?> getAddressFromLatLng(Position position) async {
     try {
-      List<Placemark> placeMarks =
-          await placemarkFromCoordinates(position.latitude, position.longitude);
+      List<Placemark> placeMarks = await placemarkFromCoordinates(position.latitude, position.longitude);
       Placemark place = placeMarks[0];
       return "${place.street}, ${place.subLocality},${place.subAdministrativeArea}, ${place.postalCode}";
     } catch (e) {

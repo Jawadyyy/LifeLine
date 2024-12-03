@@ -87,6 +87,10 @@ flutter:
   - assets/images/placeholders/signup.png
   - assets/images/placeholders/forgotpass.png
   - assets/images/placeholders/changepass.png
+  - assets/images/navbar/circle.png
+  - assets/images/navbar/home.png
+  - assets/images/navbar/map.png
+  - assets/images/navbar/profile.png
 
 
   # An image asset can refer to one or more resolution-specific "variants", see

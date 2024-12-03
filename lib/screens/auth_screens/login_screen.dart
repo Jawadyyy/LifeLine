@@ -1,8 +1,8 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:lifeline/screens/forgotpass_screen.dart';
-import 'package:lifeline/screens/homepage.dart';
+import 'package:lifeline/screens/auth_screens/forgotpass_screen.dart';
+import 'package:lifeline/screens/main_screens/homePage.dart';
 import 'package:lifeline/services/auth_service.dart';
 import 'signup_screen.dart';
 
@@ -143,8 +143,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     hintStyle: GoogleFonts.nunito(),
                     border: const UnderlineInputBorder(),
                     focusedBorder: const UnderlineInputBorder(
-                      borderSide:
-                          BorderSide(color: Color(0xFF1565C0), width: 2),
+                      borderSide: BorderSide(color: Color(0xFF1565C0), width: 2),
                     ),
                   ),
                 ),
@@ -171,9 +170,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       child: Padding(
                         padding: const EdgeInsets.all(10.0),
                         child: Image.asset(
-                          _isPasswordVisible
-                              ? 'assets/images/icons/show.png'
-                              : 'assets/images/icons/hide.png',
+                          _isPasswordVisible ? 'assets/images/icons/show.png' : 'assets/images/icons/hide.png',
                           width: 24,
                           height: 24,
                         ),
@@ -183,8 +180,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     hintStyle: GoogleFonts.nunito(),
                     border: const UnderlineInputBorder(),
                     focusedBorder: const UnderlineInputBorder(
-                      borderSide:
-                          BorderSide(color: Color(0xFF1565C0), width: 2),
+                      borderSide: BorderSide(color: Color(0xFF1565C0), width: 2),
                     ),
                   ),
                 ),
@@ -195,8 +191,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     onPressed: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(
-                            builder: (context) => const ForgotpassScreen()),
+                        MaterialPageRoute(builder: (context) => const ForgotpassScreen()),
                       );
                     },
                     child: Text(
@@ -252,8 +247,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: ElevatedButton(
                     onPressed: () async {
                       try {
-                        final userCredential =
-                            await AuthService().signInWithGoogle();
+                        final userCredential = await AuthService().signInWithGoogle();
 
                         if (userCredential != null) {
                           ScaffoldMessenger.of(context).showSnackBar(
@@ -266,15 +260,13 @@ class _LoginScreenState extends State<LoginScreen> {
 
                           Navigator.pushReplacement(
                             context,
-                            MaterialPageRoute(
-                                builder: (context) => const HomePage()),
+                            MaterialPageRoute(builder: (context) => const HomePage()),
                           );
                         }
                       } catch (e) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            content:
-                                Text("Google Sign-In Failed: ${e.toString()}"),
+                            content: Text("Google Sign-In Failed: ${e.toString()}"),
                             backgroundColor: Colors.red,
                             duration: const Duration(seconds: 2),
                           ),
@@ -320,8 +312,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       onTap: () {
                         Navigator.push(
                           context,
-                          MaterialPageRoute(
-                              builder: (context) => const SignUpScreen()),
+                          MaterialPageRoute(builder: (context) => const SignUpScreen()),
                         );
                       },
                       child: Text(

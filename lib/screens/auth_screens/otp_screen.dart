@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:lifeline/screens/change_password.dart';
+import 'package:lifeline/screens/auth_screens/change_password.dart';
 
 class OTPScreen extends StatefulWidget {
   final String phone;
@@ -18,7 +18,6 @@ class _OTPScreenState extends State<OTPScreen> {
 
   @override
   void dispose() {
-    // Dispose controllers and focus nodes
     for (var controller in _otpControllers) {
       controller.dispose();
     }
@@ -147,10 +146,8 @@ class _OTPScreenState extends State<OTPScreen> {
                               ),
                               onChanged: (value) {
                                 if (value.isNotEmpty && index < 5) {
-                                  // Move focus to the next field
                                   _focusNodes[index + 1].requestFocus();
                                 } else if (value.isEmpty && index > 0) {
-                                  // Move focus to the previous field if backspace is pressed
                                   _focusNodes[index - 1].requestFocus();
                                 }
                               },

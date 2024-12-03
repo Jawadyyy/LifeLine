@@ -1,6 +1,8 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:lifeline/screens/login_screen.dart';
+import 'package:fluttertoast/fluttertoast.dart';
+import 'package:lifeline/screens/auth_screens/login_screen.dart';
 
 class ChangePasswordScreen extends StatefulWidget {
   const ChangePasswordScreen({super.key});
@@ -14,106 +16,56 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
   final TextEditingController _confirmPasswordController = TextEditingController();
   bool _isNewPasswordVisible = false;
   bool _isConfirmPasswordVisible = false;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  void _showConfirmationDialog() {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return Dialog(
-          backgroundColor: Colors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(20.0),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  "Are you sure you want to change your password?",
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.nunito(
-                    fontSize: 16,
-                    color: Colors.black,
-                  ),
-                ),
-                const SizedBox(height: 20),
-                ElevatedButton(
-                  onPressed: () {
-                    Navigator.pop(context);
+  void _changePassword() async {
+    final newPassword = _newPasswordController.text.trim();
+    final confirmPassword = _confirmPasswordController.text.trim();
 
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(builder: (context) => const LoginScreen()),
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF1565C0),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30),
-                    ),
-                    minimumSize: const Size(double.infinity, 50),
-                  ),
-                  child: Text(
-                    "Yes",
-                    style: GoogleFonts.nunito(
-                      fontSize: 16,
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 10),
-                OutlinedButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                  },
-                  style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: Color(0xFF1565C0)),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30),
-                    ),
-                    minimumSize: const Size(double.infinity, 50),
-                  ),
-                  child: Text(
-                    "No",
-                    style: GoogleFonts.nunito(
-                      fontSize: 16,
-                      color: const Color(0xFF1565C0),
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  void _changePassword() {
-    if (_newPasswordController.text.isEmpty || _confirmPasswordController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Please fill in all fields."),
-          backgroundColor: Colors.red,
-        ),
+    if (newPassword.isEmpty || confirmPassword.isEmpty) {
+      Fluttertoast.showToast(
+        msg: "Please fill in all fields.",
+        backgroundColor: Colors.red,
       );
       return;
     }
 
-    if (_newPasswordController.text != _confirmPasswordController.text) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Passwords do not match."),
-          backgroundColor: Colors.red,
-        ),
+    if (newPassword != confirmPassword) {
+      Fluttertoast.showToast(
+        msg: "Passwords do not match.",
+        backgroundColor: Colors.red,
       );
       return;
     }
 
-    _showConfirmationDialog();
+    try {
+      await _auth.currentUser!.updatePassword(newPassword);
+
+      Fluttertoast.showToast(
+        msg: "Password changed successfully!",
+        backgroundColor: Colors.green,
+      );
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const LoginScreen()),
+      );
+    } catch (e) {
+      String errorMessage = "An error occurred. Please try again.";
+
+      if (e is FirebaseAuthException) {
+        if (e.code == 'weak-password') {
+          errorMessage = "The password is too weak.";
+        } else if (e.code == 'requires-recent-login') {
+          errorMessage = "Please log in again to change your password.";
+        }
+      }
+
+      Fluttertoast.showToast(
+        msg: errorMessage,
+        backgroundColor: Colors.red,
+      );
+    }
   }
 
   @override
@@ -129,9 +81,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
               children: [
                 const SizedBox(height: 20),
                 GestureDetector(
-                  onTap: () {
-                    Navigator.pop(context);
-                  },
+                  onTap: () => Navigator.pop(context),
                   child: const Icon(
                     Icons.arrow_back,
                     color: Colors.black,

@@ -1,7 +1,7 @@
 // signup_screen.dart
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:lifeline/screens/login_screen.dart';
+import 'package:lifeline/screens/auth_screens/login_screen.dart';
 import 'package:lifeline/services/auth_service.dart';
 import 'package:lifeline/components/phone_field.dart';
 
@@ -16,7 +16,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final TextEditingController _fullNameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  String _phone = ''; // Store phone number here
+  String _phone = '';
   bool _isPasswordVisible = false;
 
   final RegExp _emailRegex = RegExp(
@@ -28,7 +28,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
 
-    // Validate inputs
     if (fullName.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -67,7 +66,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
         email: email,
         password: password,
         username: fullName,
-        phone: _phone, // Pass the phone number
+        phone: _phone,
       );
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -211,7 +210,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 const SizedBox(height: 30),
                 PhoneForm(onPhoneChanged: (phone) {
                   setState(() {
-                    _phone = phone; // Store the phone number
+                    _phone = phone;
                   });
                 }),
                 const SizedBox(height: 20),
