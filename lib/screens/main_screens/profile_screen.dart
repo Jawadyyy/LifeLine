@@ -1,26 +1,49 @@
 import 'package:flutter/material.dart';
 import 'package:lifeline/components/bottom_navbar.dart';
 
+class ProfilePageApp extends StatelessWidget {
+  static final Map<String, dynamic> userInfo = {
+    "name": "Maria",
+    "profileImage": "https://via.placeholder.com/150",
+    "bio": "No bio available",
+    "bloodType": "AB+",
+    "age": "56",
+    "weight": "103lbs",
+  };
+
+  const ProfilePageApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData.light(),
+      home: const ProfilePage(),
+    );
+  }
+}
+
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
 
   @override
-  // ignore: library_private_types_in_public_api
   _ProfilePageState createState() => _ProfilePageState();
 }
 
 class _ProfilePageState extends State<ProfilePage> {
   int _selectedIndex = 3;
-  Map<String, dynamic> userInfo = {};
 
   @override
   Widget build(BuildContext context) {
+    final userInfo = ProfilePageApp.userInfo;
+
     return Scaffold(
-      backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text('Profile', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+        title: const Text(
+          'Profile',
+          style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+        ),
         centerTitle: true,
-        backgroundColor: Colors.white,
       ),
       body: SingleChildScrollView(
         child: Padding(
@@ -29,21 +52,19 @@ class _ProfilePageState extends State<ProfilePage> {
             children: [
               CircleAvatar(
                 radius: 65,
-                backgroundImage: userInfo["profileImage"] != null ? NetworkImage(userInfo["profileImage"]) : const NetworkImage('https://via.placeholder.com/150'),
+                backgroundImage: NetworkImage(userInfo["profileImage"]),
               ),
               const SizedBox(height: 16),
-              // Name
               Text(
-                userInfo["name"] ?? "Jawad",
+                userInfo["name"],
                 style: const TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
-                  color: Colors.black87,
                 ),
               ),
               const SizedBox(height: 10),
               Text(
-                userInfo["bio"] ?? "No bio available",
+                userInfo["bio"],
                 style: const TextStyle(
                   fontSize: 16,
                   color: Colors.grey,
@@ -53,28 +74,25 @@ class _ProfilePageState extends State<ProfilePage> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
-                  _buildInfoCard("Blood Type", userInfo["bloodType"] ?? "N/A"),
-                  _buildInfoCard("Age", userInfo["age"]?.toString() ?? "N/A"),
-                  _buildInfoCard("Weight", userInfo["weight"] ?? "N/A"),
+                  _buildInfoCard("Blood Type", userInfo["bloodType"]),
+                  _buildInfoCard("Age", userInfo["age"]),
+                  _buildInfoCard("Weight", userInfo["weight"]),
                 ],
               ),
               const SizedBox(height: 30),
               _buildMenuItem(Icons.person, "Profile", () {}),
               _buildMenuItem(Icons.history, "History", () {}),
-              _buildMenuItem(Icons.settings, "Settings", () {}),
+              _buildMenuItem(Icons.settings, "Settings", () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const SettingsPage()),
+                ).then((_) => setState(() {})); // Update when returning
+              }),
               _buildMenuItem(Icons.help_outline, "FAQs", () {}),
               _buildMenuItem(Icons.logout, "Logout", () {}),
             ],
           ),
         ),
-      ),
-      bottomNavigationBar: CustomBottomNavigationBar(
-        currentIndex: _selectedIndex,
-        onTap: (index) {
-          setState(() {
-            _selectedIndex = index;
-          });
-        },
       ),
     );
   }
@@ -85,7 +103,7 @@ class _ProfilePageState extends State<ProfilePage> {
       width: 100,
       child: Card(
         elevation: 4,
-        color: Colors.white,
+        color: Theme.of(context).cardColor,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(15),
         ),
@@ -127,10 +145,77 @@ class _ProfilePageState extends State<ProfilePage> {
       ),
       elevation: 3,
       child: ListTile(
-        leading: Icon(icon, color: Colors.blueAccent),
+        leading: Icon(icon),
         title: Text(title, style: const TextStyle(fontSize: 16)),
-        trailing: const Icon(Icons.arrow_forward_ios, color: Colors.blueAccent),
+        trailing: const Icon(Icons.arrow_forward_ios),
         onTap: onTap,
+      ),
+    );
+  }
+}
+
+class SettingsPage extends StatefulWidget {
+  const SettingsPage({super.key});
+
+  @override
+  _SettingsPageState createState() => _SettingsPageState();
+}
+
+class _SettingsPageState extends State<SettingsPage> {
+  final TextEditingController bloodTypeController = TextEditingController();
+  final TextEditingController ageController = TextEditingController();
+  final TextEditingController weightController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    final userInfo = ProfilePageApp.userInfo;
+    bloodTypeController.text = userInfo["bloodType"];
+    ageController.text = userInfo["age"];
+    weightController.text = userInfo["weight"];
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("Settings Page"),
+        centerTitle: true,
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            TextField(
+              controller: bloodTypeController,
+              decoration: const InputDecoration(labelText: "Blood Type"),
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: ageController,
+              decoration: const InputDecoration(labelText: "Age"),
+              keyboardType: TextInputType.number,
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              controller: weightController,
+              decoration: const InputDecoration(labelText: "Weight"),
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () {
+                setState(() {
+                  ProfilePageApp.userInfo["bloodType"] = bloodTypeController.text;
+                  ProfilePageApp.userInfo["age"] = ageController.text;
+                  ProfilePageApp.userInfo["weight"] = weightController.text;
+                });
+                Navigator.pop(context);
+              },
+              child: const Text("Save"),
+            ),
+          ],
+        ),
       ),
     );
   }
