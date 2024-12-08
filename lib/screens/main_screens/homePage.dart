@@ -70,14 +70,16 @@ class _HomePageState extends State<HomePage> {
           ),
           actions: [
             IconButton(
-              onPressed: () {},
-              icon: const Icon(Icons.notifications, color: Colors.black),
+              onPressed: _getUserLocation, // Refresh the location on tap
+              icon: const Icon(Icons.refresh,
+                  color: Colors.black), // Refresh icon
             ),
             const Padding(
               padding: EdgeInsets.only(right: 8.0),
               child: CircleAvatar(
                 radius: 20,
-                backgroundImage: NetworkImage("https://via.placeholder.com/150"),
+                backgroundImage:
+                    NetworkImage("https://via.placeholder.com/150"),
               ),
             ),
           ],
@@ -122,7 +124,8 @@ class _HomePageState extends State<HomePage> {
                       ),
                     ],
                   ),
-                  child: const Icon(Icons.touch_app, size: 40, color: Colors.white),
+                  child: const Icon(Icons.touch_app,
+                      size: 40, color: Colors.white),
                 ),
               ),
               const SizedBox(height: 30),
@@ -130,7 +133,8 @@ class _HomePageState extends State<HomePage> {
                 onPressed: () {
                   Navigator.pushReplacement(
                     context,
-                    MaterialPageRoute(builder: (context) => const LoginScreen()),
+                    MaterialPageRoute(
+                        builder: (context) => const LoginScreen()),
                   );
                 },
                 style: ElevatedButton.styleFrom(
