@@ -52,5 +52,7 @@
 <array>
     <string>whatsapp</string>
 </array>
+<key>NSContactsUsageDescription</key>
+<string>We need access to your contacts for adding emergency contacts.</string>
 </dict>
 </plist>
