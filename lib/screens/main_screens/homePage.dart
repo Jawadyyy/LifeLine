@@ -1,7 +1,9 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:lifeline/components/bottom_navbar.dart';
-//import 'package:lifeline/screens/auth_screens/login_screen.dart';
 import 'package:lifeline/services/location_handler.dart';
+import 'package:lifeline/services/firestore_service.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'dart:math';
 
 class HomePage extends StatefulWidget {
@@ -34,6 +36,62 @@ class _HomePageState extends State<HomePage> {
         _currentAddress = "Location permission denied";
       });
     }
+  }
+
+  // Modify this part of your code where you fetch and pass Position
+
+  Future<void> _sendEmergencyMessage(String emergencyType) async {
+    // Get the current user's ID
+    final user = FirebaseAuth.instance.currentUser;
+
+    // Ensure the user is authenticated
+    if (user == null) {
+      print("User is not authenticated");
+      return;
+    }
+
+    final userId = user.uid; // Use the authenticated user's ID
+
+    // Fetch emergency contacts from Firestore
+    final contacts = await FirestoreService().getEmergencyContacts(userId);
+
+    // Check if there are any emergency contacts
+    if (contacts.isEmpty) {
+      print("No emergency contacts found");
+      return;
+    }
+
+    // Get the current location
+    final position = await LocationHandler.getCurrentPosition();
+
+    // Check if the position is null and handle the case
+    if (position == null) {
+      print("Location not available");
+      return;
+    }
+
+    // Get the address from the latitude and longitude
+    final address = await LocationHandler.getAddressFromLatLng(position);
+
+    // Prepare the emergency message with the type of emergency
+    String message =
+        "🚨 I am in an emergency: $emergencyType. My location is: $address";
+
+    // Notify each contact
+    for (String contact in contacts) {
+      final whatsappUrl =
+          'https://wa.me/$contact?text=${Uri.encodeFull(message)}';
+
+      try {
+        await launch(whatsappUrl);
+        await Future.delayed(
+            const Duration(seconds: 2)); // Add delay for reliability
+      } catch (e) {
+        print("Could not open WhatsApp for contact $contact. Error: $e");
+      }
+    }
+
+    print("Emergency message sent to all contacts.");
   }
 
   @override
@@ -134,26 +192,6 @@ class _HomePageState extends State<HomePage> {
                         size: 40, color: Colors.white),
                   ),
                 ),
-                //  const SizedBox(height: 30),
-                // ElevatedButton(
-                //   onPressed: () {
-                //     Navigator.pushReplacement(
-                //       context,
-                //       MaterialPageRoute(
-                //           builder: (context) => const LoginScreen()),
-                //     );
-                //   },
-                //   style: ElevatedButton.styleFrom(
-                //     backgroundColor: const Color.fromARGB(255, 32, 34, 160),
-                //     shape: RoundedRectangleBorder(
-                //       borderRadius: BorderRadius.circular(10),
-                //     ),
-                //   ),
-                //   child: const Text(
-                //     "Go Back to Login",
-                //     style: TextStyle(color: Colors.white),
-                //   ),
-                // ),
               ],
             ),
           ),
@@ -182,6 +220,15 @@ class _HomePageState extends State<HomePage> {
       Icons.warning,
     ];
 
+    final List<String> emergencyTypes = [
+      "Medical Emergency",
+      "Police Assistance",
+      "Fire Alert",
+      "Health Issue",
+      "SOS",
+      "General Emergency"
+    ];
+
     final double radius = 140.0; // Distance from the main button
 
     return List.generate(emergencyIcons.length, (index) {
@@ -197,15 +244,22 @@ class _HomePageState extends State<HomePage> {
         child: AnimatedOpacity(
           duration: const Duration(milliseconds: 300),
           opacity: _showEmergencyOptions ? 1 : 0,
-          child: Container(
-            height: 60,
-            width: 60,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.circle,
-              border: Border.all(color: const Color(0xFFFF7E7B), width: 2),
+          child: GestureDetector(
+            onTap: () {
+              // Send the emergency message when an option is selected
+              _sendEmergencyMessage(emergencyTypes[index]);
+            },
+            child: Container(
+              height: 60,
+              width: 60,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+                border: Border.all(color: const Color(0xFFFF7E7B), width: 2),
+              ),
+              child:
+                  Icon(emergencyIcons[index], color: const Color(0xFFFF7E7B)),
             ),
-            child: Icon(emergencyIcons[index], color: const Color(0xFFFF7E7B)),
           ),
         ),
       );

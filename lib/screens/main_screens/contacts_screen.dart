@@ -116,7 +116,7 @@ class _ContactsPageState extends State<ContactsPage> {
             : 'No Phone Number',
       };
 
-      // Save the contact to Firestore
+      // Save the contact to Firestore under the `contacts` array
       await contactsRef.doc(currentUser!.uid).set(
         {
           'contacts': FieldValue.arrayUnion([newContact]),
