@@ -87,7 +87,7 @@ class _ContactsPageState extends State<ContactsPage> {
                 itemBuilder: (context, index) {
                   final contact = phoneContacts[index];
                   return ListTile(
-                    title: Text(contact.displayName ?? 'No Name'),
+                    title: Text(contact.displayName),
                     onTap: () {
                       // Add the selected contact to Firestore
                       _addContactToFirestore(contact);
@@ -110,7 +110,7 @@ class _ContactsPageState extends State<ContactsPage> {
     if (currentUser != null) {
       // Prepare contact data
       final newContact = {
-        'name': selectedContact.displayName ?? 'No Name',
+        'name': selectedContact.displayName,
         'phone': selectedContact.phones.isNotEmpty
             ? selectedContact.phones[0].number
             : 'No Phone Number',
