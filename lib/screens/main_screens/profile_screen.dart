@@ -5,9 +5,10 @@ import 'package:lifeline/screens/auth_screens/login_screen.dart';
 import 'package:lifeline/screens/main_screens/contacts_screen.dart';
 import 'package:lifeline/screens/main_screens/homePage.dart';
 import 'package:lifeline/screens/main_screens/map_screen.dart';
+import 'package:lifeline/screens/main_screens/profile_setting_screen.dart';
 
 class ProfilePage extends StatelessWidget {
-  const ProfilePage({Key? key}) : super(key: key);
+  const ProfilePage({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -58,7 +59,13 @@ class ProfilePage extends StatelessWidget {
             child: ListView(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               children: [
-                _buildMenuItem(Icons.person_outline, 'Profile', () {}),
+                _buildMenuItem(Icons.person_outline, 'Profile', () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) => const ProfileSettingScreen()),
+                  );
+                }),
                 _buildMenuItem(Icons.history, 'History', () {}),
                 _buildMenuItem(Icons.settings_outlined, 'Settings', () {}),
                 _buildMenuItem(Icons.help_outline, 'FAQs', () {
