@@ -1,6 +1,7 @@
 import 'package:flutter_contacts/flutter_contacts.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter/material.dart';
 import 'package:lifeline/components/bottom_navbar.dart';
 
@@ -26,16 +27,14 @@ class _ContactsPageState extends State<ContactsPage> {
   User? get currentUser => FirebaseAuth.instance.currentUser;
 
   // Reference to Firestore for storing contacts
-  CollectionReference get contactsRef =>
-      FirebaseFirestore.instance.collection('contacts');
+  CollectionReference get contactsRef => FirebaseFirestore.instance.collection('contacts');
 
   // Load stored contacts from Firestore
   void _loadStoredContacts() async {
     if (currentUser != null) {
       final doc = await contactsRef.doc(currentUser!.uid).get();
       if (doc.exists) {
-        final List<dynamic> storedContacts =
-            doc.get('contacts') as List<dynamic>;
+        final List<dynamic> storedContacts = doc.get('contacts') as List<dynamic>;
         setState(() {
           contacts = storedContacts.map((contact) {
             return {
@@ -52,11 +51,7 @@ class _ContactsPageState extends State<ContactsPage> {
   // Filter contacts based on query
   void _filterContacts(String query) {
     setState(() {
-      filteredContacts = contacts
-          .where((contact) => (contact['name'] as String)
-              .toLowerCase()
-              .contains(query.toLowerCase()))
-          .toList();
+      filteredContacts = contacts.where((contact) => (contact['name'] as String).toLowerCase().contains(query.toLowerCase())).toList();
     });
   }
 
@@ -78,25 +73,86 @@ class _ContactsPageState extends State<ContactsPage> {
         context: context,
         builder: (BuildContext context) {
           return AlertDialog(
-            title: const Text("Select a Contact"),
-            content: SizedBox(
-              height: 300,
-              width: 300,
-              child: ListView.builder(
-                itemCount: phoneContacts.length,
-                itemBuilder: (context, index) {
-                  final contact = phoneContacts[index];
-                  return ListTile(
-                    title: Text(contact.displayName),
-                    onTap: () {
-                      // Add the selected contact to Firestore
-                      _addContactToFirestore(contact);
-                      Navigator.pop(context); // Close the dialog
-                    },
-                  );
-                },
-              ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
             ),
+            backgroundColor: Colors.white,
+            title: Row(
+              children: [
+                const Icon(Icons.contact_phone, color: Colors.blue),
+                const SizedBox(width: 10),
+                Text(
+                  "Select a Contact",
+                  style: GoogleFonts.nunito(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 20,
+                  ),
+                ),
+              ],
+            ),
+            content: SizedBox(
+              height: 350, // Increased height for better visibility
+              width: 300,
+              child: phoneContacts.isNotEmpty
+                  ? ListView.separated(
+                      itemCount: phoneContacts.length,
+                      separatorBuilder: (context, index) => Divider(
+                        color: Colors.grey[300],
+                        thickness: 1,
+                        height: 10,
+                      ),
+                      itemBuilder: (context, index) {
+                        final contact = phoneContacts[index];
+                        return ListTile(
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 10),
+                          leading: CircleAvatar(
+                            backgroundColor: Colors.blueAccent,
+                            child: Text(
+                              contact.displayName[0].toUpperCase(),
+                              style: GoogleFonts.nunito(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                          title: Text(
+                            contact.displayName,
+                            style: GoogleFonts.nunito(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          trailing: const Icon(Icons.add_circle, color: Colors.green),
+                          onTap: () {
+                            // Add the selected contact to Firestore
+                            _addContactToFirestore(contact);
+                            Navigator.pop(context); // Close the dialog
+                          },
+                        );
+                      },
+                    )
+                  : Center(
+                      child: Text(
+                        "No contacts found.",
+                        style: GoogleFonts.nunito(
+                          fontSize: 16,
+                          color: Colors.grey,
+                        ),
+                      ),
+                    ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text(
+                  "Cancel",
+                  style: GoogleFonts.nunito(
+                    color: Colors.red,
+                    fontSize: 16,
+                  ),
+                ),
+              ),
+            ],
           );
         },
       );
@@ -111,15 +167,15 @@ class _ContactsPageState extends State<ContactsPage> {
       // Prepare contact data
       final newContact = {
         'name': selectedContact.displayName,
-        'phone': selectedContact.phones.isNotEmpty
-            ? selectedContact.phones[0].number
-            : 'No Phone Number',
+        'phone': selectedContact.phones.isNotEmpty ? selectedContact.phones[0].number : 'No Phone Number',
       };
 
       // Save the contact to Firestore under the `contacts` array
       await contactsRef.doc(currentUser!.uid).set(
         {
-          'contacts': FieldValue.arrayUnion([newContact]),
+          'contacts': FieldValue.arrayUnion([
+            newContact
+          ]),
         },
         SetOptions(merge: true),
       );
@@ -136,18 +192,22 @@ class _ContactsPageState extends State<ContactsPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'Emergency Circle',
-          style: TextStyle(color: Colors.black),
+        automaticallyImplyLeading: false,
+        title: Padding(
+          padding: const EdgeInsets.only(left: 6.0),
+          child: Text(
+            'Emergency Circle',
+            style: GoogleFonts.nunito(color: Colors.black),
+          ),
         ),
         backgroundColor: Colors.white,
         elevation: 0,
         actions: [
           TextButton(
             onPressed: _showContactsDialog,
-            child: const Text(
+            child: Text(
               'Add Contact',
-              style: TextStyle(color: Colors.blue),
+              style: GoogleFonts.nunito(color: Colors.blue),
             ),
           ),
         ],
@@ -175,13 +235,10 @@ class _ContactsPageState extends State<ContactsPage> {
             ),
             Expanded(
               child: filteredContacts.isEmpty
-                  ? const Center(
+                  ? Center(
                       child: Text(
                         'No contacts available',
-                        style: TextStyle(
-                            fontSize: 16,
-                            color: Colors.grey,
-                            fontWeight: FontWeight.w500),
+                        style: GoogleFonts.nunito(fontSize: 16, color: Colors.grey, fontWeight: FontWeight.w500),
                       ),
                     )
                   : ListView.builder(
@@ -189,8 +246,7 @@ class _ContactsPageState extends State<ContactsPage> {
                       itemBuilder: (context, index) {
                         final contact = filteredContacts[index];
                         return Padding(
-                          padding: const EdgeInsets.symmetric(
-                              vertical: 4.0, horizontal: 16.0),
+                          padding: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 16.0),
                           child: Container(
                             padding: const EdgeInsets.all(12.0),
                             decoration: BoxDecoration(

@@ -16,91 +16,157 @@ class ProfileSettingScreen extends StatelessWidget {
           },
         ),
         title: const Text(
-          'Profile Setting',
-          style: TextStyle(color: Colors.black),
+          'Profile Settings',
+          style: TextStyle(
+            color: Colors.black,
+            fontWeight: FontWeight.bold,
+            fontSize: 20,
+          ),
         ),
         centerTitle: true,
       ),
-      body: Container(
-        color: Colors.white, // Set background color of the body
+      backgroundColor: Colors.white,
+      body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
-          child: SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: 10),
-                const TextField(
-                  decoration: InputDecoration(
-                    labelText: 'Full Name',
-                    border: OutlineInputBorder(),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 10),
+              // Full Name TextField
+              const TextField(
+                decoration: InputDecoration(
+                  labelText: 'Full Name',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.all(Radius.circular(12.0)),
                   ),
+                  contentPadding: EdgeInsets.symmetric(horizontal: 20),
                 ),
-                const SizedBox(height: 16),
-                DropdownButtonFormField<String>(
-                  decoration: const InputDecoration(
-                    labelText: 'Diseases (if any)',
-                    border: OutlineInputBorder(),
+              ),
+              const SizedBox(height: 16),
+              // Diseases Dropdown
+              DropdownButtonFormField<String>(
+                decoration: const InputDecoration(
+                  labelText: 'Diseases (if any)',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.all(Radius.circular(12.0)),
                   ),
-                  items: [],
-                  onChanged: null, // Add your logic here
+                  contentPadding: EdgeInsets.symmetric(horizontal: 20),
                 ),
-                const SizedBox(height: 16),
-                DropdownButtonFormField<String>(
-                  decoration: const InputDecoration(
-                    labelText: 'Blood Group',
-                    border: OutlineInputBorder(),
+                items: const [
+                  DropdownMenuItem(
+                    value: 'None',
+                    child: Text('None'),
                   ),
-                  items: [],
-                  onChanged: null, // Add your logic here
-                ),
-                const SizedBox(height: 16),
-                const TextField(
-                  decoration: InputDecoration(
-                    labelText: 'Height',
-                    border: OutlineInputBorder(),
+                  // Add more items if necessary
+                ],
+                onChanged: (value) {
+                  // Handle change
+                },
+              ),
+              const SizedBox(height: 16),
+              // Blood Group Dropdown
+              DropdownButtonFormField<String>(
+                decoration: const InputDecoration(
+                  labelText: 'Blood Group',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.all(Radius.circular(12.0)),
                   ),
-                  keyboardType: TextInputType.number,
+                  contentPadding: EdgeInsets.symmetric(horizontal: 20),
                 ),
-                const SizedBox(height: 16),
-                const TextField(
-                  decoration: InputDecoration(
-                    labelText: 'Contact',
-                    border: OutlineInputBorder(),
+                items: const [
+                  DropdownMenuItem(
+                    value: 'A+',
+                    child: Text('A+'),
                   ),
-                  keyboardType: TextInputType.phone,
-                ),
-                const SizedBox(height: 16),
-                const TextField(
-                  decoration: InputDecoration(
-                    labelText: 'Home Address',
-                    border: OutlineInputBorder(),
+                  // Add more items if necessary
+                ],
+                onChanged: (value) {
+                  // Handle change
+                },
+              ),
+              const SizedBox(height: 16),
+              // Height TextField
+              const TextField(
+                decoration: InputDecoration(
+                  labelText: 'Height',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.all(Radius.circular(12.0)),
                   ),
+                  contentPadding: EdgeInsets.symmetric(horizontal: 20),
                 ),
-                const SizedBox(height: 32),
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: () {
-                          Navigator.pop(context);
-                        },
-                        child: const Text('Cancel'),
+                keyboardType: TextInputType.number,
+              ),
+              const SizedBox(height: 16),
+              // Contact TextField
+              const TextField(
+                decoration: InputDecoration(
+                  labelText: 'Contact',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.all(Radius.circular(12.0)),
+                  ),
+                  contentPadding: EdgeInsets.symmetric(horizontal: 20),
+                ),
+                keyboardType: TextInputType.phone,
+              ),
+              const SizedBox(height: 16),
+              // Home Address TextField
+              const TextField(
+                decoration: InputDecoration(
+                  labelText: 'Home Address',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.all(Radius.circular(12.0)),
+                  ),
+                  contentPadding: EdgeInsets.symmetric(horizontal: 20),
+                ),
+              ),
+              const SizedBox(height: 32),
+              // Action Buttons
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                      },
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(color: Colors.blueAccent),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12.0),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 16.0),
+                      ),
+                      child: const Text(
+                        'Cancel',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.blueAccent,
+                        ),
                       ),
                     ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: () {
-                          // Add your update logic here
-                        },
-                        child: const Text('Update Setting'),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        // Add your update logic here
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blueAccent,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12.0),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 16.0),
+                      ),
+                      child: const Text(
+                        'Update Setting',
+                        style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
                       ),
                     ),
-                  ],
-                ),
-              ],
-            ),
+                  ),
+                ],
+              ),
+            ],
           ),
         ),
       ),

@@ -96,7 +96,7 @@ class _MapScreenState extends State<MapScreen> {
           ),
           leading: IconButton(
             icon: const Icon(
-              Icons.arrow_back,
+              Icons.my_location,
               color: Colors.black,
             ),
             onPressed: () {

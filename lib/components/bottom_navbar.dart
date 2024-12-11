@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lifeline/screens/main_screens/contacts_screen.dart';
-import 'package:lifeline/screens/main_screens/homePage.dart';
+import 'package:lifeline/screens/main_screens/home_screen.dart';
 import 'package:lifeline/screens/main_screens/map_screen.dart';
 import 'package:lifeline/screens/main_screens/profile_screen.dart';
 
@@ -95,7 +95,7 @@ class CustomBottomNavigationBar extends StatelessWidget {
         } else if (index == 0) {
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => const HomePage()),
+            MaterialPageRoute(builder: (context) => const HomeScreen()),
           );
         } else {
           onTap(index);

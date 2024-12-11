@@ -2,7 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lifeline/screens/auth_screens/forgotpass_screen.dart';
-import 'package:lifeline/screens/main_screens/homePage.dart';
+import 'package:lifeline/screens/main_screens/home_screen.dart';
 import 'package:lifeline/services/auth_service.dart';
 import 'signup_screen.dart';
 
@@ -65,7 +65,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const HomePage()),
+          MaterialPageRoute(builder: (context) => const HomeScreen()),
         );
       }
     } on FirebaseAuthException catch (e) {
@@ -260,7 +260,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                           Navigator.pushReplacement(
                             context,
-                            MaterialPageRoute(builder: (context) => const HomePage()),
+                            MaterialPageRoute(builder: (context) => const HomeScreen()),
                           );
                         }
                       } catch (e) {

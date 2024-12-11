@@ -85,6 +85,7 @@ flutter:
   - assets/images/icons/user.png
   - assets/images/icons/back.png
   - assets/images/icons/phone.png
+  - assets/images/icons/tap.png
   - assets/images/placeholders/login.png
   - assets/images/placeholders/signup.png
   - assets/images/placeholders/forgotpass.png
