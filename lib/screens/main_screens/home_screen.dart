@@ -92,109 +92,120 @@ class _HomeScreenState extends State<HomeScreen> {
     print("Emergency message sent to all contacts.");
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
+@override
+Widget build(BuildContext context) {
+  return Scaffold(
+    backgroundColor: Colors.white,
+    appBar: AppBar(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        leading: Padding(
-          padding: const EdgeInsets.only(left: 15.0),
-          child: Image.asset(
-            "assets/images/logo.png",
-            fit: BoxFit.contain,
-          ),
+      elevation: 0,
+      leading: Padding(
+        padding: const EdgeInsets.only(left: 15.0),
+        child: Image.asset(
+          "assets/images/logo.png",
+          fit: BoxFit.contain,
         ),
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              "Current location",
-              style: GoogleFonts.nunito(
-                fontSize: 14,
-                color: Colors.grey,
-              ),
-            ),
-            Text(
-              _currentAddress,
-              style: GoogleFonts.nunito(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: Colors.black,
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          IconButton(
-            onPressed: _getUserLocation,
-            icon: const Icon(Icons.refresh, color: Colors.black),
-          ),
-          const Padding(
-            padding: EdgeInsets.only(right: 8.0),
-            child: CircleAvatar(
-              radius: 20,
-              backgroundImage: NetworkImage("https://via.placeholder.com/150"),
-            ),
-          ),
-        ],
       ),
-      body: Stack(
-        alignment: Alignment.center,
+      title: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Center content inside the Column widget
-          Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  "Having an Emergency?",
-                  style: GoogleFonts.nunito(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  "Press the button below\nhelp will arrive soon",
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.nunito(
-                    fontSize: 16,
-                    color: Color.fromARGB(255, 105, 105, 105),
-                  ),
-                ),
-                const SizedBox(height: 40),
-                GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      _showEmergencyOptions = !_showEmergencyOptions;
-                    });
-                  },
-                  child: buildMainEmergencyButton(onTap: () {
-                    setState(() {
-                      _showEmergencyOptions = !_showEmergencyOptions;
-                    });
-                  }),
-                )
-              ],
+          Text(
+            "Current location",
+            style: GoogleFonts.nunito(
+              fontSize: 14,
+              color: Colors.grey,
             ),
           ),
-          // Animated small buttons
-          if (_showEmergencyOptions) ..._buildEmergencyOptions(),
+          Text(
+            _currentAddress,
+            style: GoogleFonts.nunito(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Colors.black,
+            ),
+          ),
         ],
       ),
-      bottomNavigationBar: CustomBottomNavigationBar(
-        currentIndex: _selectedIndex,
-        onTap: (index) {
-          setState(() {
-            _selectedIndex = index;
-          });
-        },
+      actions: [
+        IconButton(
+          onPressed: _getUserLocation,
+          icon: const Icon(Icons.refresh, color: Colors.black),
+        ),
+        const Padding(
+          padding: EdgeInsets.only(right: 8.0),
+          child: CircleAvatar(
+            radius: 20,
+            backgroundImage: NetworkImage("https://via.placeholder.com/150"),
+          ),
+        ),
+      ],
+    ),
+    body: Stack(
+      alignment: Alignment.center,
+      children: [
+        Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                "Having an Emergency?",
+                style: GoogleFonts.nunito(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                "Press the button below\nhelp will arrive soon",
+                textAlign: TextAlign.center,
+                style: GoogleFonts.nunito(
+                  fontSize: 16,
+                  color: Color.fromARGB(255, 105, 105, 105),
+                ),
+              ),
+              const SizedBox(height: 40),
+              GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _showEmergencyOptions = !_showEmergencyOptions;
+                  });
+                },
+                child: buildMainEmergencyButton(onTap: () {
+                  setState(() {
+                    _showEmergencyOptions = !_showEmergencyOptions;
+                  });
+                }),
+              )
+            ],
+          ),
+        ),
+        if (_showEmergencyOptions) ..._buildEmergencyOptions(),
+      ],
+    ),
+    floatingActionButton: FloatingActionButton(
+      onPressed: () {
+        Navigator.pushNamed(context, '/chatBotScreen'); // Replace with the correct route name for the AI bot chatting screen
+      },
+      backgroundColor: const Color(0xFFFF7E7B),
+      elevation: 4.0,
+      child: Icon(
+        Icons.chat,
+        color: Colors.white,
+        size: 28.0,
       ),
-    );
-  }
+    ),
+    bottomNavigationBar: CustomBottomNavigationBar(
+      currentIndex: _selectedIndex,
+      onTap: (index) {
+        setState(() {
+          _selectedIndex = index;
+        });
+      },
+    ),
+  );
+}
+
 
   List<Widget> _buildEmergencyOptions() {
     final List<IconData> emergencyIcons = [
@@ -231,7 +242,6 @@ class _HomeScreenState extends State<HomeScreen> {
           opacity: _showEmergencyOptions ? 1 : 0,
           child: GestureDetector(
             onTap: () {
-              // Send the emergency message when an option is selected
               _sendEmergencyMessage(emergencyTypes[index]);
             },
             child: Container(
