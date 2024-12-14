@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:lifeline/chatbot/screens/home_screen.dart';
 import 'package:lifeline/components/bottom_navbar.dart';
 import 'package:lifeline/services/location_handler.dart';
 import 'package:lifeline/services/firestore_service.dart';
@@ -185,7 +186,10 @@ Widget build(BuildContext context) {
     ),
     floatingActionButton: FloatingActionButton(
       onPressed: () {
-        Navigator.pushNamed(context, '/chatBotScreen'); // Replace with the correct route name for the AI bot chatting screen
+        Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const ChatHomeScreen()),
+                      ); 
       },
       backgroundColor: const Color(0xFFFF7E7B),
       elevation: 4.0,
