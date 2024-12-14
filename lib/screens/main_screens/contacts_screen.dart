@@ -14,48 +14,45 @@ class ContactsPage extends StatefulWidget {
 
 class _ContactsPageState extends State<ContactsPage> {
   int _selectedIndex = 1;
-  List<Map<String, dynamic>> contacts = []; // Updated to match Firestore data
+  List<Map<String, dynamic>> contacts = [];
   List<Map<String, dynamic>> filteredContacts = [];
 
   @override
   void initState() {
     super.initState();
-    _loadStoredContacts(); // Load stored contacts from Firestore
+    _loadStoredContacts();
   }
 
-  // Get the current authenticated user from Firebase
+  // Get the current authenticated user
   User? get currentUser => FirebaseAuth.instance.currentUser;
 
-  // Reference to Firestore for storing contacts
-  CollectionReference get contactsRef => FirebaseFirestore.instance.collection('contacts');
+  // Reference to the Firestore user's contacts subcollection
+  CollectionReference<Map<String, dynamic>> get contactsRef {
+    if (currentUser == null) {
+      throw Exception("User not authenticated");
+    }
+    return FirebaseFirestore.instance.collection('users').doc(currentUser!.uid).collection('contacts');
+  }
 
-  // Load stored contacts from Firestore
+  // Load contacts from the subcollection in Firestore
   void _loadStoredContacts() async {
     if (currentUser != null) {
-      final doc = await contactsRef.doc(currentUser!.uid).get();
-      if (doc.exists) {
-        final List<dynamic> storedContacts = doc.get('contacts') as List<dynamic>;
-        setState(() {
-          contacts = storedContacts.map((contact) {
-            return {
-              'name': contact['name'] ?? 'No Name',
-              'phone': contact['phone'] ?? 'No Phone Number',
-            };
-          }).toList();
-          filteredContacts = contacts;
-        });
-      }
+      final querySnapshot = await contactsRef.get();
+      setState(() {
+        contacts = querySnapshot.docs.map((doc) => doc.data()).toList();
+        filteredContacts = contacts;
+      });
     }
   }
 
-  // Filter contacts based on query
+  // Filter contacts based on the search query
   void _filterContacts(String query) {
     setState(() {
       filteredContacts = contacts.where((contact) => (contact['name'] as String).toLowerCase().contains(query.toLowerCase())).toList();
     });
   }
 
-  // Show a dialog with phone contacts for selection
+  // Show a dialog to select a phone contact
   void _showContactsDialog() async {
     try {
       bool permissionGranted = await FlutterContacts.requestPermission();
@@ -91,7 +88,7 @@ class _ContactsPageState extends State<ContactsPage> {
               ],
             ),
             content: SizedBox(
-              height: 350, // Increased height for better visibility
+              height: 350,
               width: 300,
               child: phoneContacts.isNotEmpty
                   ? ListView.separated(
@@ -124,9 +121,8 @@ class _ContactsPageState extends State<ContactsPage> {
                           ),
                           trailing: const Icon(Icons.add_circle, color: Colors.green),
                           onTap: () {
-                            // Add the selected contact to Firestore
                             _addContactToFirestore(contact);
-                            Navigator.pop(context); // Close the dialog
+                            Navigator.pop(context);
                           },
                         );
                       },
@@ -161,24 +157,16 @@ class _ContactsPageState extends State<ContactsPage> {
     }
   }
 
-  // Add the selected contact to Firestore
+  // Add a selected contact to the Firestore subcollection
   void _addContactToFirestore(Contact selectedContact) async {
     if (currentUser != null) {
-      // Prepare contact data
       final newContact = {
         'name': selectedContact.displayName,
         'phone': selectedContact.phones.isNotEmpty ? selectedContact.phones[0].number : 'No Phone Number',
       };
 
-      // Save the contact to Firestore under the `contacts` array
-      await contactsRef.doc(currentUser!.uid).set(
-        {
-          'contacts': FieldValue.arrayUnion([
-            newContact
-          ]),
-        },
-        SetOptions(merge: true),
-      );
+      // Add the contact as a new document in the subcollection
+      await contactsRef.add(newContact);
 
       // Update the local state
       setState(() {
@@ -213,7 +201,7 @@ class _ContactsPageState extends State<ContactsPage> {
         ],
       ),
       body: Container(
-        color: Colors.grey[100], // Light background
+        color: Colors.grey[100],
         child: Column(
           children: [
             Padding(
@@ -276,7 +264,7 @@ class _ContactsPageState extends State<ContactsPage> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      contact['name']!,
+                                      contact['name'],
                                       style: const TextStyle(
                                         fontSize: 16,
                                         fontWeight: FontWeight.bold,
@@ -285,7 +273,7 @@ class _ContactsPageState extends State<ContactsPage> {
                                     ),
                                     const SizedBox(height: 4),
                                     Text(
-                                      contact['phone']!,
+                                      contact['phone'],
                                       style: const TextStyle(
                                         fontSize: 14,
                                         color: Colors.grey,

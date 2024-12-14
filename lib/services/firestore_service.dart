@@ -7,29 +7,38 @@ class FirestoreService {
   // Fetch the emergency contacts for the user
   Future<List<String>> getEmergencyContacts(String userId) async {
     try {
-      var docSnapshot = await _db.collection('contacts').doc(userId).get();
-      if (docSnapshot.exists) {
-        // Extract phone numbers from the `contacts` array
-        var contactList = docSnapshot['contacts'] as List<dynamic>;
-        var phoneNumbers = contactList.map((contact) {
-          return contact['phone'] as String;
-        }).toList();
-        return phoneNumbers;
-      } else {
-        print("User document does not exist.");
-        return [];
-      }
+      // Access the subcollection 'contacts' under the user's document
+      var contactsSnapshot = await _db.collection('users').doc(userId).collection('contacts').get();
+
+      // Extract phone numbers from the documents
+      var phoneNumbers = contactsSnapshot.docs.map((doc) {
+        return doc['phone'] as String;
+      }).toList();
+
+      return phoneNumbers;
     } catch (e) {
       print("Error fetching contacts: $e");
       return [];
+    }
+  }
+
+  // Add a contact to the user's subcollection
+  Future<void> addEmergencyContact(String userId, String name, String phone) async {
+    try {
+      await _db.collection('users').doc(userId).collection('contacts').add({
+        'name': name,
+        'phone': phone
+      });
+      print("Contact added successfully.");
+    } catch (e) {
+      print("Error adding contact: $e");
     }
   }
 }
 
 // Example usage:
 Future<void> fetchContacts() async {
-  final userId = FirebaseAuth
-      .instance.currentUser?.uid; // Get the authenticated user's UID
+  final userId = FirebaseAuth.instance.currentUser?.uid;
 
   if (userId != null) {
     final contacts = await FirestoreService().getEmergencyContacts(userId);

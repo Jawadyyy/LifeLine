@@ -5,8 +5,7 @@ import 'package:lifeline/chatbot/providers/settings_provider.dart';
 import 'package:lifeline/firebase/firebase_options.dart';
 import 'package:lifeline/screens/auth_screens/loading_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:provider/provider.dart'; 
-
+import 'package:provider/provider.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -20,8 +19,8 @@ Future<void> main() async {
   runApp(
     MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (context) => ChatProvider()), 
-        ChangeNotifierProvider(create: (context) => SettingsProvider()), 
+        ChangeNotifierProvider(create: (context) => ChatProvider()),
+        ChangeNotifierProvider(create: (context) => SettingsProvider()),
       ],
       child: const MyApp(),
     ),
