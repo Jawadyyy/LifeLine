@@ -1,5 +1,7 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:lifeline/components/bottom_navbar.dart';
 import 'package:lifeline/screens/auth_screens/login_screen.dart';
 import 'package:lifeline/screens/main_screens/contacts_screen.dart';
@@ -7,8 +9,55 @@ import 'package:lifeline/screens/main_screens/home_screen.dart';
 import 'package:lifeline/screens/main_screens/map_screen.dart';
 import 'package:lifeline/screens/main_screens/profile_setting_screen.dart';
 
-class ProfilePage extends StatelessWidget {
+// Simulating a logged-in user
+class User {
+  String name;
+  String bloodType;
+  String age;
+  String weight;
+  String profileImage;
+
+  User({
+    required this.name,
+    required this.bloodType,
+    required this.age,
+    required this.weight,
+    required this.profileImage,
+  });
+}
+
+// Global user object
+User currentUser = User(
+  name: "Maria",
+  bloodType: "AB+",
+  age: "56",
+  weight: "103lbs",
+  profileImage: "", // Initially no profile image
+);
+
+class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
+
+  @override
+  State<ProfilePage> createState() => _ProfilePageState();
+}
+
+class _ProfilePageState extends State<ProfilePage> {
+  final ImagePicker _picker = ImagePicker();
+
+  // Function to update the profile image
+  Future<void> _updateProfileImage(ImageSource source) async {
+    try {
+      final XFile? pickedFile = await _picker.pickImage(source: source);
+      if (pickedFile != null) {
+        setState(() {
+          currentUser.profileImage = pickedFile.path;
+        });
+      }
+    } catch (e) {
+      debugPrint("Error picking image: $e");
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -33,13 +82,16 @@ class ProfilePage extends StatelessWidget {
           Center(
             child: Column(
               children: [
-                const CircleAvatar(
-                  radius: 50,
-                  backgroundImage: NetworkImage('https://via.placeholder.com/150'), // Replace with your image URL
+                GestureDetector(
+                  onTap: () => _showProfileImageOptions(context),
+                  child: CircleAvatar(
+                    radius: 50,
+                    backgroundImage: currentUser.profileImage.isNotEmpty ? FileImage(File(currentUser.profileImage)) : const NetworkImage('https://via.placeholder.com/150') as ImageProvider,
+                  ),
                 ),
                 const SizedBox(height: 10),
                 Text(
-                  'Maria',
+                  currentUser.name,
                   style: GoogleFonts.nunito(fontSize: 22, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 20),
@@ -47,9 +99,9 @@ class ProfilePage extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
-                    _buildStatColumn(Icons.favorite, 'Blood Type', 'AB+'),
-                    _buildStatColumn(Icons.water_drop, 'Age', '56'),
-                    _buildStatColumn(Icons.monitor_weight, 'Weight', '103lbs'),
+                    _buildStatColumn(Icons.favorite, 'Blood Type', currentUser.bloodType),
+                    _buildStatColumn(Icons.water_drop, 'Age', currentUser.age),
+                    _buildStatColumn(Icons.monitor_weight, 'Weight', currentUser.weight),
                   ],
                 ),
               ],
@@ -67,14 +119,14 @@ class ProfilePage extends StatelessWidget {
                     MaterialPageRoute(builder: (context) => const ProfileSettingScreen()),
                   );
                 }),
-                _buildMenuItem(Icons.history, 'History', () {}),
                 _buildMenuItem(Icons.settings_outlined, 'Settings', () {}),
                 _buildMenuItem(Icons.help_outline, 'FAQs', () {
                   _showFAQDialog(context);
                 }),
                 _buildMenuItem(Icons.logout, 'Logout', () {
-                  // Navigate to login screen
-                  Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (context) => const LoginScreen()));
+                  Navigator.of(context).pushReplacement(
+                    MaterialPageRoute(builder: (context) => const LoginScreen()),
+                  );
                 }),
               ],
             ),
@@ -84,15 +136,13 @@ class ProfilePage extends StatelessWidget {
       bottomNavigationBar: CustomBottomNavigationBar(
         currentIndex: 3, // Set 3 for the Profile tab as active
         onTap: (index) {
-          // Logic to handle tab changes
           if (index != 3) {
-            // Navigate to other pages
             Navigator.of(context).pushReplacement(MaterialPageRoute(
               builder: (context) {
                 if (index == 0) return const HomeScreen();
                 if (index == 1) return const ContactsPage();
                 if (index == 2) return const MapScreen();
-                return const ProfilePage(); // Default to Profile for safety
+                return const ProfilePage();
               },
             ));
           }
@@ -131,80 +181,161 @@ class ProfilePage extends StatelessWidget {
     );
   }
 
-  void _showFAQDialog(BuildContext context) {
-    showDialog(
+  void _showProfileImageOptions(BuildContext context) {
+    showModalBottomSheet(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: Colors.white,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12.0), // Smooth rounded corners
-        ),
-        title: const Text(
-          'About the Project',
-          style: TextStyle(
-            fontSize: 20, // Slightly larger title
-            fontWeight: FontWeight.w600,
-            color: Colors.black87, // Darker color for better contrast
-          ),
-        ),
-        contentPadding: const EdgeInsets.all(16.0), // Padding inside the dialog
-        content: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 8),
-              _buildSectionTitle('Contributors'),
-              _buildListItem('1. Jawad Mansoor'),
-              _buildListItem('2. Sardar Muhammad Ali Khan'),
-              _buildListItem('3. Muhammad Waqas Siddique'),
-              const SizedBox(height: 16),
-              _buildSectionTitle('Licenses'),
-              _buildListItem('MIT License'),
-              _buildListItem('All rights reserved © 2024'),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text(
-              'Close',
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.blueAccent, // Blue color for action button
-                fontWeight: FontWeight.bold, // Bold action text
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      backgroundColor: Colors.white,
+      builder: (BuildContext context) {
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 10),
+            Text(
+              "Choose an Action",
+              style: GoogleFonts.nunito(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: Colors.black87,
               ),
             ),
-          ),
-        ],
-      ),
+            const Divider(thickness: 1, color: Colors.grey),
+            const SizedBox(height: 5),
+            _buildBottomSheetOption(
+              icon: Icons.photo_camera,
+              color: Colors.green,
+              title: "Take Picture From Camera",
+              onTap: () {
+                Navigator.of(context).pop();
+                _updateProfileImage(ImageSource.camera);
+              },
+            ),
+            _buildBottomSheetOption(
+              icon: Icons.image,
+              color: Colors.blue,
+              title: "Choose from Gallery",
+              onTap: () {
+                Navigator.of(context).pop();
+                _updateProfileImage(ImageSource.gallery);
+              },
+            ),
+            const SizedBox(height: 10),
+            // Cancel Button
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              child: ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.redAccent,
+                  foregroundColor: Colors.white,
+                  elevation: 2,
+                  minimumSize: const Size(double.infinity, 50),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                icon: const Icon(Icons.cancel, size: 24),
+                label: const Text(
+                  "Cancel",
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+            ),
+            const SizedBox(height: 10),
+          ],
+        );
+      },
     );
   }
 
-  Widget _buildSectionTitle(String title) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8.0),
-      child: Text(
+  Widget _buildBottomSheetOption({
+    required IconData icon,
+    required Color color,
+    required String title,
+    required VoidCallback onTap,
+  }) {
+    return ListTile(
+      leading: CircleAvatar(
+        backgroundColor: color.withOpacity(0.2),
+        child: Icon(icon, color: color, size: 28),
+      ),
+      title: Text(
         title,
-        style: const TextStyle(
+        style: GoogleFonts.nunito(
           fontSize: 16,
           fontWeight: FontWeight.w600,
-          color: Colors.blueGrey, // Light grayish-blue for section titles
+          color: Colors.black87,
         ),
       ),
+      onTap: onTap,
     );
   }
+}
 
-  Widget _buildListItem(String text) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 4.0),
-      child: Text(
-        text,
-        style: const TextStyle(
-          fontSize: 14,
-          color: Colors.black, // Slightly muted black for list items
+void _showFAQDialog(BuildContext context) {
+  showDialog(
+    context: context,
+    builder: (context) => AlertDialog(
+      backgroundColor: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12.0),
+      ),
+      title: const Text(
+        'About the Project',
+        style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: Colors.black87),
+      ),
+      contentPadding: const EdgeInsets.all(16.0),
+      content: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 8),
+            _buildSectionTitle('Contributors'),
+            _buildListItem('1. Jawad Mansoor'),
+            _buildListItem('2. Sardar Muhammad Ali Khan'),
+            _buildListItem('3. Muhammad Waqas Siddique'),
+            const SizedBox(height: 16),
+            _buildSectionTitle('Licenses'),
+            _buildListItem('MIT License'),
+            _buildListItem('All rights reserved © 2024'),
+          ],
         ),
       ),
-    );
-  }
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text(
+            'Close',
+            style: TextStyle(fontSize: 16, color: Colors.blueAccent, fontWeight: FontWeight.bold),
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+Widget _buildSectionTitle(String title) {
+  return Padding(
+    padding: const EdgeInsets.only(bottom: 8.0),
+    child: Text(
+      title,
+      style: const TextStyle(
+        fontSize: 16,
+        fontWeight: FontWeight.w600,
+        color: Colors.blueGrey,
+      ),
+    ),
+  );
+}
+
+Widget _buildListItem(String text) {
+  return Padding(
+    padding: const EdgeInsets.only(bottom: 4.0),
+    child: Text(
+      text,
+      style: const TextStyle(fontSize: 14, color: Colors.black),
+    ),
+  );
 }

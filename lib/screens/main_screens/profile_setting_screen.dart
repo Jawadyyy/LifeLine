@@ -14,8 +14,7 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen> {
 
   // Function to pick image from gallery
   Future<void> _pickImage() async {
-    final pickedFile =
-        await ImagePicker().pickImage(source: ImageSource.gallery);
+    final pickedFile = await ImagePicker().pickImage(source: ImageSource.gallery);
     if (pickedFile != null) {
       setState(() {
         _image = File(pickedFile.path);
@@ -52,44 +51,6 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              const SizedBox(height: 10),
-
-              // Profile Picture Section
-              GestureDetector(
-                onTap: _pickImage,
-                child: Column(
-                  children: [
-                    CircleAvatar(
-                      radius: 60,
-                      backgroundColor: Colors.grey[200],
-                      backgroundImage: _image != null
-                          ? FileImage(_image!) as ImageProvider
-                          : const AssetImage(
-                              'assets/images/profileimage/default_image.jpg'), // Default image
-                      child: _image == null
-                          ? const Icon(
-                              Icons.camera_alt,
-                              color: Colors.grey,
-                              size: 40,
-                            )
-                          : null,
-                    ),
-                    const SizedBox(height: 8),
-                    const Text(
-                      'Change Picture',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.blueAccent,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 20),
-
-              // Full Name TextField
               const TextField(
                 decoration: InputDecoration(
                   labelText: 'Full Name',
@@ -113,8 +74,7 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen> {
                 items: const [
                   DropdownMenuItem(value: 'None', child: Text('None')),
                   DropdownMenuItem(value: 'Diabetes', child: Text('Diabetes')),
-                  DropdownMenuItem(
-                      value: 'Hypertension', child: Text('Hypertension')),
+                  DropdownMenuItem(value: 'Hypertension', child: Text('Hypertension')),
                   DropdownMenuItem(value: 'Asthma', child: Text('Asthma')),
                   DropdownMenuItem(value: 'Other', child: Text('Other')),
                 ],
@@ -226,8 +186,7 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen> {
                       ),
                       child: const Text(
                         'Update Setting',
-                        style: TextStyle(
-                            fontWeight: FontWeight.bold, color: Colors.white),
+                        style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
                       ),
                     ),
                   ),

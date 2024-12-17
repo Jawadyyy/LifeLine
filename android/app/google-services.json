@@ -12,7 +12,20 @@
           "package_name": "com.example.lifeline"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "108936893907-etfejtcesff244rt59ru6f62669sa62v.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.lifeline",
+            "certificate_hash": "cf9cb02e1ec23bd8bc62eb634949ade9496f1039"
+          }
+        },
+        {
+          "client_id": "108936893907-rvo0cbf6cej8tgrvedgpgfa0rgrg4muq.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyDYeU_1OgU-cTLqdv4PhWp9-vcSnDpBDnQ"
@@ -20,7 +33,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "108936893907-rvo0cbf6cej8tgrvedgpgfa0rgrg4muq.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "108936893907-qe03l5tft76u6ifvhduq4ivntjkff3fn.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.lifeline"
+              }
+            }
+          ]
         }
       }
     }

@@ -22,8 +22,7 @@ class AuthService {
     required String phone,
   }) async {
     try {
-      UserCredential userCredential =
-          await _auth.createUserWithEmailAndPassword(
+      UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
@@ -116,16 +115,14 @@ class AuthService {
         return null;
       }
 
-      final GoogleSignInAuthentication googleAuth =
-          await googleUser.authentication;
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
 
       final credential = GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
       );
 
-      final UserCredential userCredential =
-          await _auth.signInWithCredential(credential);
+      final UserCredential userCredential = await _auth.signInWithCredential(credential);
 
       User? user = userCredential.user;
 
@@ -195,16 +192,14 @@ class AuthService {
     }
   }
 
-  Future<void> verifyOTP(
-      String verificationId, String otp, BuildContext context) async {
+  Future<void> verifyOTP(String verificationId, String otp, BuildContext context) async {
     try {
       final PhoneAuthCredential credential = PhoneAuthProvider.credential(
         verificationId: verificationId,
         smsCode: otp,
       );
 
-      final UserCredential userCredential =
-          await _auth.signInWithCredential(credential);
+      final UserCredential userCredential = await _auth.signInWithCredential(credential);
 
       if (userCredential.user != null) {
         Fluttertoast.showToast(msg: "OTP verified successfully!");
