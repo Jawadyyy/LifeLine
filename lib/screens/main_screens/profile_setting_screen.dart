@@ -1,7 +1,27 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
 
-class ProfileSettingScreen extends StatelessWidget {
+class ProfileSettingScreen extends StatefulWidget {
   const ProfileSettingScreen({super.key});
+
+  @override
+  State<ProfileSettingScreen> createState() => _ProfileSettingScreenState();
+}
+
+class _ProfileSettingScreenState extends State<ProfileSettingScreen> {
+  File? _image; // To store the selected image
+
+  // Function to pick image from gallery
+  Future<void> _pickImage() async {
+    final pickedFile =
+        await ImagePicker().pickImage(source: ImageSource.gallery);
+    if (pickedFile != null) {
+      setState(() {
+        _image = File(pickedFile.path);
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -30,9 +50,45 @@ class ProfileSettingScreen extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               const SizedBox(height: 10),
+
+              // Profile Picture Section
+              GestureDetector(
+                onTap: _pickImage,
+                child: Column(
+                  children: [
+                    CircleAvatar(
+                      radius: 60,
+                      backgroundColor: Colors.grey[200],
+                      backgroundImage: _image != null
+                          ? FileImage(_image!) as ImageProvider
+                          : const AssetImage(
+                              'assets/images/profileimage/default_image.jpg'), // Default image
+                      child: _image == null
+                          ? const Icon(
+                              Icons.camera_alt,
+                              color: Colors.grey,
+                              size: 40,
+                            )
+                          : null,
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Change Picture',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.blueAccent,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 20),
+
               // Full Name TextField
               const TextField(
                 decoration: InputDecoration(
@@ -44,6 +100,7 @@ class ProfileSettingScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 16),
+
               // Diseases Dropdown
               DropdownButtonFormField<String>(
                 decoration: const InputDecoration(
@@ -54,17 +111,19 @@ class ProfileSettingScreen extends StatelessWidget {
                   contentPadding: EdgeInsets.symmetric(horizontal: 20),
                 ),
                 items: const [
+                  DropdownMenuItem(value: 'None', child: Text('None')),
+                  DropdownMenuItem(value: 'Diabetes', child: Text('Diabetes')),
                   DropdownMenuItem(
-                    value: 'None',
-                    child: Text('None'),
-                  ),
-                  // Add more items if necessary
+                      value: 'Hypertension', child: Text('Hypertension')),
+                  DropdownMenuItem(value: 'Asthma', child: Text('Asthma')),
+                  DropdownMenuItem(value: 'Other', child: Text('Other')),
                 ],
                 onChanged: (value) {
                   // Handle change
                 },
               ),
               const SizedBox(height: 16),
+
               // Blood Group Dropdown
               DropdownButtonFormField<String>(
                 decoration: const InputDecoration(
@@ -75,17 +134,21 @@ class ProfileSettingScreen extends StatelessWidget {
                   contentPadding: EdgeInsets.symmetric(horizontal: 20),
                 ),
                 items: const [
-                  DropdownMenuItem(
-                    value: 'A+',
-                    child: Text('A+'),
-                  ),
-                  // Add more items if necessary
+                  DropdownMenuItem(value: 'A+', child: Text('A+')),
+                  DropdownMenuItem(value: 'A-', child: Text('A-')),
+                  DropdownMenuItem(value: 'B+', child: Text('B+')),
+                  DropdownMenuItem(value: 'B-', child: Text('B-')),
+                  DropdownMenuItem(value: 'AB+', child: Text('AB+')),
+                  DropdownMenuItem(value: 'AB-', child: Text('AB-')),
+                  DropdownMenuItem(value: 'O+', child: Text('O+')),
+                  DropdownMenuItem(value: 'O-', child: Text('O-')),
                 ],
                 onChanged: (value) {
                   // Handle change
                 },
               ),
               const SizedBox(height: 16),
+
               // Height TextField
               const TextField(
                 decoration: InputDecoration(
@@ -98,6 +161,7 @@ class ProfileSettingScreen extends StatelessWidget {
                 keyboardType: TextInputType.number,
               ),
               const SizedBox(height: 16),
+
               // Contact TextField
               const TextField(
                 decoration: InputDecoration(
@@ -110,6 +174,7 @@ class ProfileSettingScreen extends StatelessWidget {
                 keyboardType: TextInputType.phone,
               ),
               const SizedBox(height: 16),
+
               // Home Address TextField
               const TextField(
                 decoration: InputDecoration(
@@ -121,6 +186,7 @@ class ProfileSettingScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 32),
+
               // Action Buttons
               Row(
                 children: [
@@ -160,7 +226,8 @@ class ProfileSettingScreen extends StatelessWidget {
                       ),
                       child: const Text(
                         'Update Setting',
-                        style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold, color: Colors.white),
                       ),
                     ),
                   ),

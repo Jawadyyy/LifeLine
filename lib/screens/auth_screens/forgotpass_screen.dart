@@ -20,26 +20,29 @@ class _ForgotpassScreenState extends State<ForgotpassScreen> {
   Future<void> _sendOTP(String phone) async {
     try {
       final otp = Random().nextInt(900000) + 100000;
+      String formattedPhone = phone.replaceAll(RegExp(r'\D'), '');
 
-      final whatsappUrl = "whatsapp://send?phone=$phone&text=Your OTP is $otp";
+      final whatsappUrl =
+          'https://wa.me/$formattedPhone?text=${Uri.encodeFull("Your OTP is $otp")}';
 
       await _firestore.collection('otps').doc(phone).set({
         'otp': otp,
         'timestamp': FieldValue.serverTimestamp(),
       });
 
-      if (await canLaunchUrl(Uri.parse(Uri.encodeFull(whatsappUrl)))) {
-        await launchUrl(Uri.parse(Uri.encodeFull(whatsappUrl)));
-
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => OTPScreen(phone: phone, otp: otp),
-          ),
-        );
-      } else {
-        throw 'Could not launch WhatsApp';
+      if (!await launchUrl(
+        Uri.parse(whatsappUrl),
+        mode: LaunchMode.externalApplication,
+      )) {
+        throw 'Could not launch $whatsappUrl';
       }
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => OTPScreen(phone: phone, otp: otp),
+        ),
+      );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

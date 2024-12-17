@@ -40,8 +40,6 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  // Modify this part of your code where you fetch and pass Position
-
   Future<void> _sendEmergencyMessage(String emergencyType) async {
     // Get the current user's ID
     final user = FirebaseAuth.instance.currentUser;
@@ -76,15 +74,18 @@ class _HomeScreenState extends State<HomeScreen> {
     final address = await LocationHandler.getAddressFromLatLng(position);
 
     // Prepare the emergency message with the type of emergency
-    String message = "🚨 I am in an emergency: $emergencyType. My location is: $address";
+    String message =
+        "🚨 I am in an emergency: $emergencyType. My location is: $address";
 
     // Notify each contact
     for (String contact in contacts) {
-      final whatsappUrl = 'https://wa.me/$contact?text=${Uri.encodeFull(message)}';
+      final whatsappUrl =
+          'https://wa.me/$contact?text=${Uri.encodeFull(message)}';
 
       try {
         await launch(whatsappUrl);
-        await Future.delayed(const Duration(seconds: 2)); // Add delay for reliability
+        await Future.delayed(
+            const Duration(seconds: 2)); // Add delay for reliability
       } catch (e) {
         print("Could not open WhatsApp for contact $contact. Error: $e");
       }
@@ -93,123 +94,122 @@ class _HomeScreenState extends State<HomeScreen> {
     print("Emergency message sent to all contacts.");
   }
 
-@override
-Widget build(BuildContext context) {
-  return Scaffold(
-    backgroundColor: Colors.white,
-    appBar: AppBar(
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
       backgroundColor: Colors.white,
-      elevation: 0,
-      leading: Padding(
-        padding: const EdgeInsets.only(left: 15.0),
-        child: Image.asset(
-          "assets/images/logo.png",
-          fit: BoxFit.contain,
-        ),
-      ),
-      title: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            "Current location",
-            style: GoogleFonts.nunito(
-              fontSize: 14,
-              color: Colors.grey,
-            ),
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        leading: Padding(
+          padding: const EdgeInsets.only(left: 15.0),
+          child: Image.asset(
+            "assets/images/logo.png",
+            fit: BoxFit.contain,
           ),
-          Text(
-            _currentAddress,
-            style: GoogleFonts.nunito(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: Colors.black,
+        ),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              "Current location",
+              style: GoogleFonts.nunito(
+                fontSize: 14,
+                color: Colors.grey,
+              ),
+            ),
+            Text(
+              _currentAddress,
+              style: GoogleFonts.nunito(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.black,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          IconButton(
+            onPressed: _getUserLocation,
+            icon: const Icon(Icons.refresh, color: Colors.black),
+          ),
+          const Padding(
+            padding: EdgeInsets.only(right: 8.0),
+            child: CircleAvatar(
+              radius: 20,
+              backgroundImage: NetworkImage("https://via.placeholder.com/150"),
             ),
           ),
         ],
       ),
-      actions: [
-        IconButton(
-          onPressed: _getUserLocation,
-          icon: const Icon(Icons.refresh, color: Colors.black),
-        ),
-        const Padding(
-          padding: EdgeInsets.only(right: 8.0),
-          child: CircleAvatar(
-            radius: 20,
-            backgroundImage: NetworkImage("https://via.placeholder.com/150"),
-          ),
-        ),
-      ],
-    ),
-    body: Stack(
-      alignment: Alignment.center,
-      children: [
-        Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                "Having an Emergency?",
-                style: GoogleFonts.nunito(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black,
+      body: Stack(
+        alignment: Alignment.center,
+        children: [
+          Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  "Having an Emergency?",
+                  style: GoogleFonts.nunito(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 10),
-              Text(
-                "Press the button below\nhelp will arrive soon",
-                textAlign: TextAlign.center,
-                style: GoogleFonts.nunito(
-                  fontSize: 16,
-                  color: Color.fromARGB(255, 105, 105, 105),
+                const SizedBox(height: 10),
+                Text(
+                  "Press the button below\nhelp will arrive soon",
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.nunito(
+                    fontSize: 16,
+                    color: Color.fromARGB(255, 105, 105, 105),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 40),
-              GestureDetector(
-                onTap: () {
-                  setState(() {
-                    _showEmergencyOptions = !_showEmergencyOptions;
-                  });
-                },
-                child: buildMainEmergencyButton(onTap: () {
-                  setState(() {
-                    _showEmergencyOptions = !_showEmergencyOptions;
-                  });
-                }),
-              )
-            ],
+                const SizedBox(height: 40),
+                GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _showEmergencyOptions = !_showEmergencyOptions;
+                    });
+                  },
+                  child: buildMainEmergencyButton(onTap: () {
+                    setState(() {
+                      _showEmergencyOptions = !_showEmergencyOptions;
+                    });
+                  }),
+                )
+              ],
+            ),
           ),
-        ),
-        if (_showEmergencyOptions) ..._buildEmergencyOptions(),
-      ],
-    ),
-    floatingActionButton: FloatingActionButton(
-      onPressed: () {
-        Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const ChatHomeScreen()),
-                      ); 
-      },
-      backgroundColor: const Color(0xFFFF7E7B),
-      elevation: 4.0,
-      child: Icon(
-        Icons.chat,
-        color: Colors.white,
-        size: 28.0,
+          if (_showEmergencyOptions) ..._buildEmergencyOptions(),
+        ],
       ),
-    ),
-    bottomNavigationBar: CustomBottomNavigationBar(
-      currentIndex: _selectedIndex,
-      onTap: (index) {
-        setState(() {
-          _selectedIndex = index;
-        });
-      },
-    ),
-  );
-}
-
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const ChatHomeScreen()),
+          );
+        },
+        backgroundColor: const Color(0xFFFF7E7B),
+        elevation: 4.0,
+        child: Icon(
+          Icons.chat,
+          color: Colors.white,
+          size: 28.0,
+        ),
+      ),
+      bottomNavigationBar: CustomBottomNavigationBar(
+        currentIndex: _selectedIndex,
+        onTap: (index) {
+          setState(() {
+            _selectedIndex = index;
+          });
+        },
+      ),
+    );
+  }
 
   List<Widget> _buildEmergencyOptions() {
     final List<IconData> emergencyIcons = [
@@ -233,7 +233,8 @@ Widget build(BuildContext context) {
     const double radius = 140.0; // Distance from the main button
 
     return List.generate(emergencyIcons.length, (index) {
-      final angle = (index * 60) * (3.141592653589793 / 180); // 60 degrees apart
+      final angle =
+          (index * 60) * (3.141592653589793 / 180); // 60 degrees apart
       final offsetX = radius * cos(angle);
       final offsetY = radius * sin(angle);
 
@@ -273,7 +274,8 @@ Widget build(BuildContext context) {
               ),
               child: Center(
                 child: TweenAnimationBuilder(
-                  tween: Tween<double>(begin: 1.0, end: _showEmergencyOptions ? 1.1 : 1.0),
+                  tween: Tween<double>(
+                      begin: 1.0, end: _showEmergencyOptions ? 1.1 : 1.0),
                   duration: const Duration(milliseconds: 300),
                   builder: (context, scale, child) {
                     return Transform.scale(
