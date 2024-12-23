@@ -2,12 +2,14 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:lifeline/components/bottom_navbar.dart';
 import 'package:lifeline/screens/auth_screens/login_screen.dart';
 import 'package:lifeline/screens/main_screens/contacts_screen.dart';
 import 'package:lifeline/screens/main_screens/home_screen.dart';
 import 'package:lifeline/screens/main_screens/map_screen.dart';
 import 'package:lifeline/screens/main_screens/profile_setting_screen.dart';
+import 'package:lifeline/services/auth_service.dart';
 
 // Simulating a logged-in user
 class User {
@@ -28,10 +30,10 @@ class User {
 
 // Global user object
 User currentUser = User(
-  name: "Maria",
-  bloodType: "AB+",
-  age: "56",
-  weight: "103lbs",
+  name: "Loading...",
+  bloodType: "N/A",
+  age: "N/A",
+  weight: "N/A",
   profileImage: "", // Initially no profile image
 );
 
@@ -44,6 +46,33 @@ class ProfilePage extends StatefulWidget {
 
 class _ProfilePageState extends State<ProfilePage> {
   final ImagePicker _picker = ImagePicker();
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchUserData();
+  }
+
+  // Function to fetch user data from Firebase
+  Future<void> _fetchUserData() async {
+    try {
+      final String userId = AuthService().getCurrentUserId(); // Replace with your method to get user ID
+      final DocumentSnapshot userDoc = await _firestore.collection('users').doc(userId).get();
+
+      if (userDoc.exists) {
+        setState(() {
+          currentUser.name = userDoc['username'] ?? 'Unknown';
+          currentUser.bloodType = userDoc['bloodType'] ?? 'N/A';
+          currentUser.age = userDoc['age'] ?? 'N/A';
+          currentUser.weight = userDoc['weight'] ?? 'N/A';
+          currentUser.profileImage = userDoc['profileImage'] ?? '';
+        });
+      }
+    } catch (e) {
+      debugPrint("Error fetching user data: $e");
+    }
+  }
 
   // Function to update the profile image
   Future<void> _updateProfileImage(ImageSource source) async {
@@ -53,6 +82,7 @@ class _ProfilePageState extends State<ProfilePage> {
         setState(() {
           currentUser.profileImage = pickedFile.path;
         });
+        // Optionally, upload the image to Firebase Storage and update Firestore
       }
     } catch (e) {
       debugPrint("Error picking image: $e");
@@ -238,12 +268,11 @@ class _ProfilePageState extends State<ProfilePage> {
                 icon: const Icon(Icons.cancel, size: 24),
                 label: const Text(
                   "Cancel",
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  style: TextStyle(fontSize: 16),
                 ),
                 onPressed: () => Navigator.of(context).pop(),
               ),
             ),
-            const SizedBox(height: 10),
           ],
         );
       },
@@ -257,10 +286,7 @@ class _ProfilePageState extends State<ProfilePage> {
     required VoidCallback onTap,
   }) {
     return ListTile(
-      leading: CircleAvatar(
-        backgroundColor: color.withOpacity(0.2),
-        child: Icon(icon, color: color, size: 28),
-      ),
+      leading: Icon(icon, color: color),
       title: Text(
         title,
         style: GoogleFonts.nunito(
@@ -272,70 +298,70 @@ class _ProfilePageState extends State<ProfilePage> {
       onTap: onTap,
     );
   }
-}
 
-void _showFAQDialog(BuildContext context) {
-  showDialog(
-    context: context,
-    builder: (context) => AlertDialog(
-      backgroundColor: Colors.white,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12.0),
-      ),
-      title: const Text(
-        'About the Project',
-        style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: Colors.black87),
-      ),
-      contentPadding: const EdgeInsets.all(16.0),
-      content: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 8),
-            _buildSectionTitle('Contributors'),
-            _buildListItem('1. Jawad Mansoor'),
-            _buildListItem('2. Sardar Muhammad Ali Khan'),
-            _buildListItem('3. Muhammad Waqas Siddique'),
-            const SizedBox(height: 16),
-            _buildSectionTitle('Licenses'),
-            _buildListItem('MIT License'),
-            _buildListItem('All rights reserved © 2024'),
-          ],
+  void _showFAQDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12.0),
         ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text(
-            'Close',
-            style: TextStyle(fontSize: 16, color: Colors.blueAccent, fontWeight: FontWeight.bold),
+        title: const Text(
+          'About the Project',
+          style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: Colors.black87),
+        ),
+        contentPadding: const EdgeInsets.all(16.0),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 8),
+              _buildSectionTitle('Contributors'),
+              _buildListItem('1. Jawad Mansoor'),
+              _buildListItem('2. Sardar Muhammad Ali Khan'),
+              _buildListItem('3. Muhammad Waqas Siddique'),
+              const SizedBox(height: 16),
+              _buildSectionTitle('Licenses'),
+              _buildListItem('MIT License'),
+              _buildListItem('All rights reserved © 2024'),
+            ],
           ),
         ),
-      ],
-    ),
-  );
-}
-
-Widget _buildSectionTitle(String title) {
-  return Padding(
-    padding: const EdgeInsets.only(bottom: 8.0),
-    child: Text(
-      title,
-      style: const TextStyle(
-        fontSize: 16,
-        fontWeight: FontWeight.w600,
-        color: Colors.blueGrey,
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text(
+              'Close',
+              style: TextStyle(fontSize: 16, color: Colors.blueAccent, fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
       ),
-    ),
-  );
-}
+    );
+  }
 
-Widget _buildListItem(String text) {
-  return Padding(
-    padding: const EdgeInsets.only(bottom: 4.0),
-    child: Text(
-      text,
-      style: const TextStyle(fontSize: 14, color: Colors.black),
-    ),
-  );
+  Widget _buildSectionTitle(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8.0),
+      child: Text(
+        title,
+        style: const TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.w600,
+          color: Colors.blueGrey,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildListItem(String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4.0),
+      child: Text(
+        text,
+        style: const TextStyle(fontSize: 14, color: Colors.black),
+      ),
+    );
+  }
 }

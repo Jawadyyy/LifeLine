@@ -1,5 +1,4 @@
 import 'package:firebase_auth/firebase_auth.dart';
-//import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -11,6 +10,7 @@ class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final GoogleSignIn _googleSignIn = GoogleSignIn();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  User? get currentUser => _auth.currentUser;
 
   final key = encrypt.Key.fromLength(32);
   final iv = encrypt.IV.fromLength(16);
@@ -107,6 +107,15 @@ class AuthService {
     }
   }
 
+  String getCurrentUserId() {
+    final User? user = _auth.currentUser;
+    if (user != null) {
+      return user.uid;
+    } else {
+      throw Exception("No user is currently logged in.");
+    }
+  }
+
   Future<User?> signInWithGoogle() async {
     try {
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
@@ -157,94 +166,5 @@ class AuthService {
   Future<void> signOut() async {
     await _auth.signOut();
     await _googleSignIn.signOut();
-  }
-
-  Future<bool> isLoggedIn() async {
-    User? user = _auth.currentUser;
-    return user != null;
-  }
-
-  Future<void> sendOTP(String phoneNumber, Function(String) onCodeSent) async {
-    try {
-      await _auth.verifyPhoneNumber(
-        phoneNumber: phoneNumber,
-        timeout: const Duration(seconds: 60),
-        verificationCompleted: (PhoneAuthCredential credential) async {
-          await _auth.signInWithCredential(credential);
-          Fluttertoast.showToast(msg: "Phone number automatically verified!");
-        },
-        verificationFailed: (FirebaseAuthException e) {
-          Fluttertoast.showToast(
-            msg: 'Failed to verify phone number. Please try again.',
-            backgroundColor: Colors.red,
-          );
-        },
-        codeSent: (String verificationId, int? resendToken) {
-          onCodeSent(verificationId);
-        },
-        codeAutoRetrievalTimeout: (String verificationId) {},
-      );
-    } catch (e) {
-      Fluttertoast.showToast(
-        msg: 'Error during OTP send: $e',
-        backgroundColor: Colors.red,
-      );
-    }
-  }
-
-  Future<void> verifyOTP(String verificationId, String otp, BuildContext context) async {
-    try {
-      final PhoneAuthCredential credential = PhoneAuthProvider.credential(
-        verificationId: verificationId,
-        smsCode: otp,
-      );
-
-      final UserCredential userCredential = await _auth.signInWithCredential(credential);
-
-      if (userCredential.user != null) {
-        Fluttertoast.showToast(msg: "OTP verified successfully!");
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const ChangePasswordScreen()),
-        );
-      } else {
-        Fluttertoast.showToast(msg: "Invalid OTP. Please try again.");
-      }
-    } catch (e) {
-      Fluttertoast.showToast(
-        msg: 'Error during OTP verification: $e',
-        backgroundColor: Colors.red,
-      );
-    }
-  }
-
-  Future<void> resetPassword({
-    required String userId,
-    required String newPassword,
-  }) async {
-    try {
-      final encrypter = encrypt.Encrypter(encrypt.AES(key));
-      final encryptedPassword = encrypter.encrypt(newPassword, iv: iv);
-
-      await _firestore.collection('users').doc(userId).update({
-        'password': encryptedPassword.base64,
-      });
-
-      Fluttertoast.showToast(
-        msg: 'Password reset successfully!',
-        toastLength: Toast.LENGTH_LONG,
-        gravity: ToastGravity.SNACKBAR,
-        backgroundColor: Colors.green,
-        textColor: Colors.white,
-      );
-    } catch (e) {
-      Fluttertoast.showToast(
-        msg: 'Failed to reset password: $e',
-        toastLength: Toast.LENGTH_LONG,
-        gravity: ToastGravity.SNACKBAR,
-        backgroundColor: Colors.red,
-        textColor: Colors.white,
-      );
-    }
   }
 }
