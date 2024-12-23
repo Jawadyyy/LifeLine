@@ -15,14 +15,14 @@ import 'package:lifeline/services/auth_service.dart';
 class User {
   String name;
   String bloodType;
-  String age;
+  String height;
   String weight;
   String profileImage;
 
   User({
     required this.name,
     required this.bloodType,
-    required this.age,
+    required this.height,
     required this.weight,
     required this.profileImage,
   });
@@ -32,7 +32,7 @@ class User {
 User currentUser = User(
   name: "Loading...",
   bloodType: "N/A",
-  age: "N/A",
+  height: "N/A",
   weight: "N/A",
   profileImage: "", // Initially no profile image
 );
@@ -54,6 +54,13 @@ class _ProfilePageState extends State<ProfilePage> {
     _fetchUserData();
   }
 
+  // Refetch user data whenever the profile page is reloaded
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _fetchUserData(); // Refresh the user data when navigating back to this page
+  }
+
   // Function to fetch user data from Firebase
   Future<void> _fetchUserData() async {
     try {
@@ -63,9 +70,9 @@ class _ProfilePageState extends State<ProfilePage> {
       if (userDoc.exists) {
         setState(() {
           currentUser.name = userDoc['username'] ?? 'Unknown';
-          currentUser.bloodType = userDoc['bloodType'] ?? 'N/A';
-          currentUser.age = userDoc['age'] ?? 'N/A';
-          currentUser.weight = userDoc['weight'] ?? 'N/A';
+          currentUser.bloodType = userDoc['blood_group'] ?? 'N/A'; // Adjust the field name as needed
+          currentUser.height = userDoc['height'] ?? 'N/A'; // Replace with the correct field name
+          currentUser.weight = userDoc['weight'] ?? 'N/A'; // Replace with the correct field name
           currentUser.profileImage = userDoc['profileImage'] ?? '';
         });
       }
@@ -74,7 +81,6 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
-  // Function to update the profile image
   Future<void> _updateProfileImage(ImageSource source) async {
     try {
       final XFile? pickedFile = await _picker.pickImage(source: source);
@@ -82,7 +88,7 @@ class _ProfilePageState extends State<ProfilePage> {
         setState(() {
           currentUser.profileImage = pickedFile.path;
         });
-        // Optionally, upload the image to Firebase Storage and update Firestore
+// Optionally, upload the image to Firebase Storage and update Firestore
       }
     } catch (e) {
       debugPrint("Error picking image: $e");
@@ -125,12 +131,12 @@ class _ProfilePageState extends State<ProfilePage> {
                   style: GoogleFonts.nunito(fontSize: 22, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 20),
-                // Health Stats Row
+                // Health Stats Row with updated values
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
-                    _buildStatColumn(Icons.favorite, 'Blood Type', currentUser.bloodType),
-                    _buildStatColumn(Icons.water_drop, 'Age', currentUser.age),
+                    _buildStatColumn(Icons.bloodtype, 'Blood Type', currentUser.bloodType),
+                    _buildStatColumn(Icons.height, 'Height', currentUser.height),
                     _buildStatColumn(Icons.monitor_weight, 'Weight', currentUser.weight),
                   ],
                 ),
@@ -324,17 +330,20 @@ class _ProfilePageState extends State<ProfilePage> {
               const SizedBox(height: 16),
               _buildSectionTitle('Licenses'),
               _buildListItem('MIT License'),
-              _buildListItem('All rights reserved © 2024'),
+              const SizedBox(height: 16),
+              const Text(
+                'This app provides medical-related services, including emergency responses and contacts.',
+                style: TextStyle(fontSize: 14, color: Colors.black54),
+              ),
             ],
           ),
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text(
-              'Close',
-              style: TextStyle(fontSize: 16, color: Colors.blueAccent, fontWeight: FontWeight.bold),
-            ),
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+            child: const Text('Close'),
           ),
         ],
       ),
@@ -342,26 +351,16 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Widget _buildSectionTitle(String title) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8.0),
-      child: Text(
-        title,
-        style: const TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.w600,
-          color: Colors.blueGrey,
-        ),
-      ),
+    return Text(
+      title,
+      style: GoogleFonts.nunito(fontSize: 16, fontWeight: FontWeight.bold),
     );
   }
 
-  Widget _buildListItem(String text) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 4.0),
-      child: Text(
-        text,
-        style: const TextStyle(fontSize: 14, color: Colors.black),
-      ),
+  Widget _buildListItem(String item) {
+    return Text(
+      item,
+      style: GoogleFonts.nunito(fontSize: 14, color: Colors.black54),
     );
   }
 }
