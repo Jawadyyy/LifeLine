@@ -88,7 +88,6 @@ class _ProfilePageState extends State<ProfilePage> {
         setState(() {
           currentUser.profileImage = pickedFile.path;
         });
-// Optionally, upload the image to Firebase Storage and update Firestore
       }
     } catch (e) {
       debugPrint("Error picking image: $e");
@@ -105,11 +104,10 @@ class _ProfilePageState extends State<ProfilePage> {
         backgroundColor: Colors.white,
         automaticallyImplyLeading: false,
         title: const Padding(
-          padding: EdgeInsets.only(top: 8.0),
+          padding: EdgeInsets.only(top: 10.0),
           child: Text('Profile', style: TextStyle(color: Colors.black)),
         ),
         centerTitle: true,
-        toolbarHeight: 50,
       ),
       body: Column(
         children: [
@@ -136,8 +134,8 @@ class _ProfilePageState extends State<ProfilePage> {
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
                     _buildStatColumn(Icons.bloodtype, 'Blood Type', currentUser.bloodType),
-                    _buildStatColumn(Icons.height, 'Height', currentUser.height),
-                    _buildStatColumn(Icons.monitor_weight, 'Weight', currentUser.weight),
+                    _buildStatColumn(Icons.height_rounded, 'Height', currentUser.height),
+                    _buildStatColumn(Icons.line_weight, 'Weight', currentUser.weight),
                   ],
                 ),
               ],

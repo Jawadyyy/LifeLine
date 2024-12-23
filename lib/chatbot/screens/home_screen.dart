@@ -34,6 +34,7 @@ class _ChatHomeScreenState extends State<ChatHomeScreen> {
           bottomNavigationBar: BottomNavigationBar(
             currentIndex: chatProvider.currentIndex,
             elevation: 0,
+            backgroundColor: Colors.white,
             selectedItemColor: Theme.of(context).colorScheme.primary,
             onTap: (index) {
               chatProvider.setCurrentIndex(newIndex: index);
@@ -48,7 +49,7 @@ class _ChatHomeScreenState extends State<ChatHomeScreen> {
               BottomNavigationBarItem(
                 icon: Icon(CupertinoIcons.chat_bubble),
                 label: 'Chat',
-               )
+              )
             ],
           ),
         );
