@@ -25,8 +25,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_scrollController.hasClients &&
-          _scrollController.position.maxScrollExtent > 0.0) {
+      if (_scrollController.hasClients && _scrollController.position.maxScrollExtent > 0.0) {
         _scrollController.animateTo(
           _scrollController.position.maxScrollExtent,
           duration: const Duration(milliseconds: 300),
@@ -52,8 +51,9 @@ class _ChatScreenState extends State<ChatScreen> {
         });
 
         return Scaffold(
+          backgroundColor: Colors.white,
           appBar: AppBar(
-            backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
+            backgroundColor: Colors.white,
             centerTitle: true,
             title: const Text('Bot Assistant'),
             actions: [
@@ -73,8 +73,7 @@ class _ChatScreenState extends State<ChatScreen> {
                           onActionPressed: (value) async {
                             if (value) {
                               // prepare chat room
-                              await chatProvider.prepareChatRoom(
-                                  isNewChat: true, chatID: '');
+                              await chatProvider.prepareChatRoom(isNewChat: true, chatID: '');
                             }
                           },
                         );

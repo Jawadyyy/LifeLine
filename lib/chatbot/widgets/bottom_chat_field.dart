@@ -70,12 +70,11 @@ class _BottomChatFieldState extends State<BottomChatField> {
 
   @override
   Widget build(BuildContext context) {
-    bool hasImages = widget.chatProvider.imagesFileList != null &&
-        widget.chatProvider.imagesFileList!.isNotEmpty;
+    bool hasImages = widget.chatProvider.imagesFileList != null && widget.chatProvider.imagesFileList!.isNotEmpty;
 
     return Container(
       decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
+        color: Colors.white,
         borderRadius: BorderRadius.circular(30),
         border: Border.all(
           color: Theme.of(context).textTheme.titleLarge!.color!,
@@ -153,7 +152,7 @@ class _BottomChatFieldState extends State<BottomChatField> {
                       },
                 child: Container(
                     decoration: BoxDecoration(
-                      color: Colors.deepPurple,
+                      color: Color.fromARGB(255, 111, 176, 230),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     margin: const EdgeInsets.all(5.0),
