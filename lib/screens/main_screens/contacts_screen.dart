@@ -23,36 +23,42 @@ class _ContactsPageState extends State<ContactsPage> {
     _loadStoredContacts();
   }
 
-  // Get the current authenticated user
   User? get currentUser => FirebaseAuth.instance.currentUser;
 
-  // Reference to the Firestore user's contacts subcollection
   CollectionReference<Map<String, dynamic>> get contactsRef {
     if (currentUser == null) {
       throw Exception("User not authenticated");
     }
-    return FirebaseFirestore.instance.collection('users').doc(currentUser!.uid).collection('contacts');
+    return FirebaseFirestore.instance
+        .collection('users')
+        .doc(currentUser!.uid)
+        .collection('contacts');
   }
 
-  // Load contacts from the subcollection in Firestore
   void _loadStoredContacts() async {
     if (currentUser != null) {
       final querySnapshot = await contactsRef.get();
       setState(() {
-        contacts = querySnapshot.docs.map((doc) => doc.data()).toList();
+        contacts = querySnapshot.docs.map((doc) {
+          final data = doc.data();
+          data['id'] = doc.id; // Store document ID
+          return data;
+        }).toList();
         filteredContacts = contacts;
       });
     }
   }
 
-  // Filter contacts based on the search query
   void _filterContacts(String query) {
     setState(() {
-      filteredContacts = contacts.where((contact) => (contact['name'] as String).toLowerCase().contains(query.toLowerCase())).toList();
+      filteredContacts = contacts
+          .where((contact) => (contact['name'] as String)
+              .toLowerCase()
+              .contains(query.toLowerCase()))
+          .toList();
     });
   }
 
-  // Show a dialog to select a phone contact
   void _showContactsDialog() async {
     try {
       bool permissionGranted = await FlutterContacts.requestPermission();
@@ -61,7 +67,6 @@ class _ContactsPageState extends State<ContactsPage> {
         return;
       }
 
-      // Fetch phone contacts
       List<Contact> phoneContacts = await FlutterContacts.getContacts(
         withProperties: true,
       );
@@ -101,7 +106,8 @@ class _ContactsPageState extends State<ContactsPage> {
                       itemBuilder: (context, index) {
                         final contact = phoneContacts[index];
                         return ListTile(
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 10),
+                          contentPadding:
+                              const EdgeInsets.symmetric(horizontal: 10),
                           leading: CircleAvatar(
                             backgroundColor: Colors.blueAccent,
                             child: Text(
@@ -119,7 +125,8 @@ class _ContactsPageState extends State<ContactsPage> {
                               fontWeight: FontWeight.w600,
                             ),
                           ),
-                          trailing: const Icon(Icons.add_circle, color: Colors.green),
+                          trailing:
+                              const Icon(Icons.add_circle, color: Colors.green),
                           onTap: () {
                             _addContactToFirestore(contact);
                             Navigator.pop(context);
@@ -157,23 +164,70 @@ class _ContactsPageState extends State<ContactsPage> {
     }
   }
 
-  // Add a selected contact to the Firestore subcollection
   void _addContactToFirestore(Contact selectedContact) async {
     if (currentUser != null) {
       final newContact = {
         'name': selectedContact.displayName,
-        'phone': selectedContact.phones.isNotEmpty ? selectedContact.phones[0].number : 'No Phone Number',
+        'phone': selectedContact.phones.isNotEmpty
+            ? selectedContact.phones[0].number
+            : 'No Phone Number',
       };
 
-      // Add the contact as a new document in the subcollection
       await contactsRef.add(newContact);
 
-      // Update the local state
       setState(() {
         contacts.add(newContact);
         filteredContacts = contacts;
       });
     }
+  }
+
+  void _deleteContact(String contactId) async {
+    if (currentUser != null) {
+      try {
+        await contactsRef.doc(contactId).delete();
+        setState(() {
+          contacts.removeWhere((contact) => contact['id'] == contactId);
+          filteredContacts = contacts;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Contact deleted successfully')),
+        );
+      } catch (e) {
+        print('Error deleting contact: $e');
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to delete contact')),
+        );
+      }
+    }
+  }
+
+  void _showDeleteDialog(String contactId) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text("Delete Contact"),
+          content: const Text("Are you sure you want to delete this contact?"),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Cancel"),
+            ),
+            TextButton(
+              onPressed: () {
+                _deleteContact(contactId);
+                Navigator.pop(context);
+              },
+              child: const Text(
+                "Delete",
+                style: TextStyle(color: Colors.red),
+              ),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
@@ -226,62 +280,72 @@ class _ContactsPageState extends State<ContactsPage> {
                   ? Center(
                       child: Text(
                         'No contacts available',
-                        style: GoogleFonts.nunito(fontSize: 16, color: Colors.grey, fontWeight: FontWeight.w500),
+                        style: GoogleFonts.nunito(
+                          fontSize: 16,
+                          color: Colors.grey,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
                     )
                   : ListView.builder(
                       itemCount: filteredContacts.length,
                       itemBuilder: (context, index) {
                         final contact = filteredContacts[index];
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 16.0),
-                          child: Container(
-                            padding: const EdgeInsets.all(12.0),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(8.0),
-                              border: Border.all(
-                                color: Colors.grey[300]!,
+                        return GestureDetector(
+                          onLongPress: () =>
+                              _showDeleteDialog(contact['id'] as String),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                                vertical: 4.0, horizontal: 16.0),
+                            child: Container(
+                              padding: const EdgeInsets.all(12.0),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(8.0),
+                                border: Border.all(
+                                  color: Colors.grey[300]!,
+                                ),
                               ),
-                            ),
-                            child: Row(
-                              children: [
-                                Container(
-                                  height: 50,
-                                  width: 50,
-                                  decoration: BoxDecoration(
-                                    color: Colors.blue[100],
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: const Icon(
-                                    Icons.person,
-                                    color: Colors.blue,
-                                    size: 28,
-                                  ),
-                                ),
-                                const SizedBox(width: 16),
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      contact['name'],
-                                      style: const TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.black,
-                                      ),
+                              child: Row(
+                                children: [
+                                  Container(
+                                    height: 50,
+                                    width: 50,
+                                    decoration: BoxDecoration(
+                                      color: Colors.blue[100],
+                                      shape: BoxShape.circle,
                                     ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      contact['phone'],
-                                      style: const TextStyle(
-                                        fontSize: 14,
-                                        color: Colors.grey,
-                                      ),
+                                    child: const Icon(
+                                      Icons.person,
+                                      color: Colors.blue,
+                                      size: 28,
                                     ),
-                                  ],
-                                ),
-                              ],
+                                  ),
+                                  const SizedBox(width: 16),
+                                  Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        contact['name'],
+                                        style: const TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.black,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        contact['phone'],
+                                        style: const TextStyle(
+                                          fontSize: 14,
+                                          color: Colors.grey,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         );
