@@ -73,7 +73,6 @@ class _ProfilePageState extends State<ProfilePage> {
           currentUser.bloodType = userDoc['blood_group'] ?? 'N/A'; // Adjust the field name as needed
           currentUser.height = userDoc['height'] ?? 'N/A'; // Replace with the correct field name
           currentUser.weight = userDoc['weight'] ?? 'N/A'; // Replace with the correct field name
-          currentUser.profileImage = userDoc['profileImage'] ?? '';
         });
       }
     } catch (e) {
@@ -97,6 +96,13 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _fetchUserData,
+        icon: const Icon(Icons.refresh),
+        label: const Text('Refresh'),
+        backgroundColor: Colors.blue,
+        foregroundColor: Colors.white,
+      ),
       primary: false,
       backgroundColor: Colors.white,
       appBar: AppBar(
