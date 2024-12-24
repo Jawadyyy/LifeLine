@@ -84,8 +84,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
       try {
         await launch(whatsappUrl);
-        await Future.delayed(
-            const Duration(seconds: 2)); // Add delay for reliability
+        await Future.delayed(const Duration(seconds: 2));
       } catch (e) {
         print("Could not open WhatsApp for contact $contact. Error: $e");
       }
@@ -132,13 +131,6 @@ class _HomeScreenState extends State<HomeScreen> {
           IconButton(
             onPressed: _getUserLocation,
             icon: const Icon(Icons.refresh, color: Colors.black),
-          ),
-          const Padding(
-            padding: EdgeInsets.only(right: 8.0),
-            child: CircleAvatar(
-              radius: 20,
-              backgroundImage: NetworkImage("https://via.placeholder.com/150"),
-            ),
           ),
         ],
       ),
@@ -192,12 +184,16 @@ class _HomeScreenState extends State<HomeScreen> {
             MaterialPageRoute(builder: (context) => const ChatHomeScreen()),
           );
         },
-        backgroundColor: const Color(0xFFFF7E7B),
+        backgroundColor: const Color.fromARGB(255, 255, 255, 255),
         elevation: 4.0,
-        child: Icon(
-          Icons.chat,
-          color: Colors.white,
-          size: 28.0,
+        child: SizedBox(
+          width: 40.0, // Adjust width as needed
+          height: 40.0, // Adjust height as needed
+          child: Image.asset(
+            'assets/images/icons/brain.png',
+            fit: BoxFit
+                .contain, // Ensures the image fits within the specified size
+          ),
         ),
       ),
       bottomNavigationBar: CustomBottomNavigationBar(
@@ -212,13 +208,13 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   List<Widget> _buildEmergencyOptions() {
-    final List<IconData> emergencyIcons = [
-      Icons.local_hospital,
-      Icons.local_police,
-      Icons.fire_truck,
-      Icons.healing,
-      Icons.sos,
-      Icons.warning,
+    final List<String> emergencyImages = [
+      'assets/images/icons/ambulance.png',
+      'assets/images/icons/policeman.png',
+      'assets/images/icons/avatar.png',
+      'assets/images/icons/healthcare.png',
+      'assets/images/icons/warning.png',
+      'assets/images/icons/bandage.png',
     ];
 
     final List<String> emergencyTypes = [
@@ -232,7 +228,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     const double radius = 140.0; // Distance from the main button
 
-    return List.generate(emergencyIcons.length, (index) {
+    return List.generate(emergencyImages.length, (index) {
       final angle =
           (index * 60) * (3.141592653589793 / 180); // 60 degrees apart
       final offsetX = radius * cos(angle);
@@ -280,10 +276,11 @@ class _HomeScreenState extends State<HomeScreen> {
                   builder: (context, scale, child) {
                     return Transform.scale(
                       scale: scale,
-                      child: Icon(
-                        emergencyIcons[index],
-                        color: Colors.white,
-                        size: 30, // Slightly larger icon size
+                      child: Image.asset(
+                        emergencyImages[index],
+                        fit: BoxFit.contain,
+                        height: 30, // Adjust the image size if necessary
+                        width: 30,
                       ),
                     );
                   },
