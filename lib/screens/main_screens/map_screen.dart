@@ -39,7 +39,8 @@ class _MapScreenState extends State<MapScreen> {
       builder: (BuildContext context) {
         return AlertDialog(
           title: const Text('Location Service Disabled'),
-          content: const Text('Your location services are turned off. Please enable them to use the map.'),
+          content: const Text(
+              'Your location services are turned off. Please enable them to use the map.'),
           actions: [
             TextButton(
               onPressed: () {
@@ -123,8 +124,9 @@ class _MapScreenState extends State<MapScreen> {
                 ),
                 children: [
                   TileLayer(
-                    urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                    userAgentPackageName: 'com.example.app',
+                    urlTemplate:
+                        'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                    userAgentPackageName: 'com.example.lifeline',
                   ),
                   MarkerLayer(
                     markers: [
