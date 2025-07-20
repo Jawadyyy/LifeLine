@@ -4,7 +4,6 @@ import 'package:lifeline/chatbot/screens/home_screen.dart';
 import 'package:lifeline/components/bottom_navbar.dart';
 import 'package:lifeline/services/location_handler.dart';
 import 'package:lifeline/services/firestore_service.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'dart:math';
 
@@ -15,96 +14,168 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   int _selectedIndex = 0;
   String _currentAddress = "Fetching location...";
   bool _showEmergencyOptions = false;
+  late AnimationController _animationController;
+  late Animation<double> _scaleAnimation;
+  bool _isLoadingLocation = false;
 
   @override
   void initState() {
     super.initState();
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 1.1).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: Curves.easeInOut,
+      ),
+    );
     _getUserLocation();
   }
 
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
+
   Future<void> _getUserLocation() async {
-    final position = await LocationHandler.getCurrentPosition();
-    if (position != null) {
-      final address = await LocationHandler.getAddressFromLatLng(position);
+    setState(() => _isLoadingLocation = true);
+    try {
+      final position = await LocationHandler.getCurrentPosition();
+      if (position != null) {
+        final address = await LocationHandler.getAddressFromLatLng(position);
+        setState(() {
+          _currentAddress = address ?? "Location unavailable";
+        });
+      } else {
+        setState(() {
+          _currentAddress = "Location permission denied";
+        });
+      }
+    } catch (e) {
       setState(() {
-        _currentAddress = address ?? "Location unavailable";
+        _currentAddress = "Error getting location";
       });
-    } else {
-      setState(() {
-        _currentAddress = "Location permission denied";
-      });
+    } finally {
+      setState(() => _isLoadingLocation = false);
     }
   }
 
   Future<void> _sendEmergencyMessage(String emergencyType) async {
-    // Get the current user's ID
     final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
 
-    // Ensure the user is authenticated
-    if (user == null) {
-      print("User is not authenticated");
-      return;
-    }
+    setState(() {
+      _showEmergencyOptions = false;
+    });
 
-    final userId = user.uid; // Use the authenticated user's ID
+    // Show sending indicator immediately
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const AlertDialog(
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(height: 16),
+            Text("Sending emergency alerts..."),
+          ],
+        ),
+      ),
+    );
 
-    // Fetch emergency contacts from Firestore
-    final contacts = await FirestoreService().getEmergencyContacts(userId);
-
-    // Check if there are any emergency contacts
-    if (contacts.isEmpty) {
-      print("No emergency contacts found");
-      return;
-    }
-
-    // Get the current location
-    final position = await LocationHandler.getCurrentPosition();
-
-    // Check if the position is null and handle the case
-    if (position == null) {
-      print("Location not available");
-      return;
-    }
-
-    // Get the address from the latitude and longitude
-    final address = await LocationHandler.getAddressFromLatLng(position);
-
-    // Prepare the emergency message with the type of emergency
-    String message =
-        "🚨 I am in an emergency: $emergencyType. My location is: $address";
-
-    // Notify each contact
-    for (String contact in contacts) {
-      final whatsappUrl =
-          'https://wa.me/$contact?text=${Uri.encodeFull(message)}';
-
-      try {
-        await launch(whatsappUrl);
-        await Future.delayed(const Duration(seconds: 2));
-      } catch (e) {
-        print("Could not open WhatsApp for contact $contact. Error: $e");
+    try {
+      final contacts = await FirestoreService().getEmergencyContacts(user.uid);
+      if (contacts.isEmpty) {
+        Navigator.pop(context); // Dismiss loading dialog
+        return;
       }
-    }
 
-    print("Emergency message sent to all contacts.");
+      final position = await LocationHandler.getCurrentPosition();
+      if (position == null) {
+        Navigator.pop(context); // Dismiss loading dialog
+        return;
+      }
+
+      final address = await LocationHandler.getAddressFromLatLng(position);
+      String message =
+          "🚨 EMERGENCY: $emergencyType\n📍 Location: $address\n🕒 ${DateTime.now().toString().substring(0, 16)}";
+
+      // Send messages immediately without confirmation
+      for (String contact in contacts) {
+        final whatsappUrl =
+            'https://wa.me/$contact?text=${Uri.encodeFull(message)}';
+        try {
+          await launch(whatsappUrl);
+          await Future.delayed(const Duration(seconds: 2));
+        } catch (e) {
+          debugPrint("Error sending to $contact: $e");
+        }
+      }
+
+      Navigator.pop(context); // Dismiss loading dialog
+
+      // Show brief success message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Emergency alerts sent for $emergencyType'),
+          backgroundColor: Colors.green,
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 2),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+        ),
+      );
+    } catch (e) {
+      Navigator.pop(context); // Dismiss loading dialog if still showing
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Failed to send emergency alerts'),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+        ),
+      );
+    }
+  }
+
+  void _toggleEmergencyOptions() {
+    setState(() {
+      _showEmergencyOptions = !_showEmergencyOptions;
+      if (_showEmergencyOptions) {
+        _animationController.forward();
+      } else {
+        _animationController.reverse();
+      }
+    });
   }
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final size = MediaQuery.of(context).size;
+
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: theme.colorScheme.background,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: theme.colorScheme.surface,
         elevation: 0,
         leading: Padding(
-          padding: const EdgeInsets.only(left: 15.0),
+          padding: const EdgeInsets.only(left: 16),
           child: Image.asset(
             "assets/images/logo.png",
-            fit: BoxFit.contain,
+            height: 40,
+            width: 40,
           ),
         ),
         title: Column(
@@ -112,68 +183,76 @@ class _HomeScreenState extends State<HomeScreen> {
           children: [
             Text(
               "Current location",
-              style: GoogleFonts.nunito(
-                fontSize: 14,
-                color: Colors.grey,
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: theme.colorScheme.onSurface.withOpacity(0.6),
               ),
             ),
-            Text(
-              _currentAddress,
-              style: GoogleFonts.nunito(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: Colors.black,
-              ),
+            const SizedBox(height: 2),
+            SizedBox(
+              width: size.width * 0.6,
+              child: _isLoadingLocation
+                  ? const SizedBox(
+                      height: 20,
+                      child: LinearProgressIndicator(),
+                    )
+                  : Text(
+                      _currentAddress,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
             ),
           ],
         ),
         actions: [
           IconButton(
             onPressed: _getUserLocation,
-            icon: const Icon(Icons.refresh, color: Colors.black),
+            icon: Icon(
+              Icons.refresh,
+              color: theme.colorScheme.primary,
+            ),
+            tooltip: "Refresh location",
           ),
         ],
       ),
       body: Stack(
-        alignment: Alignment.center,
         children: [
-          Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  "Having an Emergency?",
-                  style: GoogleFonts.nunito(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black,
-                  ),
+          // Main content
+          Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                "Emergency Assistance",
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
                 ),
-                const SizedBox(height: 10),
-                Text(
-                  "Press the button below\nhelp will arrive soon",
+              ),
+              const SizedBox(height: 8),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 40),
+                child: Text(
+                  "Press the emergency button below to get immediate help",
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.nunito(
-                    fontSize: 16,
-                    color: Color.fromARGB(255, 105, 105, 105),
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onBackground.withOpacity(0.7),
                   ),
                 ),
-                const SizedBox(height: 40),
-                GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      _showEmergencyOptions = !_showEmergencyOptions;
-                    });
-                  },
-                  child: buildMainEmergencyButton(onTap: () {
-                    setState(() {
-                      _showEmergencyOptions = !_showEmergencyOptions;
-                    });
-                  }),
-                )
-              ],
-            ),
+              ),
+              const SizedBox(height: 40),
+              Center(
+                child: ScaleTransition(
+                  scale: _scaleAnimation,
+                  child: buildMainEmergencyButton(
+                    onTap: _toggleEmergencyOptions,
+                  ),
+                ),
+              ),
+            ],
           ),
+
+          // Emergency options
           if (_showEmergencyOptions) ..._buildEmergencyOptions(),
         ],
       ),
@@ -184,16 +263,11 @@ class _HomeScreenState extends State<HomeScreen> {
             MaterialPageRoute(builder: (context) => const ChatHomeScreen()),
           );
         },
-        backgroundColor: const Color.fromARGB(255, 255, 255, 255),
-        elevation: 4.0,
-        child: SizedBox(
-          width: 40.0, // Adjust width as needed
-          height: 40.0, // Adjust height as needed
-          child: Image.asset(
-            'assets/images/icons/brain.png',
-            fit: BoxFit
-                .contain, // Ensures the image fits within the specified size
-          ),
+        backgroundColor: theme.colorScheme.surface,
+        elevation: 4,
+        child: Image.asset(
+          'assets/images/icons/brain.png',
+          height: 28,
         ),
       ),
       bottomNavigationBar: CustomBottomNavigationBar(
@@ -208,83 +282,85 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   List<Widget> _buildEmergencyOptions() {
-    final List<String> emergencyImages = [
-      'assets/images/icons/ambulance.png',
-      'assets/images/icons/policeman.png',
-      'assets/images/icons/avatar.png',
-      'assets/images/icons/healthcare.png',
-      'assets/images/icons/warning.png',
-      'assets/images/icons/bandage.png',
+    final List<Map<String, dynamic>> emergencyTypes = [
+      {
+        "image": 'assets/images/icons/ambulance.png',
+        "type": "Medical Emergency",
+        "color": const Color.fromARGB(255, 255, 255, 255),
+      },
+      {
+        "image": 'assets/images/icons/policeman.png',
+        "type": "Police Assistance",
+        "color": const Color.fromARGB(255, 255, 255, 255),
+      },
+      {
+        "image": 'assets/images/icons/fire.png',
+        "type": "Fire Alert",
+        "color": const Color.fromARGB(255, 255, 255, 255),
+      },
+      {
+        "image": 'assets/images/icons/healthcare.png',
+        "type": "Health Issue",
+        "color": const Color.fromARGB(255, 255, 255, 255),
+      },
+      {
+        "image": 'assets/images/icons/warning.png',
+        "type": "SOS",
+        "color": const Color.fromARGB(255, 255, 255, 255),
+      },
+      {
+        "image": 'assets/images/icons/bandage.png',
+        "type": "General Emergency",
+        "color": const Color.fromARGB(255, 255, 255, 255),
+      },
     ];
 
-    final List<String> emergencyTypes = [
-      "Medical Emergency",
-      "Police Assistance",
-      "Fire Alert",
-      "Health Issue",
-      "SOS",
-      "General Emergency",
-    ];
+    final size = MediaQuery.of(context).size;
+    const double radius = 160.0;
 
-    const double radius = 140.0; // Distance from the main button
-
-    return List.generate(emergencyImages.length, (index) {
-      final angle =
-          (index * 60) * (3.141592653589793 / 180); // 60 degrees apart
+    return List.generate(emergencyTypes.length, (index) {
+      final angle = (index * 60) * (pi / 180);
       final offsetX = radius * cos(angle);
       final offsetY = radius * sin(angle);
 
       return AnimatedPositioned(
         duration: const Duration(milliseconds: 300),
-        left: MediaQuery.of(context).size.width / 2 + offsetX - 35, // Centered
-        top: MediaQuery.of(context).size.height / 2 + offsetY - 35,
-        child: AnimatedOpacity(
-          duration: const Duration(milliseconds: 300),
-          opacity: _showEmergencyOptions ? 1 : 0,
-          child: GestureDetector(
-            onTap: () {
-              _sendEmergencyMessage(emergencyTypes[index]);
-            },
-            child: Container(
-              height: 70, // Slightly larger for better visibility
-              width: 70,
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [
-                    Color(0xFFFFAD59),
-                    Color(0xFFFF7E7B)
-                  ], // Gradient colors
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
+        left: size.width / 2 + offsetX - 35,
+        top: size.height / 2 + offsetY - 35,
+        child: GestureDetector(
+          onTap: () => _sendEmergencyMessage(emergencyTypes[index]["type"]),
+          child: Container(
+            height: 70,
+            width: 70,
+            decoration: BoxDecoration(
+              color: emergencyTypes[index]["color"],
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.2),
+                  blurRadius: 10,
+                  spreadRadius: 2,
                 ),
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.2),
-                    blurRadius: 8,
-                    spreadRadius: 2,
-                    offset: const Offset(0, 3),
+              ],
+            ),
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Image.asset(
+                    emergencyTypes[index]["image"],
+                    height: 30,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    emergencyTypes[index]["type"].toString().split(' ')[0],
+                    style: const TextStyle(
+                      color: Colors.black,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ],
-                border: Border.all(color: const Color(0xFFFF7E7B), width: 2),
-              ),
-              child: Center(
-                child: TweenAnimationBuilder(
-                  tween: Tween<double>(
-                      begin: 1.0, end: _showEmergencyOptions ? 1.1 : 1.0),
-                  duration: const Duration(milliseconds: 300),
-                  builder: (context, scale, child) {
-                    return Transform.scale(
-                      scale: scale,
-                      child: Image.asset(
-                        emergencyImages[index],
-                        fit: BoxFit.contain,
-                        height: 30, // Adjust the image size if necessary
-                        width: 30,
-                      ),
-                    );
-                  },
-                ),
               ),
             ),
           ),
@@ -293,34 +369,49 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  GestureDetector buildMainEmergencyButton({required Function() onTap}) {
+  Widget buildMainEmergencyButton({required Function() onTap}) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        height: 150,
-        width: 150,
+        height: 160,
+        width: 160,
         decoration: BoxDecoration(
           gradient: const RadialGradient(
-            center: Alignment(-0.3, -0.3),
             colors: [
-              Color(0xFFFFAD59), // Light gradient color
-              Color(0xFFFF7E7B), // Dark gradient color
+              Color(0xFFFF5252),
+              Color(0xFFFF1744),
             ],
+            stops: [0.4, 1.0],
+            radius: 0.8,
           ),
           shape: BoxShape.circle,
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFFFF7E7B).withOpacity(0.5),
-              blurRadius: 20,
+              color: const Color(0xFFFF1744).withOpacity(0.4),
+              blurRadius: 30,
               spreadRadius: 5,
             ),
           ],
         ),
         child: Center(
-          child: Image.asset(
-            'assets/images/icons/tap.png',
-            height: 75,
-            width: 75,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Image.asset(
+                'assets/images/icons/tap.png',
+                height: 60,
+                color: Colors.white,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                _showEmergencyOptions ? "CANCEL" : "EMERGENCY",
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                ),
+              ),
+            ],
           ),
         ),
       ),
