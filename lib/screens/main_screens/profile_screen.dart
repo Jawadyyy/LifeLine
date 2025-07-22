@@ -1,6 +1,8 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:lifeline/components/bottom_navbar.dart';
@@ -10,32 +12,7 @@ import 'package:lifeline/screens/main_screens/home_screen.dart';
 import 'package:lifeline/screens/main_screens/map_screen.dart';
 import 'package:lifeline/screens/main_screens/profile_setting_screen.dart';
 import 'package:lifeline/services/auth_service.dart';
-
-// Simulating a logged-in user
-class User {
-  String name;
-  String bloodType;
-  String height;
-  String weight;
-  String profileImage;
-
-  User({
-    required this.name,
-    required this.bloodType,
-    required this.height,
-    required this.weight,
-    required this.profileImage,
-  });
-}
-
-// Global user object
-User currentUser = User(
-  name: "Loading...",
-  bloodType: "N/A",
-  height: "N/A",
-  weight: "N/A",
-  profileImage: "", // Initially no profile image
-);
+import 'package:lifeline/models/user_model.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -64,15 +41,19 @@ class _ProfilePageState extends State<ProfilePage> {
   // Function to fetch user data from Firebase
   Future<void> _fetchUserData() async {
     try {
-      final String userId = AuthService().getCurrentUserId(); // Replace with your method to get user ID
-      final DocumentSnapshot userDoc = await _firestore.collection('users').doc(userId).get();
+      final String userId = AuthService().getCurrentUserId();
+      final DocumentSnapshot userDoc =
+          await _firestore.collection('users').doc(userId).get();
 
       if (userDoc.exists) {
         setState(() {
           currentUser.name = userDoc['username'] ?? 'Unknown';
-          currentUser.bloodType = userDoc['blood_group'] ?? 'N/A'; // Adjust the field name as needed
-          currentUser.height = userDoc['height'] ?? 'N/A'; // Replace with the correct field name
-          currentUser.weight = userDoc['weight'] ?? 'N/A'; // Replace with the correct field name
+          currentUser.bloodType = userDoc['blood_group'] ?? 'N/A';
+          currentUser.height = userDoc['height'] ?? 'N/A';
+          currentUser.weight = userDoc['weight'] ?? 'N/A';
+          currentUser.profileImage = userDoc['profileImageUrl'] ?? '';
+          currentUser.email = userDoc['email'] ?? '';
+          currentUser.phone = userDoc['phone'] ?? '';
         });
       }
     } catch (e) {
@@ -80,16 +61,49 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
+  Future<String?> uploadImageToImgBB(String filePath) async {
+    final apiKey = 'b876317f0442b8eec2f8c6ffd701b13d';
+    final url = Uri.parse('https://api.imgbb.com/1/upload?key=$apiKey');
+
+    final request = http.MultipartRequest('POST', url)
+      ..files.add(await http.MultipartFile.fromPath('image', filePath));
+
+    try {
+      final response = await request.send();
+      final res = await http.Response.fromStream(response);
+
+      if (res.statusCode == 200) {
+        final data = jsonDecode(res.body);
+        final imageUrl = data['data']['url'];
+        return imageUrl;
+      } else {
+        print('Image upload failed: ${res.body}');
+        return null;
+      }
+    } catch (e) {
+      print('Upload error: $e');
+      return null;
+    }
+  }
+
   Future<void> _updateProfileImage(ImageSource source) async {
     try {
       final XFile? pickedFile = await _picker.pickImage(source: source);
       if (pickedFile != null) {
-        setState(() {
-          currentUser.profileImage = pickedFile.path;
-        });
+        final imageUrl = await uploadImageToImgBB(pickedFile.path);
+        if (imageUrl != null) {
+          final String userId = AuthService().getCurrentUserId();
+          await _firestore.collection('users').doc(userId).update({
+            'profileImageUrl': imageUrl,
+          });
+
+          setState(() {
+            currentUser.profileImage = imageUrl;
+          });
+        }
       }
     } catch (e) {
-      debugPrint("Error picking image: $e");
+      debugPrint("Error uploading image: $e");
     }
   }
 
@@ -118,7 +132,6 @@ class _ProfilePageState extends State<ProfilePage> {
       body: Column(
         children: [
           const SizedBox(height: 30),
-          // Profile Avatar and Details
           Center(
             child: Column(
               children: [
@@ -126,29 +139,33 @@ class _ProfilePageState extends State<ProfilePage> {
                   onTap: () => _showProfileImageOptions(context),
                   child: CircleAvatar(
                     radius: 50,
-                    backgroundImage: currentUser.profileImage.isNotEmpty ? FileImage(File(currentUser.profileImage)) : const NetworkImage('https://via.placeholder.com/150') as ImageProvider,
+                    backgroundImage: currentUser.profileImage.isNotEmpty
+                        ? NetworkImage(currentUser.profileImage)
+                        : const NetworkImage('https://via.placeholder.com/150'),
                   ),
                 ),
                 const SizedBox(height: 10),
                 Text(
                   currentUser.name,
-                  style: GoogleFonts.nunito(fontSize: 22, fontWeight: FontWeight.bold),
+                  style: GoogleFonts.nunito(
+                      fontSize: 22, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 20),
-                // Health Stats Row with updated values
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
-                    _buildStatColumn(Icons.bloodtype, 'Blood Type', currentUser.bloodType),
-                    _buildStatColumn(Icons.height_rounded, 'Height', currentUser.height),
-                    _buildStatColumn(Icons.line_weight, 'Weight', currentUser.weight),
+                    _buildStatColumn(
+                        Icons.bloodtype, 'Blood Type', currentUser.bloodType),
+                    _buildStatColumn(
+                        Icons.height_rounded, 'Height', currentUser.height),
+                    _buildStatColumn(
+                        Icons.line_weight, 'Weight', currentUser.weight),
                   ],
                 ),
               ],
             ),
           ),
           const SizedBox(height: 30),
-          // Menu List
           Expanded(
             child: ListView(
               padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -156,16 +173,17 @@ class _ProfilePageState extends State<ProfilePage> {
                 _buildMenuItem(Icons.person_outline, 'Profile', () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => const ProfileSettingScreen()),
+                    MaterialPageRoute(
+                        builder: (context) => const ProfileSettingScreen()),
                   );
                 }),
-                _buildMenuItem(Icons.settings_outlined, 'Settings', () {}),
                 _buildMenuItem(Icons.help_outline, 'FAQs', () {
                   _showFAQDialog(context);
                 }),
                 _buildMenuItem(Icons.logout, 'Logout', () {
                   Navigator.of(context).pushReplacement(
-                    MaterialPageRoute(builder: (context) => const LoginScreen()),
+                    MaterialPageRoute(
+                        builder: (context) => const LoginScreen()),
                   );
                 }),
               ],
@@ -174,7 +192,7 @@ class _ProfilePageState extends State<ProfilePage> {
         ],
       ),
       bottomNavigationBar: CustomBottomNavigationBar(
-        currentIndex: 3, // Set 3 for the Profile tab as active
+        currentIndex: 3,
         onTap: (index) {
           if (index != 3) {
             Navigator.of(context).pushReplacement(MaterialPageRoute(
@@ -198,12 +216,14 @@ class _ProfilePageState extends State<ProfilePage> {
         const SizedBox(height: 5),
         Text(
           label,
-          style: GoogleFonts.nunito(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.grey),
+          style: GoogleFonts.nunito(
+              fontSize: 14, fontWeight: FontWeight.w600, color: Colors.grey),
         ),
         const SizedBox(height: 5),
         Text(
           value,
-          style: GoogleFonts.nunito(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black),
+          style: GoogleFonts.nunito(
+              fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black),
         ),
       ],
     );
@@ -312,59 +332,170 @@ class _ProfilePageState extends State<ProfilePage> {
   void _showFAQDialog(BuildContext context) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: Colors.white,
+      builder: (context) => Dialog(
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12.0),
+          borderRadius: BorderRadius.circular(24),
         ),
-        title: const Text(
-          'About the Project',
-          style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: Colors.black87),
-        ),
-        contentPadding: const EdgeInsets.all(16.0),
-        content: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 8),
-              _buildSectionTitle('Contributors'),
-              _buildListItem('1. Jawad Mansoor'),
-              _buildListItem('2. Sardar Muhammad Ali Khan'),
-              _buildListItem('3. Muhammad Waqas Siddique'),
-              const SizedBox(height: 16),
-              _buildSectionTitle('Licenses'),
-              _buildListItem('MIT License'),
-              const SizedBox(height: 16),
-              const Text(
-                'This app provides medical-related services, including emergency responses and contacts.',
-                style: TextStyle(fontSize: 14, color: Colors.black54),
-              ),
-            ],
+        elevation: 16,
+        insetPadding: const EdgeInsets.all(20),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 25),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [Colors.blue.shade50, Colors.white],
+            ),
+            borderRadius: BorderRadius.circular(24),
+          ),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'About Lifeline',
+                      style: GoogleFonts.poppins(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.blue.shade900,
+                      ),
+                    ),
+                    IconButton(
+                      icon: Icon(Icons.close, color: Colors.grey.shade600),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 8,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Text(
+                    'Lifeline is a medical emergency response app designed to provide quick access to emergency services and personal health information.',
+                    style: GoogleFonts.poppins(
+                      fontSize: 15,
+                      height: 1.5,
+                      color: Colors.grey.shade800,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Text(
+                  'Developed By',
+                  style: GoogleFonts.poppins(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.blue.shade800,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                _buildTeamMemberCard(
+                  name: 'Jawad Mansoor',
+                  role: 'Lead Developer',
+                  context: context,
+                ),
+                const SizedBox(height: 24),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.shade100.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    'Version 1.0.0',
+                    style: GoogleFonts.poppins(
+                      fontSize: 13,
+                      color: Colors.blue.shade800,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blue.shade800,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 24, vertical: 12),
+                      elevation: 2,
+                    ),
+                    child: Text(
+                      'Close',
+                      style: GoogleFonts.poppins(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-            },
-            child: const Text('Close'),
-          ),
-        ],
       ),
     );
   }
 
-  Widget _buildSectionTitle(String title) {
-    return Text(
-      title,
-      style: GoogleFonts.nunito(fontSize: 16, fontWeight: FontWeight.bold),
-    );
-  }
-
-  Widget _buildListItem(String item) {
-    return Text(
-      item,
-      style: GoogleFonts.nunito(fontSize: 14, color: Colors.black54),
+  Widget _buildTeamMemberCard({
+    required String name,
+    required String role,
+    required BuildContext context,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 6,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            name,
+            style: GoogleFonts.poppins(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: Colors.blue.shade900,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            role,
+            style: GoogleFonts.poppins(
+              fontSize: 14,
+              color: Colors.grey.shade600,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

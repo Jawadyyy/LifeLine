@@ -373,25 +373,33 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        height: 160,
-        width: 160,
+        height: 180, // Slightly larger
+        width: 180,
         decoration: BoxDecoration(
           gradient: const RadialGradient(
             colors: [
               Color(0xFFFF5252),
               Color(0xFFFF1744),
+              Color(0xFFD50000), // Added darker red for depth
             ],
-            stops: [0.4, 1.0],
-            radius: 0.8,
+            stops: [0.3, 0.7, 1.0], // Adjusted stops
+            radius: 0.85,
           ),
           shape: BoxShape.circle,
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFFFF1744).withOpacity(0.4),
-              blurRadius: 30,
-              spreadRadius: 5,
+              color: const Color(0xFFFF1744)
+                  .withOpacity(0.5), // More visible shadow
+              blurRadius: 35, // Increased blur
+              spreadRadius: 8, // Increased spread
+              offset: const Offset(0, 5), // Added slight offset for depth
             ),
           ],
+          border: Border.all(
+            // Added subtle border
+            color: Colors.white.withOpacity(0.2),
+            width: 2,
+          ),
         ),
         child: Center(
           child: Column(
@@ -399,16 +407,25 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             children: [
               Image.asset(
                 'assets/images/icons/tap.png',
-                height: 60,
-                color: Colors.white,
+                height: 65, // Slightly larger icon
+                color: Colors.white.withOpacity(0.95), // Slightly softer white
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 10), // Increased spacing
               Text(
                 _showEmergencyOptions ? "CANCEL" : "EMERGENCY",
                 style: const TextStyle(
                   color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14,
+                  fontWeight: FontWeight.w800, // Slightly bolder
+                  fontSize: 16, // Larger font
+                  letterSpacing: 1.1, // Better letter spacing
+                  shadows: [
+                    // Added subtle text shadow
+                    Shadow(
+                      color: Colors.black26,
+                      blurRadius: 2,
+                      offset: Offset(1, 1),
+                    )
+                  ],
                 ),
               ),
             ],

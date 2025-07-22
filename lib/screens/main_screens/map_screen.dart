@@ -418,33 +418,7 @@ class _MapScreenState extends State<MapScreen> {
                   right: 16,
                   child: Column(
                     children: [
-                      FloatingActionButton.small(
-                        heroTag: 'zoomIn',
-                        onPressed: () {
-                          final currentZoom = _mapController.camera.zoom;
-                          _mapController.move(
-                            _mapController.camera.center,
-                            currentZoom + 1,
-                          );
-                        },
-                        child: Icon(Icons.add, color: colorScheme.onPrimary),
-                        backgroundColor: colorScheme.primary,
-                        elevation: 2,
-                      ),
                       const SizedBox(height: 8),
-                      FloatingActionButton.small(
-                        heroTag: 'zoomOut',
-                        onPressed: () {
-                          final currentZoom = _mapController.camera.zoom;
-                          _mapController.move(
-                            _mapController.camera.center,
-                            currentZoom - 1,
-                          );
-                        },
-                        child: Icon(Icons.remove, color: colorScheme.onPrimary),
-                        backgroundColor: colorScheme.primary,
-                        elevation: 2,
-                      ),
                       if (_showRoute) ...[
                         const SizedBox(height: 8),
                         FloatingActionButton.small(

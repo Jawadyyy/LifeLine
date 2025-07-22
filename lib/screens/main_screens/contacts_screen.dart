@@ -339,7 +339,7 @@ class _ContactsPageState extends State<ContactsPage> {
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
         automaticallyImplyLeading: false,
-        title: Text(
+        title: const Text(
           'Emergency Circle',
           style: TextStyle(
             fontSize: 20,
@@ -504,7 +504,7 @@ class _ContactsPageState extends State<ContactsPage> {
         ),
         title: Text(
           contact['name'],
-          style: TextStyle(
+          style: const TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w600,
             color: Colors.black87,
@@ -517,18 +517,7 @@ class _ContactsPageState extends State<ContactsPage> {
             color: Colors.grey[600],
           ),
         ),
-        trailing: IconButton(
-          icon: Icon(
-            Icons.call,
-            color: _primaryColor,
-          ),
-          onPressed: () {
-            // Implement call functionality
-          },
-        ),
-        onTap: () {
-          // Implement contact details view
-        },
+        onTap: () {},
         onLongPress: () => _showDeleteDialog(contact['id'], contact['name']),
       ),
     );

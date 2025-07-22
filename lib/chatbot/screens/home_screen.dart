@@ -14,10 +14,7 @@ class ChatHomeScreen extends StatefulWidget {
 
 class _ChatHomeScreenState extends State<ChatHomeScreen> {
   // list of screens
-  final List<Widget> _screens = [
-    const ChatHistoryScreen(),
-    const ChatScreen()
-  ];
+  final List<Widget> _screens = [const ChatHistoryScreen(), const ChatScreen()];
 
   @override
   Widget build(BuildContext context) {
