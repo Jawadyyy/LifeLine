@@ -1,6 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:lifeline/chatbot/screens/home_screen.dart';
+import 'package:lifeline/chatbot/screens/chat_homeScreen.dart';
 import 'package:lifeline/components/bottom_navbar.dart';
 import 'package:lifeline/services/location_handler.dart';
 import 'package:lifeline/services/firestore_service.dart';
@@ -75,7 +75,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       _showEmergencyOptions = false;
     });
 
-    // Show sending indicator immediately
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -94,13 +93,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     try {
       final contacts = await FirestoreService().getEmergencyContacts(user.uid);
       if (contacts.isEmpty) {
-        Navigator.pop(context); // Dismiss loading dialog
+        Navigator.pop(context);
         return;
       }
 
       final position = await LocationHandler.getCurrentPosition();
       if (position == null) {
-        Navigator.pop(context); // Dismiss loading dialog
+        Navigator.pop(context);
         return;
       }
 
@@ -108,7 +107,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       String message =
           "🚨 EMERGENCY: $emergencyType\n📍 Location: $address\n🕒 ${DateTime.now().toString().substring(0, 16)}";
 
-      // Send messages immediately without confirmation
       for (String contact in contacts) {
         final whatsappUrl =
             'https://wa.me/$contact?text=${Uri.encodeFull(message)}';
@@ -120,9 +118,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         }
       }
 
-      Navigator.pop(context); // Dismiss loading dialog
+      Navigator.pop(context);
 
-      // Show brief success message
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Emergency alerts sent for $emergencyType'),
@@ -135,7 +132,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         ),
       );
     } catch (e) {
-      Navigator.pop(context); // Dismiss loading dialog if still showing
+      Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text('Failed to send emergency alerts'),
@@ -219,7 +216,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       ),
       body: Stack(
         children: [
-          // Main content
           Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -251,13 +247,16 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               ),
             ],
           ),
-
-          // Emergency options
           if (_showEmergencyOptions) ..._buildEmergencyOptions(),
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {},
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const ChatHomeScreen()),
+          );
+        },
         backgroundColor: theme.colorScheme.surface,
         elevation: 4,
         child: Image.asset(
@@ -368,30 +367,28 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        height: 180, // Slightly larger
+        height: 180,
         width: 180,
         decoration: BoxDecoration(
           gradient: const RadialGradient(
             colors: [
               Color(0xFFFF5252),
               Color(0xFFFF1744),
-              Color(0xFFD50000), // Added darker red for depth
+              Color(0xFFD50000),
             ],
-            stops: [0.3, 0.7, 1.0], // Adjusted stops
+            stops: [0.3, 0.7, 1.0],
             radius: 0.85,
           ),
           shape: BoxShape.circle,
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFFFF1744)
-                  .withOpacity(0.5), // More visible shadow
-              blurRadius: 35, // Increased blur
-              spreadRadius: 8, // Increased spread
-              offset: const Offset(0, 5), // Added slight offset for depth
+              color: const Color(0xFFFF1744).withOpacity(0.5),
+              blurRadius: 35,
+              spreadRadius: 8,
+              offset: const Offset(0, 5),
             ),
           ],
           border: Border.all(
-            // Added subtle border
             color: Colors.white.withOpacity(0.2),
             width: 2,
           ),
@@ -402,19 +399,18 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             children: [
               Image.asset(
                 'assets/images/icons/tap.png',
-                height: 65, // Slightly larger icon
-                color: Colors.white.withOpacity(0.95), // Slightly softer white
+                height: 65,
+                color: Colors.white.withOpacity(0.95),
               ),
-              const SizedBox(height: 10), // Increased spacing
+              const SizedBox(height: 10),
               Text(
                 _showEmergencyOptions ? "CANCEL" : "EMERGENCY",
                 style: const TextStyle(
                   color: Colors.white,
-                  fontWeight: FontWeight.w800, // Slightly bolder
-                  fontSize: 16, // Larger font
-                  letterSpacing: 1.1, // Better letter spacing
+                  fontWeight: FontWeight.w800,
+                  fontSize: 16,
+                  letterSpacing: 1.1,
                   shadows: [
-                    // Added subtle text shadow
                     Shadow(
                       color: Colors.black26,
                       blurRadius: 2,
