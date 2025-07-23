@@ -124,6 +124,7 @@ flutter:
   - assets/images/icons/bandage.png
   - assets/images/icons/brain.png
   - assets/images/icons/fire.png
+  - assets/images/icons/ai.png
 
 
   # An image asset can refer to one or more resolution-specific "variants", see

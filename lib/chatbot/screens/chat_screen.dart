@@ -14,13 +14,26 @@ class ChatScreen extends StatefulWidget {
 }
 
 class _ChatScreenState extends State<ChatScreen> {
-  // scroll controller
   final ScrollController _scrollController = ScrollController();
+  bool _showAppBarShadow = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
+  }
 
   @override
   void dispose() {
+    _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
     super.dispose();
+  }
+
+  void _onScroll() {
+    setState(() {
+      _showAppBarShadow = _scrollController.offset > 0;
+    });
   }
 
   void _scrollToBottom() {
@@ -44,7 +57,6 @@ class _ChatScreenState extends State<ChatScreen> {
           _scrollToBottom();
         }
 
-        // auto scroll to bottom on new message
         chatProvider.addListener(() {
           if (chatProvider.inChatMessages.isNotEmpty) {
             _scrollToBottom();
@@ -52,65 +64,134 @@ class _ChatScreenState extends State<ChatScreen> {
         });
 
         return Scaffold(
-          backgroundColor: Colors.white,
+          backgroundColor: Colors.grey[50],
           appBar: AppBar(
             backgroundColor: Colors.white,
+            elevation: _showAppBarShadow ? 4 : 0,
             centerTitle: true,
-            title: const Text('Bot Assistant'),
+            title: const Text(
+              'Bot Assistant',
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                color: Colors.blueGrey,
+              ),
+            ),
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
+              onPressed: () => Navigator.pop(context),
+            ),
             actions: [
               if (chatProvider.inChatMessages.isNotEmpty)
                 Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: CircleAvatar(
-                    child: IconButton(
-                      icon: const Icon(CupertinoIcons.pencil),
-                      onPressed: () async {
-                        // show my animated dialog to start new chat
-                        showMyAnimatedDialog(
-                          context: context,
-                          title: 'Start New Chat',
-                          content: 'Are you sure you want to start a new chat?',
-                          actionText: 'Yes',
-                          onActionPressed: (value) async {
-                            if (value) {
-                              // prepare chat room
-                              await chatProvider.prepareChatRoom(
-                                  isNewChat: true, chatID: '');
-                            }
-                          },
-                        );
-                      },
+                  padding: const EdgeInsets.only(right: 8.0),
+                  child: IconButton(
+                    icon: Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: Colors.blue[50],
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        CupertinoIcons.pencil,
+                        size: 20,
+                        color: Colors.blue[800],
+                      ),
                     ),
+                    onPressed: () async {
+                      showMyAnimatedDialog(
+                        context: context,
+                        title: 'Start New Chat',
+                        content:
+                            'Are you sure you want to start a new chat? Your current conversation will be cleared.',
+                        actionText: 'New Chat',
+                        onActionPressed: (value) async {
+                          if (value) {
+                            await chatProvider.prepareChatRoom(
+                                isNewChat: true, chatID: '');
+                          }
+                        },
+                      );
+                    },
                   ),
-                )
+                ),
             ],
           ),
           body: SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Column(
-                children: [
-                  Expanded(
-                    child: chatProvider.inChatMessages.isEmpty
-                        ? const Center(
-                            child: Text('No messages yet'),
-                          )
-                        : ChatMessages(
-                            scrollController: _scrollController,
-                            chatProvider: chatProvider,
-                          ),
+            child: Column(
+              children: [
+                Expanded(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: const BorderRadius.only(
+                        bottomLeft: Radius.circular(20),
+                        bottomRight: Radius.circular(20),
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: ClipRRect(
+                      borderRadius: const BorderRadius.only(
+                        bottomLeft: Radius.circular(20),
+                        bottomRight: Radius.circular(20),
+                      ),
+                      child: chatProvider.inChatMessages.isEmpty
+                          ? _buildEmptyState()
+                          : ChatMessages(
+                              scrollController: _scrollController,
+                              chatProvider: chatProvider,
+                            ),
+                    ),
                   ),
-
-                  // input field
-                  BottomChatField(
-                    chatProvider: chatProvider,
-                  )
-                ],
-              ),
+                ),
+                // Bottom input field with padding
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 8, 12, 20),
+                  child: BottomChatField(chatProvider: chatProvider),
+                ),
+              ],
             ),
           ),
         );
       },
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Image.asset(
+            'assets/images/ai.png',
+            width: 120,
+            height: 120,
+            color: Colors.blue[100],
+          ),
+          const SizedBox(height: 20),
+          Text(
+            'How can I help you today?',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w500,
+              color: Colors.grey[600],
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Ask me anything about medical emergencies',
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey[400],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

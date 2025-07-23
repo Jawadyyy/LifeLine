@@ -137,48 +137,54 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen> {
               ),
               const SizedBox(height: 16),
 
-              // Diseases Dropdown
               DropdownButtonFormField<String>(
                 value: _selectedDisease,
                 decoration: InputDecoration(
                   labelText: 'Diseases (if any)',
-                  labelStyle: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  labelStyle: const TextStyle(
+                      fontSize: 16, fontWeight: FontWeight.w600),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12.0),
                   ),
-                  focusedBorder: OutlineInputBorder(
+                  focusedBorder: const OutlineInputBorder(
                     borderSide: BorderSide(color: Colors.blue, width: 2.0),
                   ),
-                  enabledBorder: OutlineInputBorder(
+                  enabledBorder: const OutlineInputBorder(
                     borderSide: BorderSide(color: Colors.grey, width: 1.0),
                   ),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
                   filled: true,
                   fillColor: Colors.grey[200],
                 ),
                 dropdownColor: Colors.white,
                 icon: const Icon(Icons.arrow_drop_down, color: Colors.blue),
-                style: TextStyle(color: Colors.black, fontSize: 16),
+                style: const TextStyle(color: Colors.black, fontSize: 16),
                 items: const [
                   DropdownMenuItem(
                     value: 'None',
-                    child: Text('None', style: TextStyle(fontWeight: FontWeight.w500)),
+                    child: Text('None',
+                        style: TextStyle(fontWeight: FontWeight.w500)),
                   ),
                   DropdownMenuItem(
                     value: 'Diabetes',
-                    child: Text('Diabetes', style: TextStyle(fontWeight: FontWeight.w500)),
+                    child: Text('Diabetes',
+                        style: TextStyle(fontWeight: FontWeight.w500)),
                   ),
                   DropdownMenuItem(
                     value: 'Hypertension',
-                    child: Text('Hypertension', style: TextStyle(fontWeight: FontWeight.w500)),
+                    child: Text('Hypertension',
+                        style: TextStyle(fontWeight: FontWeight.w500)),
                   ),
                   DropdownMenuItem(
                     value: 'Asthma',
-                    child: Text('Asthma', style: TextStyle(fontWeight: FontWeight.w500)),
+                    child: Text('Asthma',
+                        style: TextStyle(fontWeight: FontWeight.w500)),
                   ),
                   DropdownMenuItem(
                     value: 'Other',
-                    child: Text('Other', style: TextStyle(fontWeight: FontWeight.w500)),
+                    child: Text('Other',
+                        style: TextStyle(fontWeight: FontWeight.w500)),
                   ),
                 ],
                 onChanged: (value) {
@@ -195,59 +201,72 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen> {
                 value: _selectedBloodGroup,
                 decoration: InputDecoration(
                   labelText: 'Blood Group',
-                  labelStyle: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.red),
+                  labelStyle: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.red),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12.0),
                   ),
-                  focusedBorder: OutlineInputBorder(
+                  focusedBorder: const OutlineInputBorder(
                     borderSide: BorderSide(color: Colors.red, width: 2.0),
                   ),
-                  enabledBorder: OutlineInputBorder(
+                  enabledBorder: const OutlineInputBorder(
                     borderSide: BorderSide(color: Colors.grey, width: 1.0),
                   ),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
                   filled: true,
                   fillColor: Colors.grey[200],
                 ),
                 dropdownColor: Colors.white,
                 icon: const Icon(Icons.arrow_drop_down, color: Colors.red),
-                style: TextStyle(color: Colors.black, fontSize: 16),
+                style: const TextStyle(color: Colors.black, fontSize: 16),
                 items: const [
                   DropdownMenuItem(
                     value: 'None',
-                    child: Text('None', style: TextStyle(fontWeight: FontWeight.w500)),
+                    child: Text('None',
+                        style: TextStyle(fontWeight: FontWeight.w500)),
                   ),
                   DropdownMenuItem(
                     value: 'A+',
-                    child: Text('A+', style: TextStyle(fontWeight: FontWeight.w500)),
+                    child: Text('A+',
+                        style: TextStyle(fontWeight: FontWeight.w500)),
                   ),
                   DropdownMenuItem(
                     value: 'A-',
-                    child: Text('A-', style: TextStyle(fontWeight: FontWeight.w500)),
+                    child: Text('A-',
+                        style: TextStyle(fontWeight: FontWeight.w500)),
                   ),
                   DropdownMenuItem(
                     value: 'B+',
-                    child: Text('B+', style: TextStyle(fontWeight: FontWeight.w500)),
+                    child: Text('B+',
+                        style: TextStyle(fontWeight: FontWeight.w500)),
                   ),
                   DropdownMenuItem(
                     value: 'B-',
-                    child: Text('B-', style: TextStyle(fontWeight: FontWeight.w500)),
+                    child: Text('B-',
+                        style: TextStyle(fontWeight: FontWeight.w500)),
                   ),
                   DropdownMenuItem(
                     value: 'AB+',
-                    child: Text('AB+', style: TextStyle(fontWeight: FontWeight.w500)),
+                    child: Text('AB+',
+                        style: TextStyle(fontWeight: FontWeight.w500)),
                   ),
                   DropdownMenuItem(
                     value: 'AB-',
-                    child: Text('AB-', style: TextStyle(fontWeight: FontWeight.w500)),
+                    child: Text('AB-',
+                        style: TextStyle(fontWeight: FontWeight.w500)),
                   ),
                   DropdownMenuItem(
                     value: 'O+',
-                    child: Text('O+', style: TextStyle(fontWeight: FontWeight.w500)),
+                    child: Text('O+',
+                        style: TextStyle(fontWeight: FontWeight.w500)),
                   ),
                   DropdownMenuItem(
                     value: 'O-',
-                    child: Text('O-', style: TextStyle(fontWeight: FontWeight.w500)),
+                    child: Text('O-',
+                        style: TextStyle(fontWeight: FontWeight.w500)),
                   ),
                 ],
                 onChanged: (value) {
@@ -337,7 +356,8 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen> {
                       ),
                       child: const Text(
                         'Update Setting',
-                        style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold, color: Colors.white),
                       ),
                     ),
                   ),

@@ -257,12 +257,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const ChatHomeScreen()),
-          );
-        },
+        onPressed: () {},
         backgroundColor: theme.colorScheme.surface,
         elevation: 4,
         child: Image.asset(
