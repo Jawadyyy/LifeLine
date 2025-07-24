@@ -7,9 +7,11 @@ class ChatHistory {
     return _box.keys.cast<String>().toList();
   }
 
-  List<Map<String, String>> getSession(String sessionId) {
+  List<Map<String, dynamic>> getSession(String sessionId) {
     final raw = _box.get(sessionId, defaultValue: []);
-    return List<Map<String, String>>.from(raw ?? []);
+    return (raw as List)
+        .map((item) => Map<String, dynamic>.from(item as Map))
+        .toList();
   }
 
   void deleteSession(String sessionId) {

@@ -2,9 +2,11 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
+import 'package:lifeline/chatbot/api_service/api.dart';
+import 'package:lifeline/chatbot/history/chat_history.dart';
 
 class ChatScreen extends StatefulWidget {
-  final List<Map<String, String>>? restoredSession;
+  final List<Map<String, dynamic>>? restoredSession;
   const ChatScreen({super.key, this.restoredSession});
 
   @override
@@ -13,7 +15,8 @@ class ChatScreen extends StatefulWidget {
 
 class _ChatScreenState extends State<ChatScreen> {
   final TextEditingController _controller = TextEditingController();
-  final List<Map<String, String>> _messages = [];
+  final List<Map<String, dynamic>> _messages = [];
+
   bool _isLoading = false;
   File? _selectedImage;
   final ScrollController _scrollController = ScrollController();
@@ -56,33 +59,49 @@ class _ChatScreenState extends State<ChatScreen> {
     final userText = _controller.text.trim();
     if (userText.isEmpty && _selectedImage == null) return;
 
+    final userMessage = {
+      "role": "user",
+      "content": userText.isNotEmpty ? userText : "[Image uploaded]",
+      "timestamp": DateTime.now().millisecondsSinceEpoch.toString(),
+    };
+
     setState(() {
-      _messages.add({
-        "role": "user",
-        "content": userText.isNotEmpty ? userText : "[Image uploaded]",
-        "timestamp": DateTime.now().millisecondsSinceEpoch.toString(),
-      });
+      _messages.add(userMessage);
       _controller.clear();
       _isLoading = true;
     });
 
+    ChatHistory().addMessage(userMessage['role']!, userMessage['content']!);
     _scrollToBottom();
 
-    // Simulate API call delay
-    await Future.delayed(const Duration(seconds: 1));
+    try {
+      final aiReply = await ApiService.sendMessage(
+        userMessage['content']!,
+        imageFile: _selectedImage,
+      );
 
-    setState(() {
-      _messages.add({
+      final botMessage = {
         "role": "assistant",
-        "content":
-            "This is a simulated response from the assistant. In a real app, this would come from your API.",
+        "content": aiReply,
         "timestamp": DateTime.now().millisecondsSinceEpoch.toString(),
-      });
-      _isLoading = false;
-      _selectedImage = null;
-    });
+      };
 
-    _scrollToBottom();
+      setState(() {
+        _messages.add(botMessage);
+        _isLoading = false;
+        _selectedImage = null;
+      });
+
+      ChatHistory().addMessage(botMessage['role']!, botMessage['content']!);
+      _scrollToBottom();
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error: $e")),
+      );
+    }
   }
 
   Future<void> _pickImage() async {
@@ -95,8 +114,9 @@ class _ChatScreenState extends State<ChatScreen> {
 
   Widget _buildMessage(Map<String, dynamic> msg) {
     final isUser = msg['role'] == 'user';
-    final timestamp =
-        DateTime.fromMillisecondsSinceEpoch(msg['timestamp'] ?? 0);
+    final timestamp = DateTime.fromMillisecondsSinceEpoch(
+      int.tryParse(msg['timestamp'] ?? '') ?? 0,
+    );
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 12),
