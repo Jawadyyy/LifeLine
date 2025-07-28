@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lifeline/screens/auth_screens/forgotpass_screen.dart';
 import 'package:lifeline/screens/auth_screens/signup_screen.dart';
+
 import 'package:lifeline/services/auth_service.dart';
 import 'package:lifeline/screens/main_screens/home_screen.dart';
 import 'package:lifeline/components/clip_wave.dart';
@@ -24,9 +25,9 @@ class _LoginScreenState extends State<LoginScreen> {
       Image.asset('assets/images/icons/email.png', width: 24, height: 24);
   final passwordIcon =
       Image.asset('assets/images/icons/password.png', width: 24, height: 24);
-  final eyeIcon =
-      Image.asset('assets/images/icons/show.png', width: 24, height: 24);
   final eyeSlashIcon =
+      Image.asset('assets/images/icons/show.png', width: 24, height: 24);
+  final eyeIcon =
       Image.asset('assets/images/icons/hide.png', width: 24, height: 24);
 
 // Custom border with subtle animation
@@ -36,7 +37,7 @@ class _LoginScreenState extends State<LoginScreen> {
   );
 
   final RegExp _emailRegex =
-      RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}\$');
+      RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$');
 
   void _validateAndLogin() async {
     final email = _emailController.text.trim();
@@ -102,7 +103,7 @@ class _LoginScreenState extends State<LoginScreen> {
       body: Column(
         children: [
           SizedBox(
-            height: size.height * 0.40,
+            height: size.height * 0.35,
             child: Stack(
               children: [
                 ClipPath(
@@ -245,11 +246,24 @@ class _LoginScreenState extends State<LoginScreen> {
                   Align(
                     alignment: Alignment.centerRight,
                     child: TextButton(
-                      onPressed: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (_) => const ForgotpassScreen()),
-                      ),
+                      onPressed: () {
+                        Navigator.of(context).push(
+                          PageRouteBuilder(
+                            pageBuilder:
+                                (context, animation, secondaryAnimation) =>
+                                    const ForgotpassScreen(),
+                            transitionsBuilder: (context, animation,
+                                secondaryAnimation, child) {
+                              return FadeTransition(
+                                opacity: animation,
+                                child: child,
+                              );
+                            },
+                            transitionDuration:
+                                const Duration(milliseconds: 400),
+                          ),
+                        );
+                      },
                       child: Text(
                         "Forgot Password?",
                         style: GoogleFonts.nunito(
@@ -344,15 +358,28 @@ class _LoginScreenState extends State<LoginScreen> {
                         style: GoogleFonts.nunito(),
                       ),
                       GestureDetector(
-                        onTap: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (_) => const SignUpScreen()),
-                        ),
+                        onTap: () {
+                          Navigator.of(context).push(
+                            PageRouteBuilder(
+                              pageBuilder:
+                                  (context, animation, secondaryAnimation) =>
+                                      const SignUpScreen(),
+                              transitionsBuilder: (context, animation,
+                                  secondaryAnimation, child) {
+                                return FadeTransition(
+                                  opacity: animation,
+                                  child: child,
+                                );
+                              },
+                              transitionDuration:
+                                  const Duration(milliseconds: 400),
+                            ),
+                          );
+                        },
                         child: Text(
                           "Sign Up",
                           style: GoogleFonts.nunito(
-                            color: Color(0xFFFF6F61),
+                            color: const Color(0xFFFF6F61),
                             fontWeight: FontWeight.bold,
                           ),
                         ),

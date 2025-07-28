@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:lifeline/components/clip_wave.dart';
 import 'package:lifeline/screens/auth_screens/login_screen.dart';
 
 class ChangePasswordScreen extends StatefulWidget {
@@ -18,6 +19,18 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
   bool _isNewPasswordVisible = false;
   bool _isConfirmPasswordVisible = false;
   final FirebaseAuth _auth = FirebaseAuth.instance;
+
+  final OutlineInputBorder border = OutlineInputBorder(
+    borderRadius: BorderRadius.circular(12),
+    borderSide: BorderSide(color: Colors.grey.shade300, width: 1.5),
+  );
+
+  final passwordIcon =
+      Image.asset('assets/images/icons/password.png', width: 24, height: 24);
+  final eyeSlashIcon =
+      Image.asset('assets/images/icons/show.png', width: 24, height: 24);
+  final eyeIcon =
+      Image.asset('assets/images/icons/hide.png', width: 24, height: 24);
 
   void _changePassword() async {
     final newPassword = _newPasswordController.text.trim();
@@ -47,9 +60,18 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
         backgroundColor: Colors.green,
       );
 
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const LoginScreen()),
+      Navigator.of(context).push(
+        PageRouteBuilder(
+          pageBuilder: (context, animation, secondaryAnimation) =>
+              const LoginScreen(),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            return FadeTransition(
+              opacity: animation,
+              child: child,
+            );
+          },
+          transitionDuration: const Duration(milliseconds: 400),
+        ),
       );
     } catch (e) {
       String errorMessage = "An error occurred. Please try again.";
@@ -71,141 +93,181 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+
     return Scaffold(
       backgroundColor: Colors.white,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+      body: Column(
+        children: [
+          SizedBox(
+            height: size.height * 0.30,
+            child: Stack(
               children: [
-                const SizedBox(height: 20),
-                GestureDetector(
-                  onTap: () => Navigator.pop(context),
-                  child: const Icon(
-                    Icons.arrow_back,
-                    color: Colors.black,
-                  ),
-                ),
-                const SizedBox(height: 30),
-                Text(
-                  "Change Password",
-                  style: GoogleFonts.nunito(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 24,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  "Enter your new password.",
-                  style: GoogleFonts.nunito(
-                    color: Colors.grey,
-                    fontSize: 16,
-                  ),
-                ),
-                const SizedBox(height: 30),
-                TextField(
-                  controller: _newPasswordController,
-                  obscureText: !_isNewPasswordVisible,
-                  style: GoogleFonts.nunito(),
-                  decoration: InputDecoration(
-                    prefixIcon: Padding(
-                      padding: const EdgeInsets.all(10.0),
-                      child: Image.asset(
-                        'assets/images/icons/password.png',
-                        width: 24,
-                        height: 24,
-                      ),
-                    ),
-                    suffixIcon: IconButton(
-                      icon: Image.asset(
-                        _isNewPasswordVisible
-                            ? 'assets/images/icons/show.png'
-                            : 'assets/images/icons/hide.png',
-                        width: 24,
-                        height: 24,
-                      ),
-                      onPressed: () {
-                        setState(() {
-                          _isNewPasswordVisible = !_isNewPasswordVisible;
-                        });
-                      },
-                    ),
-                    hintText: 'New Password',
-                    hintStyle: GoogleFonts.nunito(),
-                    border: const UnderlineInputBorder(),
-                    focusedBorder: const UnderlineInputBorder(
-                      borderSide:
-                          BorderSide(color: Color(0xFF1565C0), width: 2),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 30),
-                TextField(
-                  controller: _confirmPasswordController,
-                  obscureText: !_isConfirmPasswordVisible,
-                  style: GoogleFonts.nunito(),
-                  decoration: InputDecoration(
-                    prefixIcon: Padding(
-                      padding: const EdgeInsets.all(10.0),
-                      child: Image.asset(
-                        'assets/images/icons/password.png',
-                        width: 24,
-                        height: 24,
-                      ),
-                    ),
-                    suffixIcon: IconButton(
-                      icon: Image.asset(
-                        _isConfirmPasswordVisible
-                            ? 'assets/images/icons/show.png'
-                            : 'assets/images/icons/hide.png',
-                        width: 24,
-                        height: 24,
-                      ),
-                      onPressed: () {
-                        setState(() {
-                          _isConfirmPasswordVisible =
-                              !_isConfirmPasswordVisible;
-                        });
-                      },
-                    ),
-                    hintText: 'Confirm New Password',
-                    hintStyle: GoogleFonts.nunito(),
-                    border: const UnderlineInputBorder(),
-                    focusedBorder: const UnderlineInputBorder(
-                      borderSide:
-                          BorderSide(color: Color(0xFF1565C0), width: 2),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 35),
-                SizedBox(
-                  width: double.infinity,
-                  height: 50,
-                  child: ElevatedButton(
-                    onPressed: _changePassword,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF1565C0),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(30),
-                      ),
-                    ),
-                    child: Text(
-                      "Change",
-                      style: GoogleFonts.nunito(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
+                ClipPath(
+                  clipper: TopWaveClipper(),
+                  child: Container(
+                    width: double.infinity,
+                    decoration: const BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [Color(0xFFFF6F61), Color(0xFFFF6F61)],
                       ),
                     ),
                   ),
                 ),
-                const SizedBox(height: 40),
+                SafeArea(
+                  child: Padding(
+                    padding: const EdgeInsets.only(left: 10, top: 10),
+                    child: IconButton(
+                      icon: const Icon(Icons.arrow_back, color: Colors.white),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
-        ),
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "Change Password",
+                    style: GoogleFonts.nunito(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 32,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    "Enter your new password.",
+                    style: GoogleFonts.nunito(fontSize: 16),
+                  ),
+                  const SizedBox(height: 30),
+
+                  /// New Password
+                  TextField(
+                    controller: _newPasswordController,
+                    obscureText: !_isNewPasswordVisible,
+                    style: GoogleFonts.nunito(fontSize: 16),
+                    decoration: InputDecoration(
+                      filled: true,
+                      fillColor: Colors.grey.shade50,
+                      prefixIcon: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: SizedBox(width: 24, child: passwordIcon),
+                      ),
+                      suffixIcon: Padding(
+                        padding: const EdgeInsets.only(right: 12),
+                        child: IconButton(
+                          icon: SizedBox(
+                            width: 24,
+                            child:
+                                _isNewPasswordVisible ? eyeSlashIcon : eyeIcon,
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              _isNewPasswordVisible = !_isNewPasswordVisible;
+                            });
+                          },
+                        ),
+                      ),
+                      hintText: 'New Password',
+                      hintStyle: GoogleFonts.nunito(
+                        color: Colors.grey[500],
+                        fontWeight: FontWeight.w500,
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(vertical: 18),
+                      enabledBorder: border,
+                      focusedBorder: border.copyWith(
+                        borderSide: const BorderSide(
+                          color: Color(0xFFFF6F61),
+                          width: 2,
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  /// Confirm Password
+                  TextField(
+                    controller: _confirmPasswordController,
+                    obscureText: !_isConfirmPasswordVisible,
+                    style: GoogleFonts.nunito(fontSize: 16),
+                    decoration: InputDecoration(
+                      filled: true,
+                      fillColor: Colors.grey.shade50,
+                      prefixIcon: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: SizedBox(width: 24, child: passwordIcon),
+                      ),
+                      suffixIcon: Padding(
+                        padding: const EdgeInsets.only(right: 12),
+                        child: IconButton(
+                          icon: SizedBox(
+                            width: 24,
+                            child: _isConfirmPasswordVisible
+                                ? eyeSlashIcon
+                                : eyeIcon,
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              _isConfirmPasswordVisible =
+                                  !_isConfirmPasswordVisible;
+                            });
+                          },
+                        ),
+                      ),
+                      hintText: 'Confirm New Password',
+                      hintStyle: GoogleFonts.nunito(
+                        color: Colors.grey[500],
+                        fontWeight: FontWeight.w500,
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(vertical: 18),
+                      enabledBorder: border,
+                      focusedBorder: border.copyWith(
+                        borderSide: const BorderSide(
+                          color: Color(0xFFFF6F61),
+                          width: 2,
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 30),
+
+                  SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: ElevatedButton(
+                      onPressed: _changePassword,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFFF6F61),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(30),
+                        ),
+                      ),
+                      child: Text(
+                        "Change",
+                        style: GoogleFonts.nunito(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 40),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

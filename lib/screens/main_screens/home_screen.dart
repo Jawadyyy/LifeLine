@@ -170,7 +170,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         leading: Padding(
           padding: const EdgeInsets.only(left: 16),
           child: Image.asset(
-            "assets/images/logo.png",
+            'assets/images/logos/logo1.png',
             height: 40,
             width: 40,
           ),

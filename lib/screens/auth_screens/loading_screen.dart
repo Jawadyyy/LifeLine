@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:lifeline/screens/auth_screens/welcome_screen.dart';
-import 'login_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class LoadingScreen extends StatefulWidget {
@@ -58,7 +57,7 @@ class _LoadingScreenState extends State<LoadingScreen>
             ScaleTransition(
               scale: _heartbeatAnimation,
               child: Image.asset(
-                'assets/images/logo.png',
+                'assets/images/logos/logo1.png',
                 width: 200,
                 height: 200,
               ),
