@@ -4,6 +4,7 @@ import 'package:flutter_polyline_points/flutter_polyline_points.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:lifeline/components/bottom_navbar.dart';
+import 'package:lifeline/main.dart';
 import 'package:lifeline/services/location_handler.dart';
 import 'package:lifeline/services/hospital_service.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -157,6 +158,7 @@ class _MapScreenState extends State<MapScreen> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
+    final Color mainColor = Color(0xFFFF6F61);
 
     return Scaffold(
       backgroundColor: colorScheme.background,
@@ -245,7 +247,7 @@ class _MapScreenState extends State<MapScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   CircularProgressIndicator(
-                    color: colorScheme.primary,
+                    color: mainColor,
                     strokeWidth: 3,
                   ),
                   const SizedBox(height: 20),
@@ -288,7 +290,7 @@ class _MapScreenState extends State<MapScreen> {
                         polylines: [
                           Polyline(
                             points: _routePoints,
-                            color: colorScheme.primary.withOpacity(0.8),
+                            color: mainColor.withOpacity(0.8),
                             strokeWidth: 6,
                             borderColor: Colors.white.withOpacity(0.8),
                             borderStrokeWidth: 2,
@@ -306,15 +308,15 @@ class _MapScreenState extends State<MapScreen> {
                             duration: _animationDuration,
                             curve: _animationCurve,
                             decoration: BoxDecoration(
-                              color: colorScheme.primaryContainer,
+                              color: const Color.fromARGB(255, 255, 255, 255),
                               shape: BoxShape.circle,
                               border: Border.all(
-                                color: colorScheme.primary,
+                                color: mainColor,
                                 width: 3,
                               ),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withOpacity(0.2),
+                                  color: Colors.black.withOpacity(0.3),
                                   blurRadius: 8,
                                   spreadRadius: 1,
                                 ),
@@ -322,12 +324,11 @@ class _MapScreenState extends State<MapScreen> {
                             ),
                             child: Icon(
                               Icons.person_pin_circle,
-                              color: colorScheme.primary,
+                              color: mainColor,
                               size: 30,
                             ),
                           ),
                         ),
-                        // Hospital markers
                         ..._hospitals.map((hospital) => Marker(
                               point: LatLng(hospital['lat'], hospital['lon']),
                               width: 40,
@@ -388,7 +389,7 @@ class _MapScreenState extends State<MapScreen> {
                               duration: _animationDuration,
                               curve: _animationCurve,
                               decoration: BoxDecoration(
-                                color: colorScheme.secondaryContainer,
+                                color: mainColor,
                                 shape: BoxShape.circle,
                                 border: Border.all(
                                   color: colorScheme.secondary,
@@ -441,7 +442,7 @@ class _MapScreenState extends State<MapScreen> {
                           },
                           child: Icon(Icons.center_focus_strong,
                               color: colorScheme.onPrimary),
-                          backgroundColor: colorScheme.primary,
+                          backgroundColor: mainColor,
                           elevation: 2,
                         ),
                       ],
@@ -517,7 +518,7 @@ class _MapScreenState extends State<MapScreen> {
                                     children: [
                                       Icon(
                                         Icons.location_on,
-                                        color: colorScheme.primary,
+                                        color: mainColor,
                                         size: 16,
                                       ),
                                       const SizedBox(width: 4),
@@ -533,15 +534,14 @@ class _MapScreenState extends State<MapScreen> {
                                         padding: const EdgeInsets.symmetric(
                                             horizontal: 8, vertical: 4),
                                         decoration: BoxDecoration(
-                                          color: colorScheme.primary
-                                              .withOpacity(0.1),
+                                          color: mainColor.withOpacity(0.1),
                                           borderRadius:
                                               BorderRadius.circular(12),
                                         ),
                                         child: Text(
                                           "DIRECTIONS",
                                           style: textTheme.labelSmall?.copyWith(
-                                            color: colorScheme.primary,
+                                            color: mainColor,
                                             fontWeight: FontWeight.bold,
                                             letterSpacing: 0.5,
                                           ),
@@ -555,7 +555,7 @@ class _MapScreenState extends State<MapScreen> {
                                         (1.0 - (distanceInKm.clamp(0, 10) / 10))
                                             .toDouble(),
                                     backgroundColor: colorScheme.surfaceVariant,
-                                    color: colorScheme.primary,
+                                    color: mainColor,
                                     minHeight: 4,
                                     borderRadius: BorderRadius.circular(2),
                                   ),
@@ -602,7 +602,7 @@ class _MapScreenState extends State<MapScreen> {
                             children: [
                               Icon(
                                 Icons.local_hospital,
-                                color: colorScheme.secondary,
+                                color: mainColor,
                                 size: 24,
                               ),
                               const SizedBox(width: 12),
@@ -625,12 +625,12 @@ class _MapScreenState extends State<MapScreen> {
                               Container(
                                 padding: const EdgeInsets.all(8),
                                 decoration: BoxDecoration(
-                                  color: colorScheme.primary.withOpacity(0.1),
+                                  color: mainColor.withOpacity(0.1),
                                   shape: BoxShape.circle,
                                 ),
                                 child: Icon(
                                   Icons.directions_car,
-                                  color: colorScheme.primary,
+                                  color: mainColor,
                                   size: 20,
                                 ),
                               ),
@@ -658,12 +658,12 @@ class _MapScreenState extends State<MapScreen> {
                               Container(
                                 padding: const EdgeInsets.all(8),
                                 decoration: BoxDecoration(
-                                  color: colorScheme.secondary.withOpacity(0.1),
+                                  color: mainColor.withOpacity(0.1),
                                   shape: BoxShape.circle,
                                 ),
                                 child: Icon(
                                   Icons.access_time,
-                                  color: colorScheme.secondary,
+                                  color: mainColor,
                                   size: 20,
                                 ),
                               ),
@@ -694,7 +694,7 @@ class _MapScreenState extends State<MapScreen> {
                             width: double.infinity,
                             child: ElevatedButton(
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: colorScheme.primary,
+                                backgroundColor: mainColor,
                                 foregroundColor: colorScheme.onPrimary,
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
@@ -710,16 +710,17 @@ class _MapScreenState extends State<MapScreen> {
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  Icon(
+                                  const Icon(
                                     Icons.directions,
                                     size: 24,
+                                    color: Colors.white,
                                   ),
                                   const SizedBox(width: 12),
                                   Text(
                                     'Start Navigation',
                                     style: textTheme.bodyLarge?.copyWith(
-                                      fontWeight: FontWeight.bold,
-                                    ),
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white),
                                   ),
                                 ],
                               ),
@@ -738,7 +739,7 @@ class _MapScreenState extends State<MapScreen> {
               duration: _animationDuration,
               child: FloatingActionButton(
                 onPressed: _checkLocationServiceAndLoadLocation,
-                backgroundColor: colorScheme.primary,
+                backgroundColor: mainColor,
                 foregroundColor: colorScheme.onPrimary,
                 elevation: 4,
                 shape: RoundedRectangleBorder(

@@ -38,10 +38,10 @@ class WelcomeScreen extends StatelessWidget {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(
-                        Icons.favorite,
-                        size: 60,
-                        color: Colors.white,
+                      Image.asset(
+                        'assets/images/logos/logo1.png',
+                        height: 80,
+                        width: 80,
                       ),
                       const SizedBox(height: 20),
                       Text(
