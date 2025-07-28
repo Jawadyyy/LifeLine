@@ -1,7 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:lifeline/chatbot/screens/chat_homeScreen.dart';
-import 'package:lifeline/components/bottom_navbar.dart';
 import 'package:lifeline/services/location_handler.dart';
 import 'package:lifeline/services/firestore_service.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -15,12 +14,13 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
-  int _selectedIndex = 0;
   String _currentAddress = "Fetching location...";
   bool _showEmergencyOptions = false;
+  bool _isLocationFetched = false;
+  bool _isLoadingLocation = false;
   late AnimationController _animationController;
   late Animation<double> _scaleAnimation;
-  bool _isLoadingLocation = false;
+  final Color _primaryColor = const Color(0xFFFF6F61);
 
   @override
   void initState() {
@@ -35,7 +35,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         curve: Curves.easeInOut,
       ),
     );
-    _getUserLocation();
+    _getUserLocationIfNeeded();
+  }
+
+  void _getUserLocationIfNeeded() {
+    if (!_isLocationFetched) {
+      _getUserLocation();
+    }
   }
 
   @override
@@ -45,13 +51,16 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 
   Future<void> _getUserLocation() async {
-    setState(() => _isLoadingLocation = true);
+    setState(() {
+      _isLoadingLocation = true;
+    });
     try {
       final position = await LocationHandler.getCurrentPosition();
       if (position != null) {
         final address = await LocationHandler.getAddressFromLatLng(position);
         setState(() {
           _currentAddress = address ?? "Location unavailable";
+          _isLocationFetched = true;
         });
       } else {
         setState(() {
@@ -63,7 +72,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         _currentAddress = "Error getting location";
       });
     } finally {
-      setState(() => _isLoadingLocation = false);
+      setState(() {
+        _isLoadingLocation = false;
+      });
     }
   }
 
@@ -163,9 +174,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     final size = MediaQuery.of(context).size;
 
     return Scaffold(
-      backgroundColor: theme.colorScheme.background,
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: theme.colorScheme.surface,
+        backgroundColor: Colors.white,
         elevation: 0,
         leading: Padding(
           padding: const EdgeInsets.only(left: 16),
@@ -257,20 +268,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             MaterialPageRoute(builder: (context) => const ChatHomeScreen()),
           );
         },
-        backgroundColor: theme.colorScheme.surface,
+        backgroundColor: Colors.white,
         elevation: 4,
         child: Image.asset(
           'assets/images/icons/brain.png',
           height: 28,
         ),
-      ),
-      bottomNavigationBar: CustomBottomNavigationBar(
-        currentIndex: _selectedIndex,
-        onTap: (index) {
-          setState(() {
-            _selectedIndex = index;
-          });
-        },
       ),
     );
   }
@@ -280,32 +283,32 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       {
         "image": 'assets/images/icons/ambulance.png',
         "type": "Medical Emergency",
-        "color": const Color.fromARGB(255, 255, 255, 255),
+        "color": Colors.white,
       },
       {
         "image": 'assets/images/icons/policeman.png',
         "type": "Police Assistance",
-        "color": const Color.fromARGB(255, 255, 255, 255),
+        "color": Colors.white,
       },
       {
         "image": 'assets/images/icons/fire.png',
         "type": "Fire Alert",
-        "color": const Color.fromARGB(255, 255, 255, 255),
+        "color": Colors.white,
       },
       {
         "image": 'assets/images/icons/healthcare.png',
         "type": "Health Issue",
-        "color": const Color.fromARGB(255, 255, 255, 255),
+        "color": Colors.white,
       },
       {
         "image": 'assets/images/icons/warning.png',
         "type": "SOS",
-        "color": const Color.fromARGB(255, 255, 255, 255),
+        "color": Colors.white,
       },
       {
         "image": 'assets/images/icons/bandage.png',
         "type": "General Emergency",
-        "color": const Color.fromARGB(255, 255, 255, 255),
+        "color": Colors.white,
       },
     ];
 
@@ -370,26 +373,26 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         height: 180,
         width: 180,
         decoration: BoxDecoration(
-          gradient: const RadialGradient(
+          gradient: RadialGradient(
             colors: [
-              Color(0xFFFF5252),
-              Color(0xFFFF1744),
-              Color(0xFFD50000),
+              _primaryColor.withOpacity(0.9),
+              _primaryColor.withOpacity(0.7),
+              _primaryColor.withOpacity(0.5),
             ],
-            stops: [0.3, 0.7, 1.0],
+            stops: const [0.3, 0.7, 1.0],
             radius: 0.85,
           ),
           shape: BoxShape.circle,
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFFFF1744).withOpacity(0.5),
+              color: _primaryColor.withOpacity(0.5),
               blurRadius: 35,
               spreadRadius: 8,
               offset: const Offset(0, 5),
             ),
           ],
           border: Border.all(
-            color: Colors.white.withOpacity(0.2),
+            color: Colors.white.withOpacity(0.3),
             width: 2,
           ),
         ),

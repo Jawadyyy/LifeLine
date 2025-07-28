@@ -23,6 +23,10 @@ class ProfilePage extends StatefulWidget {
 class _ProfilePageState extends State<ProfilePage> {
   final ImagePicker _picker = ImagePicker();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final Color _primaryColor = const Color(0xFFFF6F61);
+  final Color _backgroundColor = const Color(0xFFF9F9F9);
+  final Color _cardColor = Colors.white;
+  final Color _textColor = const Color(0xFF333333);
 
   @override
   void initState() {
@@ -30,14 +34,12 @@ class _ProfilePageState extends State<ProfilePage> {
     _fetchUserData();
   }
 
-  // Refetch user data whenever the profile page is reloaded
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _fetchUserData(); // Refresh the user data when navigating back to this page
+    _fetchUserData();
   }
 
-  // Function to fetch user data from Firebase
   Future<void> _fetchUserData() async {
     try {
       final String userId = AuthService().getCurrentUserId();
@@ -109,134 +111,266 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      floatingActionButton: FloatingActionButton.extended(
+      backgroundColor: _backgroundColor,
+      floatingActionButton: FloatingActionButton(
         onPressed: _fetchUserData,
-        icon: const Icon(Icons.refresh),
-        label: const Text('Refresh'),
-        backgroundColor: Colors.blue,
-        foregroundColor: Colors.white,
+        backgroundColor: _primaryColor,
+        child: const Icon(Icons.refresh, color: Colors.white),
       ),
-      primary: false,
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        elevation: 0,
-        backgroundColor: Colors.white,
-        automaticallyImplyLeading: false,
-        title: const Padding(
-          padding: EdgeInsets.only(top: 10.0),
-          child: Text('Profile', style: TextStyle(color: Colors.black)),
-        ),
-        centerTitle: true,
-      ),
-      body: Column(
-        children: [
-          const SizedBox(height: 30),
-          Center(
-            child: Column(
-              children: [
-                GestureDetector(
-                  onTap: () => _showProfileImageOptions(context),
-                  child: CircleAvatar(
-                    radius: 50,
-                    backgroundImage: currentUser.profileImage.isNotEmpty
-                        ? NetworkImage(currentUser.profileImage)
-                        : const NetworkImage('https://via.placeholder.com/150'),
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 30),
+              decoration: BoxDecoration(
+                color: _primaryColor,
+                borderRadius: const BorderRadius.only(
+                  bottomLeft: Radius.circular(15),
+                  bottomRight: Radius.circular(15),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: _primaryColor.withOpacity(0.2),
+                    blurRadius: 10,
+                    spreadRadius: 2,
+                    offset: const Offset(0, 5),
                   ),
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  currentUser.name,
-                  style: GoogleFonts.nunito(
-                      fontSize: 22, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 20),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    _buildStatColumn(
-                        Icons.bloodtype, 'Blood Type', currentUser.bloodType),
-                    _buildStatColumn(
-                        Icons.height_rounded, 'Height', currentUser.height),
-                    _buildStatColumn(
-                        Icons.line_weight, 'Weight', currentUser.weight),
-                  ],
-                ),
-              ],
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  const SizedBox(height: 10),
+                  const Text(
+                    'Profile',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  GestureDetector(
+                    onTap: () => _showProfileImageOptions(context),
+                    child: Stack(
+                      children: [
+                        CircleAvatar(
+                          radius: 50,
+                          backgroundColor: Colors.white,
+                          child: CircleAvatar(
+                            radius: 48,
+                            backgroundImage: currentUser.profileImage.isNotEmpty
+                                ? NetworkImage(currentUser.profileImage)
+                                : const NetworkImage(
+                                    'https://via.placeholder.com/150'),
+                          ),
+                        ),
+                        Positioned(
+                          bottom: 0,
+                          right: 0,
+                          child: Container(
+                            padding: const EdgeInsets.all(5),
+                            decoration: BoxDecoration(
+                              color: _primaryColor,
+                              shape: BoxShape.circle,
+                              border: Border.all(color: Colors.white, width: 2),
+                            ),
+                            child: const Icon(Icons.edit,
+                                color: Colors.white, size: 18),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 15),
+                  Text(
+                    currentUser.name,
+                    style: GoogleFonts.poppins(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(height: 5),
+                  Text(
+                    currentUser.email,
+                    style: GoogleFonts.poppins(
+                      fontSize: 14,
+                      color: Colors.white.withOpacity(0.8),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                ],
+              ),
             ),
-          ),
-          const SizedBox(height: 30),
-          Expanded(
-            child: ListView(
+            // Stats Cards
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  _buildStatCard(
+                      Icons.bloodtype, 'Blood Type', currentUser.bloodType),
+                  _buildStatCard(Icons.height, 'Height', currentUser.height),
+                  _buildStatCard(
+                      Icons.monitor_weight, 'Weight', currentUser.weight),
+                ],
+              ),
+            ),
+
+            // Menu Options
+            Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
-              children: [
-                _buildMenuItem(Icons.person_outline, 'Profile', () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (context) => const ProfileSettingScreen()),
-                  );
-                }),
-                _buildMenuItem(Icons.help_outline, 'FAQs', () {
-                  _showFAQDialog(context);
-                }),
-                _buildMenuItem(Icons.logout, 'Logout', () {
-                  Navigator.of(context).pushReplacement(
-                    MaterialPageRoute(
-                        builder: (context) => const LoginScreen()),
-                  );
-                }),
-              ],
+              child: Column(
+                children: [
+                  _buildMenuCard(
+                    icon: Icons.person_outline,
+                    title: 'Edit Profile',
+                    subtitle: 'Update your personal information',
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) => const ProfileSettingScreen()),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 15),
+                  _buildMenuCard(
+                    icon: Icons.help_outline,
+                    title: 'Help & FAQs',
+                    subtitle: 'Get answers to common questions',
+                    onTap: () {
+                      _showFAQDialog(context);
+                    },
+                  ),
+                  const SizedBox(height: 15),
+                  _buildMenuCard(
+                    icon: Icons.logout,
+                    title: 'Logout',
+                    subtitle: 'Sign out of your account',
+                    onTap: () {
+                      Navigator.of(context).pushReplacement(
+                        MaterialPageRoute(
+                            builder: (context) => const LoginScreen()),
+                      );
+                    },
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
-      ),
-      bottomNavigationBar: CustomBottomNavigationBar(
-        currentIndex: 3,
-        onTap: (index) {
-          if (index != 3) {
-            Navigator.of(context).pushReplacement(MaterialPageRoute(
-              builder: (context) {
-                if (index == 0) return const HomeScreen();
-                if (index == 1) return const ContactsPage();
-                if (index == 2) return const MapScreen();
-                return const ProfilePage();
-              },
-            ));
-          }
-        },
+            const SizedBox(height: 30),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildStatColumn(IconData icon, String label, String value) {
-    return Column(
-      children: [
-        Icon(icon, color: Colors.blue, size: 30),
-        const SizedBox(height: 5),
-        Text(
-          label,
-          style: GoogleFonts.nunito(
-              fontSize: 14, fontWeight: FontWeight.w600, color: Colors.grey),
+  Widget _buildStatCard(IconData icon, String label, String value) {
+    return Expanded(
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 5),
+        padding: const EdgeInsets.all(15),
+        decoration: BoxDecoration(
+          color: _cardColor,
+          borderRadius: BorderRadius.circular(15),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.1),
+              blurRadius: 10,
+              spreadRadius: 2,
+              offset: const Offset(0, 5),
+            ),
+          ],
         ),
-        const SizedBox(height: 5),
-        Text(
-          value,
-          style: GoogleFonts.nunito(
-              fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black),
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: _primaryColor.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: _primaryColor, size: 24),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              label,
+              style: GoogleFonts.poppins(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.grey),
+            ),
+            const SizedBox(height: 5),
+            Text(
+              value,
+              style: GoogleFonts.poppins(
+                  fontSize: 16, fontWeight: FontWeight.bold, color: _textColor),
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 
-  Widget _buildMenuItem(IconData icon, String title, VoidCallback onTap) {
-    return ListTile(
-      leading: Icon(icon, color: Colors.blue),
-      title: Text(
-        title,
-        style: GoogleFonts.nunito(fontSize: 16, fontWeight: FontWeight.w600),
-      ),
-      trailing: const Icon(Icons.chevron_right, color: Colors.grey),
+  Widget _buildMenuCard({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
       onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(15),
+        decoration: BoxDecoration(
+          color: _cardColor,
+          borderRadius: BorderRadius.circular(15),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.1),
+              blurRadius: 10,
+              spreadRadius: 2,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: _primaryColor.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: _primaryColor, size: 24),
+            ),
+            const SizedBox(width: 15),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: GoogleFonts.poppins(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: _textColor),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    subtitle,
+                    style:
+                        GoogleFonts.poppins(fontSize: 12, color: Colors.grey),
+                  ),
+                ],
+              ),
+            ),
+            Icon(Icons.chevron_right, color: Colors.grey.shade400),
+          ],
+        ),
+      ),
     );
   }
 
@@ -244,84 +378,83 @@ class _ProfilePageState extends State<ProfilePage> {
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
       ),
-      backgroundColor: Colors.white,
       builder: (BuildContext context) {
-        return Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const SizedBox(height: 10),
-            Text(
-              "Choose an Action",
-              style: GoogleFonts.nunito(
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                color: Colors.black87,
+        return Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: _cardColor,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(25)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                "Update Profile Picture",
+                style: GoogleFonts.poppins(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  color: _textColor,
+                ),
               ),
-            ),
-            const Divider(thickness: 1, color: Colors.grey),
-            const SizedBox(height: 5),
-            _buildBottomSheetOption(
-              icon: Icons.photo_camera,
-              color: Colors.green,
-              title: "Take Picture From Camera",
-              onTap: () {
-                Navigator.of(context).pop();
-                _updateProfileImage(ImageSource.camera);
-              },
-            ),
-            _buildBottomSheetOption(
-              icon: Icons.image,
-              color: Colors.blue,
-              title: "Choose from Gallery",
-              onTap: () {
-                Navigator.of(context).pop();
-                _updateProfileImage(ImageSource.gallery);
-              },
-            ),
-            const SizedBox(height: 10),
-            // Cancel Button
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              child: ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.redAccent,
-                  foregroundColor: Colors.white,
-                  elevation: 2,
-                  minimumSize: const Size(double.infinity, 50),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+              const SizedBox(height: 20),
+              _buildImageOption(
+                icon: Icons.camera_alt,
+                color: _primaryColor,
+                label: "Take Photo",
+                onTap: () {
+                  Navigator.pop(context);
+                  _updateProfileImage(ImageSource.camera);
+                },
+              ),
+              _buildImageOption(
+                icon: Icons.photo_library,
+                color: _primaryColor,
+                label: "Choose from Gallery",
+                onTap: () {
+                  Navigator.pop(context);
+                  _updateProfileImage(ImageSource.gallery);
+                },
+              ),
+              const SizedBox(height: 15),
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text(
+                  "Cancel",
+                  style: GoogleFonts.poppins(
+                    color: Colors.grey,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
-                icon: const Icon(Icons.cancel, size: 24),
-                label: const Text(
-                  "Cancel",
-                  style: TextStyle(fontSize: 16),
-                ),
-                onPressed: () => Navigator.of(context).pop(),
               ),
-            ),
-          ],
+            ],
+          ),
         );
       },
     );
   }
 
-  Widget _buildBottomSheetOption({
+  Widget _buildImageOption({
     required IconData icon,
     required Color color,
-    required String title,
+    required String label,
     required VoidCallback onTap,
   }) {
     return ListTile(
-      leading: Icon(icon, color: color),
+      leading: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.1),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(icon, color: color)),
       title: Text(
-        title,
-        style: GoogleFonts.nunito(
+        label,
+        style: GoogleFonts.poppins(
           fontSize: 16,
-          fontWeight: FontWeight.w600,
-          color: Colors.black87,
+          fontWeight: FontWeight.w500,
+          color: _textColor,
         ),
       ),
       onTap: onTap,
@@ -333,168 +466,122 @@ class _ProfilePageState extends State<ProfilePage> {
       context: context,
       builder: (context) => Dialog(
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(25),
         ),
-        elevation: 16,
-        insetPadding: const EdgeInsets.all(20),
+        elevation: 0,
+        backgroundColor: Colors.transparent,
         child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 25),
+          padding: const EdgeInsets.all(25),
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [Colors.blue.shade50, Colors.white],
-            ),
-            borderRadius: BorderRadius.circular(24),
+            color: _cardColor,
+            borderRadius: BorderRadius.circular(25),
           ),
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'About Lifeline',
-                      style: GoogleFonts.poppins(
-                        fontSize: 24,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.blue.shade900,
-                      ),
-                    ),
-                    IconButton(
-                      icon: Icon(Icons.close, color: Colors.grey.shade600),
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 8,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Text(
-                    'Lifeline is a medical emergency response app designed to provide quick access to emergency services and personal health information.',
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'About Lifeline',
                     style: GoogleFonts.poppins(
-                      fontSize: 15,
-                      height: 1.5,
-                      color: Colors.grey.shade800,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: _primaryColor,
                     ),
                   ),
-                ),
-                const SizedBox(height: 24),
-                Text(
-                  'Developed By',
-                  style: GoogleFonts.poppins(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.blue.shade800,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                _buildTeamMemberCard(
-                  name: 'Jawad Mansoor',
-                  role: 'Lead Developer',
-                  context: context,
-                ),
-                const SizedBox(height: 24),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-                  decoration: BoxDecoration(
-                    color: Colors.blue.shade100.withOpacity(0.3),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    'Version 1.0.0',
-                    style: GoogleFonts.poppins(
-                      fontSize: 13,
-                      color: Colors.blue.shade800,
-                      fontStyle: FontStyle.italic,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 24),
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: ElevatedButton(
+                  IconButton(
+                    icon: const Icon(Icons.close),
                     onPressed: () => Navigator.pop(context),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue.shade800,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 24, vertical: 12),
-                      elevation: 2,
-                    ),
-                    child: Text(
-                      'Close',
-                      style: GoogleFonts.poppins(
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              Text(
+                'Lifeline is a medical emergency response app designed to provide quick access to emergency services and personal health information.',
+                style: GoogleFonts.poppins(
+                  fontSize: 14,
+                  color: _textColor,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 30),
+              _buildTeamInfo(
+                name: 'Jawad Mansoor',
+                role: 'Lead Developer',
+              ),
+              const SizedBox(height: 20),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                decoration: BoxDecoration(
+                  color: _primaryColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  'Version 1.0.0',
+                  style: GoogleFonts.poppins(
+                    color: _primaryColor,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
-              ],
-            ),
+              ),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _primaryColor,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(15),
+                  ),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 30, vertical: 12),
+                ),
+                onPressed: () => Navigator.pop(context),
+                child: Text(
+                  'Close',
+                  style: GoogleFonts.poppins(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ),
     );
   }
 
-  Widget _buildTeamMemberCard({
+  Widget _buildTeamInfo({
     required String name,
     required String role,
-    required BuildContext context,
   }) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 6,
-            offset: const Offset(0, 3),
+    return Column(
+      children: [
+        Text(
+          'Developed By',
+          style: GoogleFonts.poppins(
+            fontSize: 14,
+            color: Colors.grey,
           ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            name,
-            style: GoogleFonts.poppins(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: Colors.blue.shade900,
-            ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          name,
+          style: GoogleFonts.poppins(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: _textColor,
           ),
-          const SizedBox(height: 4),
-          Text(
-            role,
-            style: GoogleFonts.poppins(
-              fontSize: 14,
-              color: Colors.grey.shade600,
-            ),
+        ),
+        Text(
+          role,
+          style: GoogleFonts.poppins(
+            fontSize: 14,
+            color: Colors.grey,
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

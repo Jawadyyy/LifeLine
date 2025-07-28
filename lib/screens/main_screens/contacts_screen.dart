@@ -2,26 +2,24 @@ import 'package:flutter_contacts/flutter_contacts.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:lifeline/components/bottom_navbar.dart';
 
 class ContactsPage extends StatefulWidget {
   const ContactsPage({super.key});
 
   @override
+  // ignore: library_private_types_in_public_api
   _ContactsPageState createState() => _ContactsPageState();
 }
 
 class _ContactsPageState extends State<ContactsPage> {
-  int _selectedIndex = 1;
   List<Map<String, dynamic>> contacts = [];
   List<Map<String, dynamic>> filteredContacts = [];
   bool _isLoading = false;
+  bool _hasLoadedOnce = false;
   final TextEditingController _searchController = TextEditingController();
 
-  // Blue theme colors
-  final Color _primaryColor = const Color(0xFF1976D2);
-  final Color _primaryLightColor = const Color(0xFFE3F2FD);
-  final Color _accentColor = const Color(0xFF2196F3);
+  final Color _primaryColor = const Color(0xFFFF6F61);
+  final Color _primaryLightColor = const Color(0xFFFFE8E5);
   final Color _errorColor = const Color(0xFFD32F2F);
   final Color _successColor = const Color(0xFF388E3C);
 
@@ -49,7 +47,9 @@ class _ContactsPageState extends State<ContactsPage> {
         .collection('contacts');
   }
 
-  Future<void> _loadStoredContacts() async {
+  Future<void> _loadStoredContacts({bool forceReload = false}) async {
+    if (_hasLoadedOnce && !forceReload) return;
+
     if (currentUser != null) {
       setState(() => _isLoading = true);
       try {
@@ -61,6 +61,7 @@ class _ContactsPageState extends State<ContactsPage> {
             return data;
           }).toList();
           filteredContacts = contacts;
+          _hasLoadedOnce = true;
         });
       } catch (e) {
         _showErrorSnackbar('Failed to load contacts');
@@ -93,14 +94,15 @@ class _ContactsPageState extends State<ContactsPage> {
       );
 
       await showModalBottomSheet(
+        // ignore: use_build_context_synchronously
         context: context,
         isScrollControlled: true,
         backgroundColor: Colors.transparent,
         builder: (context) => Container(
           height: MediaQuery.of(context).size.height * 0.85,
-          decoration: BoxDecoration(
+          decoration: const BoxDecoration(
             color: Colors.white,
-            borderRadius: const BorderRadius.vertical(
+            borderRadius: BorderRadius.vertical(
               top: Radius.circular(24),
             ),
           ),
@@ -143,6 +145,7 @@ class _ContactsPageState extends State<ContactsPage> {
                         itemCount: phoneContacts.length,
                         separatorBuilder: (context, index) => Divider(
                           height: 1,
+                          // ignore: deprecated_member_use
                           color: Colors.grey.withOpacity(0.1),
                         ),
                         itemBuilder: (context, index) {
@@ -159,7 +162,7 @@ class _ContactsPageState extends State<ContactsPage> {
                           );
                         },
                       )
-                    : Center(
+                    : const Center(
                         child: Text(
                           "No contacts found",
                           style: TextStyle(
@@ -191,7 +194,7 @@ class _ContactsPageState extends State<ContactsPage> {
         };
 
         await contactsRef.add(newContact);
-        await _loadStoredContacts();
+        await _loadStoredContacts(forceReload: true);
         _showSuccessSnackbar('Contact added successfully');
       } catch (e) {
         _showErrorSnackbar('Failed to add contact');
@@ -206,7 +209,7 @@ class _ContactsPageState extends State<ContactsPage> {
       setState(() => _isLoading = true);
       try {
         await contactsRef.doc(contactId).delete();
-        await _loadStoredContacts();
+        await _loadStoredContacts(forceReload: true);
         _showSuccessSnackbar('Contact deleted');
       } catch (e) {
         _showErrorSnackbar('Failed to delete contact');
@@ -220,23 +223,68 @@ class _ContactsPageState extends State<ContactsPage> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text("Confirm Delete"),
-        content: Text("Remove $contactName from your emergency contacts?"),
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        title: Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: _errorColor),
+            const SizedBox(width: 8),
+            const Text(
+              "Remove Contact",
+              style: TextStyle(
+                color: Colors.black87,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+        content: RichText(
+          text: TextSpan(
+            style: const TextStyle(color: Colors.black87, fontSize: 16),
+            children: [
+              const TextSpan(text: "Are you sure you want to remove "),
+              TextSpan(
+                text: contactName,
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFFFF6F61), // main theme color
+                ),
+              ),
+              const TextSpan(text: " from your emergency contacts?"),
+            ],
+          ),
+        ),
+        actionsPadding: const EdgeInsets.only(right: 16, bottom: 12),
+        actionsAlignment: MainAxisAlignment.end,
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
             child: Text(
               "CANCEL",
               style: TextStyle(
-                color: _primaryColor,
+                color: Color(0xFFFF6F61),
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.5,
               ),
             ),
           ),
-          TextButton(
+          ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
-            child: Text(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _errorColor,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: const Text(
               "DELETE",
-              style: TextStyle(color: _errorColor),
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 0.5,
+              ),
             ),
           ),
         ],
@@ -275,7 +323,7 @@ class _ContactsPageState extends State<ContactsPage> {
       ),
       title: Text(
         name,
-        style: TextStyle(
+        style: const TextStyle(
           fontSize: 16,
           fontWeight: FontWeight.w600,
           color: Colors.black87,
@@ -283,7 +331,7 @@ class _ContactsPageState extends State<ContactsPage> {
       ),
       subtitle: Text(
         phone,
-        style: TextStyle(
+        style: const TextStyle(
           fontSize: 14,
           color: Colors.grey,
         ),
@@ -336,7 +384,7 @@ class _ContactsPageState extends State<ContactsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: Colors.white,
       appBar: AppBar(
         automaticallyImplyLeading: false,
         title: const Text(
@@ -357,27 +405,49 @@ class _ContactsPageState extends State<ContactsPage> {
             color: Colors.white,
           ),
         ],
+        centerTitle: true,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(
+            bottom: Radius.circular(20),
+          ),
+        ),
       ),
       body: Column(
         children: [
+          const SizedBox(height: 20),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-            child: TextField(
-              controller: _searchController,
-              onChanged: _filterContacts,
-              decoration: InputDecoration(
-                hintText: 'Search contacts...',
-                prefixIcon: Icon(Icons.search, color: _primaryColor),
-                filled: true,
-                fillColor: Colors.white,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    // ignore: deprecated_member_use
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
+              ),
+              child: TextField(
+                controller: _searchController,
+                onChanged: _filterContacts,
+                decoration: InputDecoration(
+                  hintText: 'Search contacts...',
+                  prefixIcon: Icon(Icons.search, color: _primaryColor),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(vertical: 0),
+                  filled: true,
+                  fillColor: Colors.white,
                 ),
-                contentPadding: const EdgeInsets.symmetric(vertical: 0),
               ),
             ),
           ),
+          const SizedBox(height: 20),
           if (_isLoading)
             LinearProgressIndicator(
               minHeight: 2,
@@ -432,6 +502,7 @@ class _ContactsPageState extends State<ContactsPage> {
                         background: Container(
                           margin: const EdgeInsets.symmetric(vertical: 4),
                           decoration: BoxDecoration(
+                            // ignore: deprecated_member_use
                             color: _errorColor.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -453,72 +524,99 @@ class _ContactsPageState extends State<ContactsPage> {
           ),
         ],
       ),
-      bottomNavigationBar: CustomBottomNavigationBar(
-        currentIndex: _selectedIndex,
-        onTap: (index) {
-          setState(() {
-            _selectedIndex = index;
-          });
-        },
-      ),
     );
   }
 
   Widget _buildContactCard(Map<String, dynamic> contact) {
-    return Card(
-      margin: EdgeInsets.zero,
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(
-          color: Colors.grey.withOpacity(0.1),
-          width: 1,
-        ),
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color.fromARGB(255, 247, 244, 244),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            // ignore: deprecated_member_use
+            color: Colors.grey.withOpacity(0.1),
+            blurRadius: 10,
+            spreadRadius: 2,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        leading: Container(
-          width: 48,
-          height: 48,
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                _primaryLightColor,
-                _primaryColor.withOpacity(0.3),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: () {},
+          onLongPress: () => _showDeleteDialog(contact['id'], contact['name']),
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Row(
+              children: [
+                Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        // ignore: deprecated_member_use
+                        _primaryColor.withOpacity(0.2),
+                        // ignore: deprecated_member_use
+                        _primaryColor.withOpacity(0.4),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Center(
+                    child: Text(
+                      contact['name'][0].toUpperCase(),
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: _primaryColor,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        contact['name'],
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black87,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        contact['phone'],
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  icon: Icon(
+                    Icons.phone_outlined,
+                    color: _primaryColor,
+                    size: 24,
+                  ),
+                  onPressed: () {},
+                ),
               ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            shape: BoxShape.circle,
-          ),
-          child: Center(
-            child: Text(
-              contact['name'][0].toUpperCase(),
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: _primaryColor,
-              ),
             ),
           ),
         ),
-        title: Text(
-          contact['name'],
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: Colors.black87,
-          ),
-        ),
-        subtitle: Text(
-          contact['phone'],
-          style: TextStyle(
-            fontSize: 14,
-            color: Colors.grey[600],
-          ),
-        ),
-        onTap: () {},
-        onLongPress: () => _showDeleteDialog(contact['id'], contact['name']),
       ),
     );
   }

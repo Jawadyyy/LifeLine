@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class ProfileSettingScreen extends StatefulWidget {
   const ProfileSettingScreen({super.key});
@@ -21,6 +22,10 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen> {
 
   final _auth = FirebaseAuth.instance;
   final _firestore = FirebaseFirestore.instance;
+  final Color _primaryColor = const Color(0xFFFF6F61);
+  final Color _backgroundColor = const Color(0xFFF9F9F9);
+  final Color _cardColor = Colors.white;
+  final Color _textColor = const Color(0xFF333333);
 
   @override
   void initState() {
@@ -66,17 +71,30 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen> {
           'blood_group': _selectedBloodGroup,
         });
 
-        // Reload user data after successful update
         await _loadUserData();
 
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Profile updated successfully!')),
+          SnackBar(
+            content: const Text('Profile updated successfully!'),
+            backgroundColor: _primaryColor,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
         );
       }
     } catch (e) {
       print('Error updating user data: $e');
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to update profile.')),
+        SnackBar(
+          content: const Text('Failed to update profile.'),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
       );
     }
   }
@@ -84,288 +102,227 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: _backgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
         elevation: 0,
+        backgroundColor: _primaryColor,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
-          onPressed: () {
-            Navigator.pop(context);
-          },
+          icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
+          onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
           'Profile Settings',
           style: TextStyle(
-            color: Colors.black,
-            fontWeight: FontWeight.bold,
             fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
           ),
         ),
         centerTitle: true,
-      ),
-      backgroundColor: Colors.white,
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              // Username
-              TextField(
-                controller: _usernameController,
-                decoration: const InputDecoration(
-                  labelText: 'Username',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.all(Radius.circular(12.0)),
-                  ),
-                  contentPadding: EdgeInsets.symmetric(horizontal: 20),
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // Phone Number TextField with country code
-              TextField(
-                controller: _phoneController,
-                decoration: const InputDecoration(
-                  labelText: 'Phone Number (with country code)',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.all(Radius.circular(12.0)),
-                  ),
-                  contentPadding: EdgeInsets.symmetric(horizontal: 20),
-                ),
-                keyboardType: TextInputType.phone,
-              ),
-              const SizedBox(height: 16),
-
-              DropdownButtonFormField<String>(
-                value: _selectedDisease,
-                decoration: InputDecoration(
-                  labelText: 'Diseases (if any)',
-                  labelStyle: const TextStyle(
-                      fontSize: 16, fontWeight: FontWeight.w600),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12.0),
-                  ),
-                  focusedBorder: const OutlineInputBorder(
-                    borderSide: BorderSide(color: Colors.blue, width: 2.0),
-                  ),
-                  enabledBorder: const OutlineInputBorder(
-                    borderSide: BorderSide(color: Colors.grey, width: 1.0),
-                  ),
-                  contentPadding:
-                      const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
-                  filled: true,
-                  fillColor: Colors.grey[200],
-                ),
-                dropdownColor: Colors.white,
-                icon: const Icon(Icons.arrow_drop_down, color: Colors.blue),
-                style: const TextStyle(color: Colors.black, fontSize: 16),
-                items: const [
-                  DropdownMenuItem(
-                    value: 'None',
-                    child: Text('None',
-                        style: TextStyle(fontWeight: FontWeight.w500)),
-                  ),
-                  DropdownMenuItem(
-                    value: 'Diabetes',
-                    child: Text('Diabetes',
-                        style: TextStyle(fontWeight: FontWeight.w500)),
-                  ),
-                  DropdownMenuItem(
-                    value: 'Hypertension',
-                    child: Text('Hypertension',
-                        style: TextStyle(fontWeight: FontWeight.w500)),
-                  ),
-                  DropdownMenuItem(
-                    value: 'Asthma',
-                    child: Text('Asthma',
-                        style: TextStyle(fontWeight: FontWeight.w500)),
-                  ),
-                  DropdownMenuItem(
-                    value: 'Other',
-                    child: Text('Other',
-                        style: TextStyle(fontWeight: FontWeight.w500)),
-                  ),
-                ],
-                onChanged: (value) {
-                  setState(() {
-                    _selectedDisease = value;
-                  });
-                },
-              ),
-
-              const SizedBox(height: 16),
-
-              // Blood Group Dropdown
-              DropdownButtonFormField<String>(
-                value: _selectedBloodGroup,
-                decoration: InputDecoration(
-                  labelText: 'Blood Group',
-                  labelStyle: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.red),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12.0),
-                  ),
-                  focusedBorder: const OutlineInputBorder(
-                    borderSide: BorderSide(color: Colors.red, width: 2.0),
-                  ),
-                  enabledBorder: const OutlineInputBorder(
-                    borderSide: BorderSide(color: Colors.grey, width: 1.0),
-                  ),
-                  contentPadding:
-                      const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
-                  filled: true,
-                  fillColor: Colors.grey[200],
-                ),
-                dropdownColor: Colors.white,
-                icon: const Icon(Icons.arrow_drop_down, color: Colors.red),
-                style: const TextStyle(color: Colors.black, fontSize: 16),
-                items: const [
-                  DropdownMenuItem(
-                    value: 'None',
-                    child: Text('None',
-                        style: TextStyle(fontWeight: FontWeight.w500)),
-                  ),
-                  DropdownMenuItem(
-                    value: 'A+',
-                    child: Text('A+',
-                        style: TextStyle(fontWeight: FontWeight.w500)),
-                  ),
-                  DropdownMenuItem(
-                    value: 'A-',
-                    child: Text('A-',
-                        style: TextStyle(fontWeight: FontWeight.w500)),
-                  ),
-                  DropdownMenuItem(
-                    value: 'B+',
-                    child: Text('B+',
-                        style: TextStyle(fontWeight: FontWeight.w500)),
-                  ),
-                  DropdownMenuItem(
-                    value: 'B-',
-                    child: Text('B-',
-                        style: TextStyle(fontWeight: FontWeight.w500)),
-                  ),
-                  DropdownMenuItem(
-                    value: 'AB+',
-                    child: Text('AB+',
-                        style: TextStyle(fontWeight: FontWeight.w500)),
-                  ),
-                  DropdownMenuItem(
-                    value: 'AB-',
-                    child: Text('AB-',
-                        style: TextStyle(fontWeight: FontWeight.w500)),
-                  ),
-                  DropdownMenuItem(
-                    value: 'O+',
-                    child: Text('O+',
-                        style: TextStyle(fontWeight: FontWeight.w500)),
-                  ),
-                  DropdownMenuItem(
-                    value: 'O-',
-                    child: Text('O-',
-                        style: TextStyle(fontWeight: FontWeight.w500)),
-                  ),
-                ],
-                onChanged: (value) {
-                  setState(() {
-                    _selectedBloodGroup = value!;
-                  });
-                },
-              ),
-
-              const SizedBox(height: 16),
-
-              // Height (in cm)
-              TextField(
-                controller: _heightController,
-                decoration: const InputDecoration(
-                  labelText: 'Height (in cm)',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.all(Radius.circular(12.0)),
-                  ),
-                  contentPadding: EdgeInsets.symmetric(horizontal: 20),
-                ),
-                keyboardType: TextInputType.number,
-              ),
-              const SizedBox(height: 16),
-
-              // Weight (in pounds)
-              TextField(
-                controller: _weightController,
-                decoration: const InputDecoration(
-                  labelText: 'Weight (in pounds)',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.all(Radius.circular(12.0)),
-                  ),
-                  contentPadding: EdgeInsets.symmetric(horizontal: 20),
-                ),
-                keyboardType: TextInputType.number,
-              ),
-              const SizedBox(height: 16),
-
-              // Home Address
-              TextField(
-                controller: _addressController,
-                decoration: const InputDecoration(
-                  labelText: 'Home Address',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.all(Radius.circular(12.0)),
-                  ),
-                  contentPadding: EdgeInsets.symmetric(horizontal: 20),
-                ),
-              ),
-              const SizedBox(height: 32),
-
-              // Action Buttons
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () {
-                        Navigator.pop(context);
-                      },
-                      style: OutlinedButton.styleFrom(
-                        side: const BorderSide(color: Colors.blueAccent),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12.0),
-                        ),
-                        padding: const EdgeInsets.symmetric(vertical: 16.0),
-                      ),
-                      child: const Text(
-                        'Cancel',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.blueAccent,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: _updateUserData,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blueAccent,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12.0),
-                        ),
-                        padding: const EdgeInsets.symmetric(vertical: 16.0),
-                      ),
-                      child: const Text(
-                        'Update Setting',
-                        style: TextStyle(
-                            fontWeight: FontWeight.bold, color: Colors.white),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(
+            bottom: Radius.circular(20),
           ),
         ),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          children: [
+            // Username Field
+            _buildInputField(
+              controller: _usernameController,
+              label: 'Username',
+              icon: Icons.person_outline,
+            ),
+            const SizedBox(height: 16),
+
+            // Phone Field
+            _buildInputField(
+              controller: _phoneController,
+              label: 'Phone Number',
+              icon: Icons.phone,
+              keyboardType: TextInputType.phone,
+            ),
+            const SizedBox(height: 16),
+
+            // Disease Dropdown
+            _buildDropdown(
+              value: _selectedDisease,
+              items: const [
+                'None',
+                'Diabetes',
+                'Hypertension',
+                'Asthma',
+                'Other'
+              ],
+              label: 'Diseases (if any)',
+              icon: Icons.health_and_safety,
+              onChanged: (value) => setState(() => _selectedDisease = value),
+            ),
+            const SizedBox(height: 16),
+
+            // Blood Group Dropdown
+            _buildDropdown(
+              value: _selectedBloodGroup,
+              items: const [
+                'None',
+                'A+',
+                'A-',
+                'B+',
+                'B-',
+                'AB+',
+                'AB-',
+                'O+',
+                'O-'
+              ],
+              label: 'Blood Group',
+              icon: Icons.bloodtype,
+              onChanged: (value) => setState(() => _selectedBloodGroup = value),
+            ),
+            const SizedBox(height: 16),
+
+            // Height Field
+            _buildInputField(
+              controller: _heightController,
+              label: 'Height (cm)',
+              icon: Icons.height,
+              keyboardType: TextInputType.number,
+            ),
+            const SizedBox(height: 16),
+
+            // Weight Field
+            _buildInputField(
+              controller: _weightController,
+              label: 'Weight (lbs)',
+              icon: Icons.monitor_weight,
+              keyboardType: TextInputType.number,
+            ),
+            const SizedBox(height: 16),
+
+            // Address Field
+            _buildInputField(
+              controller: _addressController,
+              label: 'Home Address',
+              icon: Icons.home,
+            ),
+            const SizedBox(height: 32),
+
+            // Action Buttons
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.pop(context),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      side: BorderSide(color: _primaryColor, width: 2),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: Text(
+                      'CANCEL',
+                      style: GoogleFonts.poppins(
+                        fontWeight: FontWeight.bold,
+                        color: _primaryColor,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: _updateUserData,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _primaryColor,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 2,
+                    ),
+                    child: Text(
+                      'UPDATE PROFILE',
+                      style: GoogleFonts.poppins(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInputField({
+    required TextEditingController controller,
+    required String label,
+    required IconData icon,
+    TextInputType keyboardType = TextInputType.text,
+  }) {
+    return TextField(
+      controller: controller,
+      keyboardType: keyboardType,
+      style: GoogleFonts.poppins(color: _textColor),
+      decoration: InputDecoration(
+        labelText: label,
+        labelStyle: GoogleFonts.poppins(color: Colors.grey.shade600),
+        prefixIcon: Icon(icon, color: _primaryColor),
+        filled: true,
+        fillColor: _cardColor,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
+        ),
+        contentPadding: const EdgeInsets.symmetric(vertical: 16),
+      ),
+    );
+  }
+
+  Widget _buildDropdown({
+    required String? value,
+    required List<String> items,
+    required String label,
+    required IconData icon,
+    required Function(String?) onChanged,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      decoration: BoxDecoration(
+        color: _cardColor,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            blurRadius: 6,
+            spreadRadius: 2,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: DropdownButtonFormField<String>(
+        value: value,
+        decoration: InputDecoration(
+          labelText: label,
+          labelStyle: GoogleFonts.poppins(color: Colors.grey.shade600),
+          border: InputBorder.none,
+          prefixIcon: Icon(icon, color: _primaryColor),
+        ),
+        dropdownColor: _cardColor,
+        icon: Icon(Icons.arrow_drop_down, color: _primaryColor),
+        style: GoogleFonts.poppins(color: _textColor),
+        items: items.map((String value) {
+          return DropdownMenuItem<String>(
+            value: value,
+            child: Text(value),
+          );
+        }).toList(),
+        onChanged: onChanged,
       ),
     );
   }

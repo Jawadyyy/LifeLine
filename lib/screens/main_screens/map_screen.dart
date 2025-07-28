@@ -161,7 +161,7 @@ class _MapScreenState extends State<MapScreen> {
     final Color mainColor = Color(0xFFFF6F61);
 
     return Scaffold(
-      backgroundColor: colorScheme.background,
+      backgroundColor: Colors.white,
       extendBodyBehindAppBar: true,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
@@ -748,14 +748,6 @@ class _MapScreenState extends State<MapScreen> {
                 child: const Icon(Icons.my_location),
               ),
             ),
-      bottomNavigationBar: CustomBottomNavigationBar(
-        currentIndex: _selectedIndex,
-        onTap: (index) {
-          setState(() {
-            _selectedIndex = index;
-          });
-        },
-      ),
     );
   }
 }
