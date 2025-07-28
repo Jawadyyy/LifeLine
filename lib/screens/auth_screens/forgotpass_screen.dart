@@ -94,13 +94,6 @@ class _ForgotpassScreenState extends State<ForgotpassScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Center(
-                      child: Image.asset(
-                        'assets/images/placeholders/forgotpass.png',
-                        width: MediaQuery.of(context).size.width * 0.8,
-                        fit: BoxFit.cover,
-                      ),
-                    ),
                     const SizedBox(height: 20),
                     Padding(
                       padding: const EdgeInsets.only(left: 10.0),

@@ -2,9 +2,10 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lifeline/screens/auth_screens/forgotpass_screen.dart';
-import 'package:lifeline/screens/main_screens/home_screen.dart';
+import 'package:lifeline/screens/auth_screens/signup_screen.dart';
 import 'package:lifeline/services/auth_service.dart';
-import 'signup_screen.dart';
+import 'package:lifeline/screens/main_screens/home_screen.dart';
+import 'package:lifeline/components/clip_wave.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -18,9 +19,24 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _passwordController = TextEditingController();
   bool _isPasswordVisible = false;
 
-  final RegExp _emailRegex = RegExp(
-    r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
+  // Custom icons (make sure to add these assets to your project)
+  final emailIcon =
+      Image.asset('assets/images/icons/email.png', width: 24, height: 24);
+  final passwordIcon =
+      Image.asset('assets/images/icons/password.png', width: 24, height: 24);
+  final eyeIcon =
+      Image.asset('assets/images/icons/show.png', width: 24, height: 24);
+  final eyeSlashIcon =
+      Image.asset('assets/images/icons/hide.png', width: 24, height: 24);
+
+// Custom border with subtle animation
+  final border = OutlineInputBorder(
+    borderRadius: BorderRadius.circular(12),
+    borderSide: BorderSide(color: Colors.grey.shade300, width: 1.5),
   );
+
+  final RegExp _emailRegex =
+      RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}\$');
 
   void _validateAndLogin() async {
     final email = _emailController.text.trim();
@@ -31,7 +47,6 @@ class _LoginScreenState extends State<LoginScreen> {
         const SnackBar(
           content: Text("Wrong email format"),
           backgroundColor: Colors.red,
-          duration: Duration(seconds: 2),
         ),
       );
       return;
@@ -42,303 +57,313 @@ class _LoginScreenState extends State<LoginScreen> {
         const SnackBar(
           content: Text("Password cannot be empty"),
           backgroundColor: Colors.red,
-          duration: Duration(seconds: 2),
         ),
       );
       return;
     }
 
     try {
-      bool isSuccess = await AuthService().login(
-        email: email,
-        password: password,
-      );
+      bool isSuccess =
+          await AuthService().login(email: email, password: password);
 
       if (isSuccess) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text("Login successful"),
             backgroundColor: Colors.green,
-            duration: Duration(seconds: 2),
           ),
         );
-
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => const HomeScreen()),
         );
       }
-    } on FirebaseAuthException catch (e) {
-      String message = '';
-      if (e.code == 'user-not-found') {
-        message = 'No User exists with that Email';
-      } else if (e.code == 'wrong-password') {
-        message = 'Wrong Password provided for that User';
-      } else {
-        message = 'Error: ${e.message}';
-      }
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(message),
-          backgroundColor: Colors.red,
-          duration: const Duration(seconds: 2),
-        ),
-      );
     } catch (e) {
+      String message = "Error: ${e.toString()}";
+      if (e is FirebaseAuthException) {
+        if (e.code == 'user-not-found') {
+          message = 'No user exists with that email';
+        } else if (e.code == 'wrong-password') {
+          message = 'Wrong password provided';
+        }
+      }
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text("Error: ${e.toString()}"),
-          backgroundColor: Colors.red,
-          duration: const Duration(seconds: 2),
-        ),
+        SnackBar(content: Text(message), backgroundColor: Colors.red),
       );
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+
     return Scaffold(
       backgroundColor: Colors.white,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+      body: Column(
+        children: [
+          SizedBox(
+            height: size.height * 0.40,
+            child: Stack(
               children: [
-                const SizedBox(height: 40),
-                Center(
-                  child: Image.asset(
-                    'assets/images/placeholders/login.png',
-                    width: MediaQuery.of(context).size.width * 0.8,
-                    fit: BoxFit.cover,
+                ClipPath(
+                  clipper: TopWaveClipper(),
+                  child: Container(
+                    width: double.infinity,
+                    decoration: const BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          Color(0xFFFF6F61),
+                          Color(0xFFFF6F61),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
-                const SizedBox(height: 20),
-                Padding(
-                  padding: const EdgeInsets.only(left: 10.0),
-                  child: Text(
+              ],
+            ),
+          ),
+
+          // Bottom content (form)
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
                     "Log In",
                     style: GoogleFonts.nunito(
                       fontWeight: FontWeight.bold,
-                      fontSize: 36,
+                      fontSize: 32,
                     ),
                   ),
-                ),
-                const SizedBox(height: 15),
-                TextField(
-                  controller: _emailController,
-                  style: GoogleFonts.nunito(),
-                  decoration: InputDecoration(
-                    prefixIcon: Padding(
-                      padding: const EdgeInsets.all(10.0),
-                      child: Image.asset(
-                        'assets/images/icons/email.png',
-                        width: 24,
-                        height: 24,
-                      ),
-                    ),
-                    hintText: 'E-mail',
-                    hintStyle: GoogleFonts.nunito(),
-                    border: const UnderlineInputBorder(),
-                    focusedBorder: const UnderlineInputBorder(
-                      borderSide:
-                          BorderSide(color: Color(0xFF1565C0), width: 2),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 30),
-                TextField(
-                  controller: _passwordController,
-                  obscureText: !_isPasswordVisible,
-                  style: GoogleFonts.nunito(),
-                  decoration: InputDecoration(
-                    prefixIcon: Padding(
-                      padding: const EdgeInsets.all(10.0),
-                      child: Image.asset(
-                        'assets/images/icons/password.png',
-                        width: 24,
-                        height: 24,
-                      ),
-                    ),
-                    suffixIcon: GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          _isPasswordVisible = !_isPasswordVisible;
-                        });
-                      },
-                      child: Padding(
-                        padding: const EdgeInsets.all(10.0),
-                        child: Image.asset(
-                          _isPasswordVisible
-                              ? 'assets/images/icons/show.png'
-                              : 'assets/images/icons/hide.png',
-                          width: 24,
-                          height: 24,
-                        ),
-                      ),
-                    ),
-                    hintText: 'Password',
-                    hintStyle: GoogleFonts.nunito(),
-                    border: const UnderlineInputBorder(),
-                    focusedBorder: const UnderlineInputBorder(
-                      borderSide:
-                          BorderSide(color: Color(0xFF1565C0), width: 2),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: TextButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (context) => const ForgotpassScreen()),
+                  const SizedBox(height: 16),
+                  TweenAnimationBuilder(
+                    duration: const Duration(milliseconds: 300),
+                    tween: Tween<double>(begin: 0.98, end: 1.0),
+                    builder: (context, scale, child) {
+                      return Transform.scale(
+                        scale: scale,
+                        child: child,
                       );
                     },
-                    child: Text(
-                      "Forgot Password?",
+                    child: TextField(
+                      controller: _emailController,
                       style: GoogleFonts.nunito(
-                        color: Colors.blue,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 20),
-                SizedBox(
-                  width: double.infinity,
-                  height: 50,
-                  child: ElevatedButton(
-                    onPressed: _validateAndLogin,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF1565C0),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(30),
-                      ),
-                    ),
-                    child: Text(
-                      "Login",
-                      style: GoogleFonts.nunito(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
                         fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.grey[800],
+                      ),
+                      decoration: InputDecoration(
+                        filled: true,
+                        fillColor: Colors.grey.shade50,
+                        prefixIcon: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: SizedBox(width: 24, child: emailIcon),
+                        ),
+                        hintText: 'Email Address',
+                        hintStyle: GoogleFonts.nunito(
+                          color: Colors.grey[500],
+                          fontWeight: FontWeight.w500,
+                        ),
+                        contentPadding:
+                            const EdgeInsets.symmetric(vertical: 18),
+                        enabledBorder: border,
+                        focusedBorder: border.copyWith(
+                          borderSide: const BorderSide(
+                            color: Color(0xFFFF6F61),
+                            width: 2,
+                          ),
+                        ),
+                        border: border,
                       ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 20),
-                const Row(
-                  children: [
-                    Expanded(
-                      child: Divider(thickness: 1),
-                    ),
-                    Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 10),
-                      child: Text("OR"),
-                    ),
-                    Expanded(
-                      child: Divider(thickness: 1),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 20),
-                SizedBox(
-                  width: double.infinity,
-                  height: 50,
-                  child: ElevatedButton(
-                    onPressed: () async {
-                      try {
-                        final userCredential =
-                            await AuthService().signInWithGoogle();
 
-                        if (userCredential != null) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text("Google Sign-In Successful"),
-                              backgroundColor: Colors.green,
-                              duration: Duration(seconds: 2),
-                            ),
-                          );
+                  const SizedBox(height: 20),
 
-                          Navigator.pushReplacement(
-                            context,
-                            MaterialPageRoute(
-                                builder: (context) => const HomeScreen()),
-                          );
-                        }
-                      } catch (e) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content:
-                                Text("Google Sign-In Failed: ${e.toString()}"),
-                            backgroundColor: Colors.red,
-                            duration: const Duration(seconds: 2),
-                          ),
-                        );
-                      }
+// Password TextField
+                  TweenAnimationBuilder(
+                    duration: const Duration(milliseconds: 300),
+                    tween: Tween<double>(begin: 0.98, end: 1.0),
+                    builder: (context, scale, child) {
+                      return Transform.scale(
+                        scale: scale,
+                        child: child,
+                      );
                     },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFE0E0E0),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(30),
+                    child: TextField(
+                      controller: _passwordController,
+                      obscureText: !_isPasswordVisible,
+                      style: GoogleFonts.nunito(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.grey[800],
                       ),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Image.asset(
-                          'assets/images/icons/google.png',
-                          width: 24,
-                          height: 24,
+                      decoration: InputDecoration(
+                        filled: true,
+                        fillColor: Colors.grey.shade50,
+                        prefixIcon: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: SizedBox(width: 24, child: passwordIcon),
                         ),
-                        const SizedBox(width: 10),
-                        Text(
-                          "Login With Google",
-                          style: GoogleFonts.nunito(
-                            color: Colors.black,
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
+                        suffixIcon: Padding(
+                          padding: const EdgeInsets.only(right: 12),
+                          child: IconButton(
+                            icon: SizedBox(
+                              width: 24,
+                              child:
+                                  _isPasswordVisible ? eyeSlashIcon : eyeIcon,
+                            ),
+                            onPressed: () {
+                              setState(() {
+                                _isPasswordVisible = !_isPasswordVisible;
+                              });
+                            },
                           ),
                         ),
-                      ],
+                        hintText: 'Password',
+                        hintStyle: GoogleFonts.nunito(
+                          color: Colors.grey[500],
+                          fontWeight: FontWeight.w500,
+                        ),
+                        contentPadding:
+                            const EdgeInsets.symmetric(vertical: 18),
+                        enabledBorder: border,
+                        focusedBorder: border.copyWith(
+                          borderSide: const BorderSide(
+                            color: Color(0xFFFF6F61),
+                            width: 2,
+                          ),
+                        ),
+                        border: border,
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 22),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      "Don't have an account? ",
-                      style: GoogleFonts.nunito(),
-                    ),
-                    GestureDetector(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) => const SignUpScreen()),
-                        );
-                      },
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton(
+                      onPressed: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (_) => const ForgotpassScreen()),
+                      ),
                       child: Text(
-                        "Sign Up",
+                        "Forgot Password?",
                         style: GoogleFonts.nunito(
-                          color: Colors.blue,
+                          color: Color(0xFFFF6F61),
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                     ),
-                  ],
-                ),
-                const SizedBox(height: 40),
-              ],
+                  ),
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: ElevatedButton(
+                      onPressed: _validateAndLogin,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFFF6F61),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(30),
+                        ),
+                      ),
+                      child: Text(
+                        "Login",
+                        style: GoogleFonts.nunito(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  const Row(
+                    children: [
+                      Expanded(child: Divider()),
+                      Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 8),
+                        child: Text("OR"),
+                      ),
+                      Expanded(child: Divider()),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: ElevatedButton.icon(
+                      onPressed: () async {
+                        try {
+                          final user = await AuthService().signInWithGoogle();
+                          if (user != null) {
+                            Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const HomeScreen(),
+                              ),
+                            );
+                          }
+                        } catch (e) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                  "Google Sign-In Failed: ${e.toString()}"),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                        }
+                      },
+                      icon: Image.asset('assets/images/icons/google.png',
+                          width: 24, height: 24),
+                      label: Text(
+                        "Login with Google",
+                        style: GoogleFonts.nunito(
+                          color: Colors.black87,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFE0E0E0),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(30),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        "Don't have an account? ",
+                        style: GoogleFonts.nunito(),
+                      ),
+                      GestureDetector(
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) => const SignUpScreen()),
+                        ),
+                        child: Text(
+                          "Sign Up",
+                          style: GoogleFonts.nunito(
+                            color: Color(0xFFFF6F61),
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      )
+                    ],
+                  )
+                ],
+              ),
             ),
-          ),
-        ),
+          )
+        ],
       ),
     );
   }

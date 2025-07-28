@@ -13,7 +13,8 @@ class ChangePasswordScreen extends StatefulWidget {
 
 class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
   final TextEditingController _newPasswordController = TextEditingController();
-  final TextEditingController _confirmPasswordController = TextEditingController();
+  final TextEditingController _confirmPasswordController =
+      TextEditingController();
   bool _isNewPasswordVisible = false;
   bool _isConfirmPasswordVisible = false;
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -87,14 +88,6 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                     color: Colors.black,
                   ),
                 ),
-                const SizedBox(height: 20),
-                Center(
-                  child: Image.asset(
-                    'assets/images/placeholders/changepass.png',
-                    width: MediaQuery.of(context).size.width * 0.7,
-                    fit: BoxFit.cover,
-                  ),
-                ),
                 const SizedBox(height: 30),
                 Text(
                   "Change Password",
@@ -127,7 +120,9 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                     ),
                     suffixIcon: IconButton(
                       icon: Image.asset(
-                        _isNewPasswordVisible ? 'assets/images/icons/show.png' : 'assets/images/icons/hide.png',
+                        _isNewPasswordVisible
+                            ? 'assets/images/icons/show.png'
+                            : 'assets/images/icons/hide.png',
                         width: 24,
                         height: 24,
                       ),
@@ -141,7 +136,8 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                     hintStyle: GoogleFonts.nunito(),
                     border: const UnderlineInputBorder(),
                     focusedBorder: const UnderlineInputBorder(
-                      borderSide: BorderSide(color: Color(0xFF1565C0), width: 2),
+                      borderSide:
+                          BorderSide(color: Color(0xFF1565C0), width: 2),
                     ),
                   ),
                 ),
@@ -161,13 +157,16 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                     ),
                     suffixIcon: IconButton(
                       icon: Image.asset(
-                        _isConfirmPasswordVisible ? 'assets/images/icons/show.png' : 'assets/images/icons/hide.png',
+                        _isConfirmPasswordVisible
+                            ? 'assets/images/icons/show.png'
+                            : 'assets/images/icons/hide.png',
                         width: 24,
                         height: 24,
                       ),
                       onPressed: () {
                         setState(() {
-                          _isConfirmPasswordVisible = !_isConfirmPasswordVisible;
+                          _isConfirmPasswordVisible =
+                              !_isConfirmPasswordVisible;
                         });
                       },
                     ),
@@ -175,7 +174,8 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                     hintStyle: GoogleFonts.nunito(),
                     border: const UnderlineInputBorder(),
                     focusedBorder: const UnderlineInputBorder(
-                      borderSide: BorderSide(color: Color(0xFF1565C0), width: 2),
+                      borderSide:
+                          BorderSide(color: Color(0xFF1565C0), width: 2),
                     ),
                   ),
                 ),

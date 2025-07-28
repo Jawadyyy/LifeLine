@@ -113,14 +113,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Center(
-                  child: Image.asset(
-                    'assets/images/placeholders/signup.png',
-                    width: MediaQuery.of(context).size.width * 0.8,
-                    fit: BoxFit.cover,
-                  ),
-                ),
-                const SizedBox(height: 20),
                 Text(
                   "Sign Up",
                   style: GoogleFonts.nunito(
@@ -145,7 +137,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     hintStyle: GoogleFonts.nunito(),
                     border: const UnderlineInputBorder(),
                     focusedBorder: const UnderlineInputBorder(
-                      borderSide: BorderSide(color: Color(0xFF1565C0), width: 2),
+                      borderSide:
+                          BorderSide(color: Color(0xFF1565C0), width: 2),
                     ),
                   ),
                 ),
@@ -172,7 +165,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       child: Padding(
                         padding: const EdgeInsets.all(10.0),
                         child: Image.asset(
-                          _isPasswordVisible ? 'assets/images/icons/show.png' : 'assets/images/icons/hide.png',
+                          _isPasswordVisible
+                              ? 'assets/images/icons/show.png'
+                              : 'assets/images/icons/hide.png',
                           width: 24,
                           height: 24,
                         ),
@@ -182,7 +177,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     hintStyle: GoogleFonts.nunito(),
                     border: const UnderlineInputBorder(),
                     focusedBorder: const UnderlineInputBorder(
-                      borderSide: BorderSide(color: Color(0xFF1565C0), width: 2),
+                      borderSide:
+                          BorderSide(color: Color(0xFF1565C0), width: 2),
                     ),
                   ),
                 ),
@@ -203,7 +199,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     hintStyle: GoogleFonts.nunito(),
                     border: const UnderlineInputBorder(),
                     focusedBorder: const UnderlineInputBorder(
-                      borderSide: BorderSide(color: Color(0xFF1565C0), width: 2),
+                      borderSide:
+                          BorderSide(color: Color(0xFF1565C0), width: 2),
                     ),
                   ),
                 ),
@@ -252,7 +249,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       onTap: () {
                         Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (context) => const LoginScreen()),
+                          MaterialPageRoute(
+                              builder: (context) => const LoginScreen()),
                         );
                       },
                       child: Text(

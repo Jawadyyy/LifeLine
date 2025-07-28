@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lifeline/screens/auth_screens/welcome_screen.dart';
 import 'login_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -9,7 +10,8 @@ class LoadingScreen extends StatefulWidget {
   State<LoadingScreen> createState() => _LoadingScreenState();
 }
 
-class _LoadingScreenState extends State<LoadingScreen> with SingleTickerProviderStateMixin {
+class _LoadingScreenState extends State<LoadingScreen>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _heartbeatAnimation;
 
@@ -33,7 +35,7 @@ class _LoadingScreenState extends State<LoadingScreen> with SingleTickerProvider
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (context) => const LoginScreen(),
+          builder: (context) => const WelcomeScreen(),
         ),
       );
     });
@@ -48,7 +50,7 @@ class _LoadingScreenState extends State<LoadingScreen> with SingleTickerProvider
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF780000),
+      backgroundColor: const Color(0xFFFF6F61),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
