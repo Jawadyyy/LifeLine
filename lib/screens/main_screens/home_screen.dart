@@ -5,6 +5,7 @@ import 'package:lifeline/services/location_handler.dart';
 import 'package:lifeline/services/firestore_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'dart:math';
+import 'donation_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -18,6 +19,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   bool _showEmergencyOptions = false;
   bool _isLocationFetched = false;
   bool _isLoadingLocation = false;
+
   late AnimationController _animationController;
   late Animation<double> _scaleAnimation;
   final Color _primaryColor = const Color(0xFFFF6F61);
@@ -248,13 +250,18 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 ),
               ),
               const SizedBox(height: 40),
-              Center(
-                child: ScaleTransition(
-                  scale: _scaleAnimation,
-                  child: buildMainEmergencyButton(
-                    onTap: _toggleEmergencyOptions,
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  ScaleTransition(
+                    scale: _scaleAnimation,
+                    child: buildMainEmergencyButton(
+                      onTap: _toggleEmergencyOptions,
+                    ),
                   ),
-                ),
+                  const SizedBox(height: 30),
+                  buildBloodDonationCard(context),
+                ],
               ),
             ],
           ),
@@ -313,7 +320,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     ];
 
     final size = MediaQuery.of(context).size;
-    const double radius = 160.0;
+    const double radius = 155.0;
+
+    final double centerX = size.width / 2;
+    final double centerY = size.height * 0.4;
 
     return List.generate(emergencyTypes.length, (index) {
       final angle = (index * 60) * (pi / 180);
@@ -322,8 +332,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
       return AnimatedPositioned(
         duration: const Duration(milliseconds: 300),
-        left: size.width / 2 + offsetX - 35,
-        top: size.height / 2 + offsetY - 35,
+        left: centerX + offsetX - 35,
+        top: centerY + offsetY - 35,
         child: GestureDetector(
           onTap: () => _sendEmergencyMessage(emergencyTypes[index]["type"]),
           child: Container(
@@ -424,6 +434,78 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget buildBloodDonationCard(BuildContext context) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.of(context).push(PageRouteBuilder(
+          pageBuilder: (_, __, ___) => const DonationScreen(),
+          transitionsBuilder: (_, animation, __, child) {
+            return FadeTransition(opacity: animation, child: child);
+          },
+        ));
+      },
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 30),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.red.withOpacity(0.1),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+          border: Border.all(
+            color: const Color(0xFFFF6F61).withOpacity(0.2),
+          ),
+        ),
+        child: Row(
+          children: [
+            Container(
+              height: 50,
+              width: 50,
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFF6F61).withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Image.asset(
+                'assets/images/icons/blood.png',
+              ),
+            ),
+            const SizedBox(width: 16),
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "Donate Blood, Save Lives",
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                  ),
+                  SizedBox(height: 4),
+                  Text(
+                    "Tap to view donation opportunities near you",
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Icons.arrow_forward_ios_rounded,
+                size: 16, color: Colors.grey),
+          ],
         ),
       ),
     );

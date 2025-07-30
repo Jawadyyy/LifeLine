@@ -397,20 +397,17 @@ class _ContactsPageState extends State<ContactsPage> {
         ),
         backgroundColor: _primaryColor,
         elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.add),
-            onPressed: _showContactsDialog,
-            tooltip: 'Add contact',
-            color: Colors.white,
-          ),
-        ],
         centerTitle: true,
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(
             bottom: Radius.circular(20),
           ),
         ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _showContactsDialog,
+        backgroundColor: _primaryColor,
+        child: const Icon(Icons.add, color: Colors.white),
       ),
       body: Column(
         children: [
