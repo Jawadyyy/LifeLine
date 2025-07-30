@@ -3,8 +3,6 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_polyline_points/flutter_polyline_points.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:lifeline/components/bottom_navbar.dart';
-import 'package:lifeline/main.dart';
 import 'package:lifeline/services/location_handler.dart';
 import 'package:lifeline/services/hospital_service.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -20,7 +18,6 @@ class _MapScreenState extends State<MapScreen> {
   late final MapController _mapController;
   LatLng? _currentPosition;
   String? _currentAddress;
-  int _selectedIndex = 2;
   bool _isLoading = true;
   bool _isMapReady = false;
   bool _showRoute = false;
