@@ -16,8 +16,12 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen> {
   final TextEditingController _weightController = TextEditingController();
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
+  final TextEditingController _ageController = TextEditingController();
+  final TextEditingController _emergencyTextController =
+      TextEditingController();
   String? _selectedDisease;
   String? _selectedBloodGroup;
+  String? _selectedAllergy;
   String? _phone;
 
   final _auth = FirebaseAuth.instance;
@@ -31,6 +35,21 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen> {
   void initState() {
     super.initState();
     _loadUserData();
+  }
+
+  double? _calculateBMI() {
+    try {
+      final double heightCm = double.parse(_heightController.text.trim());
+      final double weightLbs = double.parse(_weightController.text.trim());
+      final double heightM = heightCm / 100;
+      final double weightKg = weightLbs * 0.453592;
+
+      if (heightM <= 0 || weightKg <= 0) return null;
+
+      return weightKg / (heightM * heightM);
+    } catch (e) {
+      return null;
+    }
   }
 
   Future<void> _loadUserData() async {
@@ -49,6 +68,9 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen> {
             _phoneController.text = _phone ?? '';
             _selectedDisease = data['disease'] ?? 'None';
             _selectedBloodGroup = data['blood_group'] ?? 'None';
+            _selectedAllergy = data['allergy'] ?? 'None';
+            _emergencyTextController.text = data['emergency_text'] ?? '';
+            _ageController.text = data['age'] ?? '';
           });
         }
       }
@@ -60,8 +82,9 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen> {
   Future<void> _updateUserData() async {
     try {
       final userId = _auth.currentUser?.uid;
+      final bmi = _calculateBMI();
       if (userId != null) {
-        await _firestore.collection('users').doc(userId).update({
+        Map<String, dynamic> userData = {
           'home_address': _addressController.text.trim(),
           'height': _heightController.text.trim(),
           'weight': _weightController.text.trim(),
@@ -69,7 +92,16 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen> {
           'phone': _phoneController.text.trim(),
           'disease': _selectedDisease,
           'blood_group': _selectedBloodGroup,
-        });
+          'allergy': _selectedAllergy,
+          'emergency_text': _emergencyTextController.text.trim(),
+          'age': _ageController.text.trim(),
+        };
+
+        if (bmi != null) {
+          userData['bmi'] = bmi.toStringAsFixed(2);
+        }
+
+        await _firestore.collection('users').doc(userId).update(userData);
 
         await _loadUserData();
 
@@ -146,6 +178,15 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen> {
             ),
             const SizedBox(height: 16),
 
+            //Age Field
+            _buildInputField(
+              controller: _ageController,
+              label: 'Age',
+              icon: Icons.cake,
+              keyboardType: TextInputType.number,
+            ),
+            const SizedBox(height: 16),
+
             // Disease Dropdown
             _buildDropdown(
               value: _selectedDisease,
@@ -154,11 +195,48 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen> {
                 'Diabetes',
                 'Hypertension',
                 'Asthma',
-                'Other'
+                'Heart Disease',
+                'Thyroid Disorder',
+                'Kidney Disease',
+                'Cancer',
+                'Liver Disease',
+                'Anemia',
+                'Epilepsy',
+                'HIV/AIDS',
+                'Tuberculosis',
+                'Arthritis',
+                'Mental Health Conditions',
+                'Other',
               ],
               label: 'Diseases (if any)',
               icon: Icons.health_and_safety,
               onChanged: (value) => setState(() => _selectedDisease = value),
+            ),
+            const SizedBox(height: 16),
+
+            // Allergy Dropdown
+            _buildDropdown(
+              value: _selectedAllergy,
+              items: const [
+                'None',
+                'Pollen',
+                'Dust Mites',
+                'Mold',
+                'Pet Dander',
+                'Food - Peanuts',
+                'Food - Shellfish',
+                'Food - Eggs',
+                'Food - Milk',
+                'Food - Wheat',
+                'Food - Soy',
+                'Insect Stings',
+                'Latex',
+                'Medications',
+                'Other',
+              ],
+              label: 'Allergies (if any)',
+              icon: Icons.warning_amber_rounded,
+              onChanged: (value) => setState(() => _selectedAllergy = value),
             ),
             const SizedBox(height: 16),
 
@@ -197,6 +275,14 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen> {
               label: 'Weight (lbs)',
               icon: Icons.monitor_weight,
               keyboardType: TextInputType.number,
+            ),
+            const SizedBox(height: 16),
+
+            // Emergency Message Field
+            _buildInputField(
+              controller: _emergencyTextController,
+              label: 'Custom Emergency Message',
+              icon: Icons.sms,
             ),
             const SizedBox(height: 16),
 

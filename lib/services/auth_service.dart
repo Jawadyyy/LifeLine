@@ -118,9 +118,9 @@ class AuthService {
 
   Future<User?> signInWithGoogle() async {
     try {
-      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
-
+      final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
       if (googleUser == null) {
+        print("Google Sign-In canceled by user.");
         return null;
       }
 
@@ -133,15 +133,21 @@ class AuthService {
       );
 
       final UserCredential userCredential =
-          await _auth.signInWithCredential(credential);
+          await FirebaseAuth.instance.signInWithCredential(credential);
 
       User? user = userCredential.user;
 
       if (user != null) {
-        var userDoc = await _firestore.collection('users').doc(user.uid).get();
+        final doc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .get();
 
-        if (!userDoc.exists) {
-          await _firestore.collection('users').doc(user.uid).set({
+        if (!doc.exists) {
+          await FirebaseFirestore.instance
+              .collection('users')
+              .doc(user.uid)
+              .set({
             'username': user.displayName ?? 'No name',
             'email': user.email,
             'phone': '',
@@ -151,10 +157,11 @@ class AuthService {
       }
 
       return user;
-    } catch (e) {
-      print('Error during Google Sign-In: $e');
+    } catch (e, stack) {
+      print('Google Sign-In Error: $e');
+      print(stack);
       Fluttertoast.showToast(
-        msg: 'Google sign-in failed. Please try again.',
+        msg: 'Google sign-in failed: ${e.toString()}',
         toastLength: Toast.LENGTH_LONG,
         gravity: ToastGravity.SNACKBAR,
         backgroundColor: Colors.black,

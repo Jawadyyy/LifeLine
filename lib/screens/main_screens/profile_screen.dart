@@ -43,14 +43,23 @@ class _ProfilePageState extends State<ProfilePage> {
           await _firestore.collection('users').doc(userId).get();
 
       if (userDoc.exists) {
+        final data = userDoc.data() as Map<String, dynamic>;
+
         setState(() {
-          currentUser.name = userDoc['username'] ?? 'Unknown';
-          currentUser.bloodType = userDoc['blood_group'] ?? 'N/A';
-          currentUser.height = userDoc['height'] ?? 'N/A';
-          currentUser.weight = userDoc['weight'] ?? 'N/A';
-          currentUser.profileImage = userDoc['profileImageUrl'] ?? '';
-          currentUser.email = userDoc['email'] ?? '';
-          currentUser.phone = userDoc['phone'] ?? '';
+          currentUser.name = data['username'] ?? 'Unknown';
+          currentUser.bloodType = data['blood_group'] ?? 'N/A';
+          currentUser.height = data['height'] ?? 'N/A';
+          currentUser.weight = data['weight'] ?? 'N/A';
+          currentUser.profileImage = data['profileImageUrl'] ?? '';
+          currentUser.email = data['email'] ?? '';
+          currentUser.phone = data['phone'] ?? '';
+          currentUser.age = data['age'] ?? '';
+          currentUser.bmi = data['bmi'] ?? '';
+          currentUser.disease = data['disease'] ?? 'None';
+          currentUser.allergy = data['allergy'] ?? 'None';
+          currentUser.address = data['home_address'] ?? '';
+          currentUser.emergencyText = data['emergency_text'] ?? '';
+          currentUser.emergencyContact = data['emergency_contact'] ?? '';
         });
       }
     } catch (e) {
@@ -190,7 +199,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   ),
                   const SizedBox(height: 5),
                   Text(
-                    currentUser.email,
+                    currentUser.email ?? 'No email available',
                     style: GoogleFonts.poppins(
                       fontSize: 14,
                       color: Colors.white.withOpacity(0.8),
@@ -207,14 +216,18 @@ class _ProfilePageState extends State<ProfilePage> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   _buildStatCard(
-                      Icons.bloodtype, 'Blood Type', currentUser.bloodType),
-                  _buildStatCard(Icons.height, 'Height', currentUser.height),
+                      Icons.cake_outlined, 'Age', currentUser.age ?? 'N/A'),
                   _buildStatCard(
-                      Icons.monitor_weight, 'Weight', currentUser.weight),
+                    Icons.monitor_heart_outlined,
+                    'BMI',
+                    currentUser.bmi ?? '0.0',
+                    isBmi: true,
+                  ),
+                  _buildStatCard(Icons.bloodtype_outlined, 'Blood Type',
+                      currentUser.bloodType ?? 'N/A'),
                 ],
               ),
             ),
-
             // Menu Options
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -263,13 +276,18 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  Widget _buildStatCard(IconData icon, String label, String value) {
+  Widget _buildStatCard(IconData icon, String label, String value,
+      {bool isBmi = false}) {
+    final double bmi = isBmi ? double.tryParse(value) ?? 0.0 : 0.0;
+    final Color bmiColor =
+        isBmi ? _getBmiColor(bmi).withOpacity(0.2) : _cardColor;
+
     return Expanded(
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 5),
         padding: const EdgeInsets.all(15),
         decoration: BoxDecoration(
-          color: _cardColor,
+          color: bmiColor,
           borderRadius: BorderRadius.circular(15),
           boxShadow: [
             BoxShadow(
@@ -285,29 +303,61 @@ class _ProfilePageState extends State<ProfilePage> {
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: _primaryColor.withOpacity(0.1),
+                color: isBmi
+                    ? _getBmiColor(bmi).withOpacity(0.3)
+                    : _primaryColor.withOpacity(0.1),
                 shape: BoxShape.circle,
               ),
-              child: Icon(icon, color: _primaryColor, size: 24),
+              child: Icon(
+                icon,
+                color: isBmi ? _getBmiColor(bmi) : _primaryColor,
+                size: 24,
+              ),
             ),
             const SizedBox(height: 10),
             Text(
               label,
               style: GoogleFonts.poppins(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.grey),
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                color: Colors.grey,
+              ),
             ),
             const SizedBox(height: 5),
-            Text(
-              value,
-              style: GoogleFonts.poppins(
-                  fontSize: 16, fontWeight: FontWeight.bold, color: _textColor),
-            ),
+            isBmi
+                ? _buildBmiValue(value)
+                : Text(
+                    value,
+                    style: GoogleFonts.poppins(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: _textColor,
+                    ),
+                  ),
           ],
         ),
       ),
     );
+  }
+
+  Widget _buildBmiValue(String value) {
+    final bmi = double.tryParse(value) ?? 0.0;
+
+    return Text(
+      bmi.toStringAsFixed(1),
+      style: GoogleFonts.poppins(
+        fontSize: 16,
+        fontWeight: FontWeight.bold,
+        color: _getBmiColor(bmi),
+      ),
+    );
+  }
+
+  Color _getBmiColor(double bmi) {
+    if (bmi < 18.5) return Colors.orange; // Underweight
+    if (bmi < 25.0) return Colors.green; // Normal
+    if (bmi < 30.0) return Colors.amber; // Overweight
+    return Colors.red; // Obese
   }
 
   Widget _buildMenuCard({
