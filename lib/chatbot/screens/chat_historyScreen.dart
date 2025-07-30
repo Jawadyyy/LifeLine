@@ -260,18 +260,28 @@ class _HistoryScreenState extends State<HistoryScreen> {
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Color(0xFFFF6F61),
         elevation: _showAppBarShadow ? 4 : 0,
         title: const Text(
-          "Chat History",
+          'Chat History',
           style: TextStyle(
-            fontWeight: FontWeight.w600,
-            color: Colors.blueGrey,
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
           ),
         ),
         centerTitle: true,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(
+            bottom: Radius.circular(20),
+          ),
+        ),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
+          icon: const Icon(
+            Icons.arrow_back_ios_new_rounded,
+            size: 20,
+            color: Colors.white,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
         actions: [

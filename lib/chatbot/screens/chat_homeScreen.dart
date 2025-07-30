@@ -45,7 +45,7 @@ class _ChatHomeScreenState extends State<ChatHomeScreen> {
           onTap: (index) => setState(() => _currentIndex = index),
           type: BottomNavigationBarType.fixed,
           backgroundColor: Colors.white,
-          selectedItemColor: Colors.blue[800],
+          selectedItemColor: const Color(0xFFFF6F61),
           unselectedItemColor: Colors.grey[600],
           selectedLabelStyle: const TextStyle(
             fontWeight: FontWeight.w600,
@@ -67,7 +67,7 @@ class _ChatHomeScreenState extends State<ChatHomeScreen> {
                       Icons.chat_bubble_outlined,
                       size: 24,
                       color: _currentIndex == 0
-                          ? Colors.blue[800]
+                          ? const Color(0xFFFF6F61)
                           : Colors.grey[600],
                     ),
                     const SizedBox(height: 4),
@@ -75,8 +75,8 @@ class _ChatHomeScreenState extends State<ChatHomeScreen> {
                       Container(
                         width: 6,
                         height: 6,
-                        decoration: BoxDecoration(
-                          color: Colors.blue[800],
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFFF6F61),
                           shape: BoxShape.circle,
                         ),
                       ),
@@ -95,7 +95,7 @@ class _ChatHomeScreenState extends State<ChatHomeScreen> {
                       Icons.history,
                       size: 24,
                       color: _currentIndex == 1
-                          ? Colors.blue[800]
+                          ? const Color(0xFFFF6F61)
                           : Colors.grey[600],
                     ),
                     const SizedBox(height: 4),
@@ -103,8 +103,8 @@ class _ChatHomeScreenState extends State<ChatHomeScreen> {
                       Container(
                         width: 6,
                         height: 6,
-                        decoration: BoxDecoration(
-                          color: Colors.blue[800],
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFFF6F61),
                           shape: BoxShape.circle,
                         ),
                       ),

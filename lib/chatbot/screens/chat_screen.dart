@@ -130,11 +130,11 @@ class _ChatScreenState extends State<ChatScreen> {
               width: 32,
               height: 32,
               margin: const EdgeInsets.only(right: 8),
-              decoration: BoxDecoration(
-                color: Colors.blue[100],
+              decoration: const BoxDecoration(
+                color: Color(0xFFFF6F61),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.face, color: Colors.blue),
+              child: const Icon(Icons.face, color: Color(0xFFFF6F61)),
             ),
           Flexible(
             child: Column(
@@ -144,7 +144,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: isUser ? Colors.blue[600] : Colors.grey[200],
+                    color: isUser ? const Color(0xFFFF6F61) : Colors.grey[200],
                     borderRadius: BorderRadius.only(
                       topLeft: const Radius.circular(12),
                       topRight: const Radius.circular(12),
@@ -182,11 +182,11 @@ class _ChatScreenState extends State<ChatScreen> {
               width: 32,
               height: 32,
               margin: const EdgeInsets.only(left: 8),
-              decoration: BoxDecoration(
-                color: Colors.blue[100],
+              decoration: const BoxDecoration(
+                color: Color(0xFFFF6F61),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.person, color: Colors.blue),
+              child: const Icon(Icons.person, color: Color(0xFFFF6F61)),
             ),
         ],
       ),
@@ -209,7 +209,7 @@ class _ChatScreenState extends State<ChatScreen> {
       child: Row(
         children: [
           IconButton(
-            icon: Icon(Icons.image, color: Colors.blue[600]),
+            icon: const Icon(Icons.image, color: Color(0xFFFF6F61)),
             onPressed: _isLoading ? null : _pickImage,
           ),
           Expanded(
@@ -272,7 +272,7 @@ class _ChatScreenState extends State<ChatScreen> {
           const SizedBox(width: 8),
           FloatingActionButton(
             mini: true,
-            backgroundColor: Colors.blue[600],
+            backgroundColor: const Color(0xFFFF6F61),
             onPressed: _isLoading ? null : _handleSend,
             child: Icon(
               _isLoading ? Icons.more_horiz : Icons.send,
@@ -289,27 +289,35 @@ class _ChatScreenState extends State<ChatScreen> {
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Color(0xFFFF6F61),
         elevation: _showAppBarShadow ? 4 : 0,
         title: const Text(
           'Gemini Chat',
           style: TextStyle(
-            fontWeight: FontWeight.w600,
-            color: Colors.blueGrey,
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
           ),
         ),
         centerTitle: true,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(
+            bottom: Radius.circular(20),
+          ),
+        ),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
+          icon: const Icon(
+            Icons.arrow_back_ios_new_rounded,
+            size: 20,
+            color: Colors.white,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
         actions: [
           if (_messages.isNotEmpty)
             IconButton(
               icon: const Icon(Icons.delete_outline),
-              onPressed: () {
-                // Add clear chat functionality
-              },
+              onPressed: () {},
             ),
         ],
       ),
@@ -360,13 +368,13 @@ class _ChatScreenState extends State<ChatScreen> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  SizedBox(
+                  const SizedBox(
                     width: 24,
                     height: 24,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
                       valueColor:
-                          AlwaysStoppedAnimation<Color>(Colors.blue[600]!),
+                          AlwaysStoppedAnimation<Color>(Color(0xFFFF6F61)),
                     ),
                   ),
                   const SizedBox(width: 8),
