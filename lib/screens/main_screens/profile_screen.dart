@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:lifeline/screens/auth_screens/change_password.dart';
 import 'package:lifeline/screens/auth_screens/login_screen.dart';
 import 'package:lifeline/screens/main_screens/profile_setting_screen.dart';
 import 'package:lifeline/services/auth_service.dart';
@@ -46,20 +47,21 @@ class _ProfilePageState extends State<ProfilePage> {
         final data = userDoc.data() as Map<String, dynamic>;
 
         setState(() {
-          currentUser.name = data['username'] ?? 'Unknown';
-          currentUser.bloodType = data['blood_group'] ?? 'N/A';
-          currentUser.height = data['height'] ?? 'N/A';
-          currentUser.weight = data['weight'] ?? 'N/A';
-          currentUser.profileImage = data['profileImageUrl'] ?? '';
-          currentUser.email = data['email'] ?? '';
-          currentUser.phone = data['phone'] ?? '';
-          currentUser.age = data['age'] ?? '';
-          currentUser.bmi = data['bmi'] ?? '';
-          currentUser.disease = data['disease'] ?? 'None';
-          currentUser.allergy = data['allergy'] ?? 'None';
-          currentUser.address = data['home_address'] ?? '';
-          currentUser.emergencyText = data['emergency_text'] ?? '';
-          currentUser.emergencyContact = data['emergency_contact'] ?? '';
+          currentUser = UserModel(
+            name: data['username'] ?? 'Unknown',
+            bloodType: data['blood_group'] ?? 'N/A',
+            height: data['height']?.toString() ?? 'N/A',
+            weight: data['weight']?.toString() ?? 'N/A',
+            profileImage: data['profileImageUrl'] ?? '',
+            email: data['email'] ?? '',
+            phone: data['phone'] ?? '',
+            age: data['age'] ?? '',
+            bmi: data['bmi'] ?? '',
+            disease: data['disease'] ?? 'None',
+            allergy: data['allergy'] ?? 'None',
+            address: data['home_address'] ?? '',
+            emergencyText: data['emergency_text'] ?? '',
+          );
         });
       }
     } catch (e) {
@@ -68,7 +70,7 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Future<String?> uploadImageToImgBB(String filePath) async {
-    final apiKey = 'b876317f0442b8eec2f8c6ffd701b13d';
+    const apiKey = 'b876317f0442b8eec2f8c6ffd701b13d';
     final url = Uri.parse('https://api.imgbb.com/1/upload?key=$apiKey');
 
     final request = http.MultipartRequest('POST', url)
@@ -104,7 +106,21 @@ class _ProfilePageState extends State<ProfilePage> {
           });
 
           setState(() {
-            currentUser.profileImage = imageUrl;
+            currentUser = UserModel(
+              name: currentUser.name,
+              bloodType: currentUser.bloodType,
+              height: currentUser.height,
+              weight: currentUser.weight,
+              profileImage: imageUrl,
+              email: currentUser.email,
+              phone: currentUser.phone,
+              age: currentUser.age,
+              bmi: currentUser.bmi,
+              disease: currentUser.disease,
+              allergy: currentUser.allergy,
+              address: currentUser.address,
+              emergencyText: currentUser.emergencyText,
+            );
           });
         }
       }
@@ -250,6 +266,26 @@ class _ProfilePageState extends State<ProfilePage> {
                     subtitle: 'Get answers to common questions',
                     onTap: () {
                       _showFAQDialog(context);
+                    },
+                  ),
+                  const SizedBox(height: 15),
+                  _buildMenuCard(
+                    icon: Icons.lock_outline,
+                    title: 'Change Password',
+                    subtitle: 'Update your account password',
+                    onTap: () {
+                      Navigator.pushReplacement(
+                        context,
+                        PageRouteBuilder(
+                          pageBuilder:
+                              (context, animation, secondaryAnimation) =>
+                                  const ChangePasswordScreen(),
+                          transitionsBuilder: (context, animation,
+                                  secondaryAnimation, child) =>
+                              FadeTransition(opacity: animation, child: child),
+                          transitionDuration: const Duration(milliseconds: 500),
+                        ),
+                      );
                     },
                   ),
                   const SizedBox(height: 15),

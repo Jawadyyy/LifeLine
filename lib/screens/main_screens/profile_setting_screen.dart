@@ -55,25 +55,25 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen> {
   Future<void> _loadUserData() async {
     try {
       final userId = _auth.currentUser?.uid;
-      if (userId != null) {
-        final userDoc = await _firestore.collection('users').doc(userId).get();
-        if (userDoc.exists) {
-          final data = userDoc.data()!;
-          setState(() {
-            _addressController.text = data['home_address'] ?? '';
-            _heightController.text = data['height'] ?? '';
-            _weightController.text = data['weight'] ?? '';
-            _usernameController.text = data['username'] ?? '';
-            _phone = data['phone'] ?? '';
-            _phoneController.text = _phone ?? '';
-            _selectedDisease = data['disease'] ?? 'None';
-            _selectedBloodGroup = data['blood_group'] ?? 'None';
-            _selectedAllergy = data['allergy'] ?? 'None';
-            _emergencyTextController.text = data['emergency_text'] ?? '';
-            _ageController.text = data['age'] ?? '';
-          });
-        }
-      }
+      if (userId == null) return;
+
+      final userDoc = await _firestore.collection('users').doc(userId).get();
+      if (!userDoc.exists) return;
+
+      final data = userDoc.data()!;
+      setState(() {
+        _addressController.text = data['home_address'] ?? '';
+        _heightController.text = data['height']?.toString() ?? '';
+        _weightController.text = data['weight']?.toString() ?? '';
+        _usernameController.text = data['username'] ?? '';
+        _phone = data['phone'] ?? '';
+        _phoneController.text = _phone ?? '';
+        _selectedDisease = data['disease'] ?? 'None';
+        _selectedBloodGroup = data['blood_group'] ?? 'None';
+        _selectedAllergy = data['allergy'] ?? 'None';
+        _emergencyTextController.text = data['emergency_text'] ?? '';
+        _ageController.text = data['age'] ?? '';
+      });
     } catch (e) {
       print('Error loading user data: $e');
     }
@@ -82,32 +82,37 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen> {
   Future<void> _updateUserData() async {
     try {
       final userId = _auth.currentUser?.uid;
+      if (userId == null) return;
+
       final bmi = _calculateBMI();
-      if (userId != null) {
-        Map<String, dynamic> userData = {
-          'home_address': _addressController.text.trim(),
-          'height': _heightController.text.trim(),
-          'weight': _weightController.text.trim(),
-          'username': _usernameController.text.trim(),
-          'phone': _phoneController.text.trim(),
-          'disease': _selectedDisease,
-          'blood_group': _selectedBloodGroup,
-          'allergy': _selectedAllergy,
-          'emergency_text': _emergencyTextController.text.trim(),
-          'age': _ageController.text.trim(),
-        };
 
-        if (bmi != null) {
-          userData['bmi'] = bmi.toStringAsFixed(2);
-        }
+      final Map<String, dynamic> userData = {
+        'home_address': _addressController.text.trim(),
+        'height': _heightController.text.trim(),
+        'weight': _weightController.text.trim(),
+        'username': _usernameController.text.trim(),
+        'phone': _phoneController.text.trim(),
+        'disease': _selectedDisease ?? 'None',
+        'blood_group': _selectedBloodGroup ?? 'None',
+        'allergy': _selectedAllergy ?? 'None',
+        'emergency_text': _emergencyTextController.text.trim(),
+        'age': _ageController.text.trim(),
+      };
 
-        await _firestore.collection('users').doc(userId).update(userData);
+      if (bmi != null) {
+        userData['bmi'] = bmi.toStringAsFixed(1);
+      }
 
-        await _loadUserData();
+      await _firestore.collection('users').doc(userId).update(userData);
+      await _loadUserData(); // Optional: reload after update
 
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('Profile updated successfully!'),
+            content: Text(
+              'Profile updated successfully!',
+              style: GoogleFonts.poppins(color: Colors.white),
+            ),
             backgroundColor: _primaryColor,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
@@ -118,16 +123,21 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen> {
       }
     } catch (e) {
       print('Error updating user data: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Failed to update profile.'),
-          backgroundColor: Colors.red,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Failed to update profile.',
+              style: GoogleFonts.poppins(color: Colors.white),
+            ),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
           ),
-        ),
-      );
+        );
+      }
     }
   }
 

@@ -1,9 +1,11 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lifeline/components/navigation.dart';
 import 'package:lifeline/screens/auth_screens/forgotpass_screen.dart';
 import 'package:lifeline/screens/auth_screens/signup_screen.dart';
+import 'package:lifeline/screens/profile_setup_screens/profileSetup_screen.dart';
 import 'package:lifeline/services/auth_service.dart';
 import 'package:lifeline/components/clip_wave.dart';
 
@@ -65,16 +67,39 @@ class _LoginScreenState extends State<LoginScreen> {
           await AuthService().login(email: email, password: password);
 
       if (isSuccess) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Login successful"),
-            backgroundColor: Colors.green,
-          ),
-        );
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const MainNavigationScreen()),
-        );
+        final user = FirebaseAuth.instance.currentUser;
+        if (user != null) {
+          final doc = await FirebaseFirestore.instance
+              .collection('users')
+              .doc(user.uid)
+              .get();
+
+          final data = doc.data();
+          final isProfileComplete = data?['bloodGroup'] != null &&
+              data?['height'] != null &&
+              data?['emergencyMessage'] != null;
+
+          Navigator.pushReplacement(
+            context,
+            PageRouteBuilder(
+              pageBuilder: (context, animation, secondaryAnimation) =>
+                  isProfileComplete
+                      ? const MainNavigationScreen()
+                      : const ProfileSetupScreen(),
+              transitionsBuilder:
+                  (context, animation, secondaryAnimation, child) =>
+                      FadeTransition(opacity: animation, child: child),
+              transitionDuration: const Duration(milliseconds: 500),
+            ),
+          );
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text("Login successful"),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
       }
     } catch (e) {
       String message = "Error: ${e.toString()}";
