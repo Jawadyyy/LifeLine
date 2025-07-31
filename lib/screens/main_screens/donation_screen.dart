@@ -191,7 +191,7 @@ class _DonationScreenState extends State<DonationScreen> {
                           if (sanitizedPhone.length < 10) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text("Invalid phone number"),
+                                content: const Text("Invalid phone number"),
                                 behavior: SnackBarBehavior.floating,
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(10),
@@ -211,7 +211,7 @@ class _DonationScreenState extends State<DonationScreen> {
                           } catch (e) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text("Could not open WhatsApp"),
+                                content: const Text("Could not open WhatsApp"),
                                 behavior: SnackBarBehavior.floating,
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(10),
@@ -342,7 +342,6 @@ class _DonationScreenState extends State<DonationScreen> {
     );
   }
 
-// Helper widget for donation details section
   Widget _buildDonationDetailsSection(
     Map<String, dynamic> data,
     DateTime donationTime,
@@ -402,7 +401,6 @@ class _DonationScreenState extends State<DonationScreen> {
     );
   }
 
-// Helper widget for description section
   Widget _buildDescriptionSection(String description) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -440,7 +438,6 @@ class _DonationScreenState extends State<DonationScreen> {
     );
   }
 
-// Helper widget for additional info section
   Widget _buildAdditionalInfoSection(
     Map<String, dynamic> data,
     Map<String, dynamic> userData,
@@ -467,31 +464,30 @@ class _DonationScreenState extends State<DonationScreen> {
               width: 1,
             ),
           ),
-          child: Column(
-            children: [
+          child: Column(children: [
+            if (userData['phone'] != null && userData['phone'].isNotEmpty)
+              _buildContactRow(
+                icon: Icons.phone_outlined,
+                value: userData['phone'],
+                isPhone: true,
+                mainColor: mainColor,
+              ),
+            if (userData['email'] != null && userData['email'].isNotEmpty) ...[
               if (userData['phone'] != null && userData['phone'].isNotEmpty)
-                _buildContactRow(
-                  icon: Icons.phone_outlined,
-                  value: userData['phone'],
-                  isPhone: true,
-                ),
-              if (userData['email'] != null &&
-                  userData['email'].isNotEmpty) ...[
-                if (userData['phone'] != null) const SizedBox(height: 12),
-                _buildContactRow(
-                  icon: Icons.email_outlined,
-                  value: userData['email'],
-                  isEmail: true,
-                ),
-              ],
+                const SizedBox(height: 12),
+              _buildContactRow(
+                icon: Icons.email_outlined,
+                value: userData['email'],
+                isEmail: true,
+                mainColor: mainColor,
+              ),
             ],
-          ),
+          ]),
         ),
       ],
     );
   }
 
-// Helper widget for detail rows
   Widget _buildDetailRow({
     required IconData icon,
     required String label,
@@ -534,12 +530,12 @@ class _DonationScreenState extends State<DonationScreen> {
     );
   }
 
-// Helper widget for contact rows
   Widget _buildContactRow({
     required IconData icon,
     required String value,
     bool isPhone = false,
     bool isEmail = false,
+    required Color mainColor,
   }) {
     return Row(
       children: [
@@ -560,29 +556,28 @@ class _DonationScreenState extends State<DonationScreen> {
         ),
         if (isPhone)
           IconButton(
-            icon: Icon(
-              Icons.message_outlined,
-              color: mainColor,
-              size: 22,
-            ),
+            icon: Icon(Icons.call, color: mainColor, size: 22),
             onPressed: () async {
-              final url = 'tel:$value';
-              if (await canLaunch(url)) {
-                await launch(url);
+              final Uri phoneUri = Uri(scheme: 'tel', path: value);
+              if (!await launchUrl(phoneUri,
+                  mode: LaunchMode.externalApplication)) {
+                debugPrint('Could not launch $phoneUri');
               }
             },
           ),
         if (isEmail)
           IconButton(
-            icon: Icon(
-              Icons.email_outlined,
-              color: mainColor,
-              size: 22,
-            ),
+            icon: Icon(Icons.email_outlined, color: mainColor, size: 22),
             onPressed: () async {
-              final url = 'mailto:$value';
-              if (await canLaunch(url)) {
-                await launch(url);
+              final Uri emailUri = Uri(
+                scheme: 'mailto',
+                path: value,
+                query:
+                    'subject=Urgent Medical Assistance Needed&body=Hello $value,%0D%0A%0D%0AI found your contact on the LifeLine app and need urgent assistance. Please respond as soon as possible.%0D%0A%0D%0AThank you.',
+              );
+              if (!await launchUrl(emailUri,
+                  mode: LaunchMode.externalApplication)) {
+                debugPrint('Could not launch $emailUri');
               }
             },
           ),
@@ -812,7 +807,8 @@ class _DonationScreenState extends State<DonationScreen> {
                       decoration: InputDecoration(
                         labelText: 'Donation Time',
                         labelStyle: TextStyle(color: Colors.grey[600]),
-                        floatingLabelStyle: TextStyle(color: Color(0xFFFF6F61)),
+                        floatingLabelStyle:
+                            const TextStyle(color: Color(0xFFFF6F61)),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                           borderSide: BorderSide(color: Colors.grey[300]!),
@@ -823,7 +819,8 @@ class _DonationScreenState extends State<DonationScreen> {
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: Color(0xFFFF6F61)),
+                          borderSide:
+                              const BorderSide(color: Color(0xFFFF6F61)),
                         ),
                         filled: true,
                         fillColor: Colors.grey[50],
@@ -835,7 +832,8 @@ class _DonationScreenState extends State<DonationScreen> {
                             DateFormat.yMd().add_jm().format(donationTime),
                             style: TextStyle(color: Colors.grey[800]),
                           ),
-                          Icon(Icons.calendar_today, color: Color(0xFFFF6F61)),
+                          const Icon(Icons.calendar_today,
+                              color: Color(0xFFFF6F61)),
                         ],
                       ),
                     ),
@@ -849,7 +847,8 @@ class _DonationScreenState extends State<DonationScreen> {
                     decoration: InputDecoration(
                       labelText: 'Description (Optional)',
                       labelStyle: TextStyle(color: Colors.grey[600]),
-                      floatingLabelStyle: TextStyle(color: Color(0xFFFF6F61)),
+                      floatingLabelStyle:
+                          const TextStyle(color: Color(0xFFFF6F61)),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                         borderSide: BorderSide(color: Colors.grey[300]!),
@@ -860,7 +859,7 @@ class _DonationScreenState extends State<DonationScreen> {
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: Color(0xFFFF6F61)),
+                        borderSide: const BorderSide(color: Color(0xFFFF6F61)),
                       ),
                       filled: true,
                       fillColor: Colors.grey[50],
@@ -899,7 +898,7 @@ class _DonationScreenState extends State<DonationScreen> {
                         }
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Color(0xFFFF6F61),
+                        backgroundColor: const Color(0xFFFF6F61),
                         foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
@@ -1298,7 +1297,7 @@ class _DonationScreenState extends State<DonationScreen> {
                         if (sanitizedPhone.length < 10) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content: Text("Invalid phone number"),
+                              content: const Text("Invalid phone number"),
                               behavior: SnackBarBehavior.floating,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(10),
@@ -1318,7 +1317,7 @@ class _DonationScreenState extends State<DonationScreen> {
                         } catch (e) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content: Text("Could not open WhatsApp"),
+                              content: const Text("Could not open WhatsApp"),
                               behavior: SnackBarBehavior.floating,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(10),
@@ -1459,7 +1458,7 @@ class _DonationScreenState extends State<DonationScreen> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Center(
+                  const Center(
                     child: Text(
                       "Create Donation Post",
                       style: TextStyle(
@@ -1485,7 +1484,8 @@ class _DonationScreenState extends State<DonationScreen> {
                     decoration: InputDecoration(
                       labelText: 'Blood Group',
                       labelStyle: TextStyle(color: Colors.grey[600]),
-                      floatingLabelStyle: TextStyle(color: Color(0xFFFF6F61)),
+                      floatingLabelStyle:
+                          const TextStyle(color: Color(0xFFFF6F61)),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                         borderSide: BorderSide(color: Colors.grey[300]!),
@@ -1496,13 +1496,14 @@ class _DonationScreenState extends State<DonationScreen> {
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: Color(0xFFFF6F61)),
+                        borderSide: const BorderSide(color: Color(0xFFFF6F61)),
                       ),
                       filled: true,
                       fillColor: Colors.grey[50],
                     ),
                     dropdownColor: Colors.white,
-                    icon: Icon(Icons.arrow_drop_down, color: Color(0xFFFF6F61)),
+                    icon: const Icon(Icons.arrow_drop_down,
+                        color: Color(0xFFFF6F61)),
                     style: TextStyle(color: Colors.grey[800]),
                   ),
                   const SizedBox(height: 20),
@@ -1514,7 +1515,8 @@ class _DonationScreenState extends State<DonationScreen> {
                     decoration: InputDecoration(
                       labelText: 'Description',
                       labelStyle: TextStyle(color: Colors.grey[600]),
-                      floatingLabelStyle: TextStyle(color: Color(0xFFFF6F61)),
+                      floatingLabelStyle:
+                          const TextStyle(color: Color(0xFFFF6F61)),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                         borderSide: BorderSide(color: Colors.grey[300]!),
@@ -1525,12 +1527,12 @@ class _DonationScreenState extends State<DonationScreen> {
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: Color(0xFFFF6F61)),
+                        borderSide: const BorderSide(color: Color(0xFFFF6F61)),
                       ),
                       filled: true,
                       fillColor: Colors.grey[50],
-                      prefixIcon:
-                          Icon(Icons.description, color: Color(0xFFFF6F61)),
+                      prefixIcon: const Icon(Icons.description,
+                          color: Color(0xFFFF6F61)),
                     ),
                     validator: (val) => val == null || val.trim().isEmpty
                         ? 'Enter a description'
@@ -1545,7 +1547,8 @@ class _DonationScreenState extends State<DonationScreen> {
                       decoration: InputDecoration(
                         labelText: 'Donation Time',
                         labelStyle: TextStyle(color: Colors.grey[600]),
-                        floatingLabelStyle: TextStyle(color: Color(0xFFFF6F61)),
+                        floatingLabelStyle:
+                            const TextStyle(color: Color(0xFFFF6F61)),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                           borderSide: BorderSide(color: Colors.grey[300]!),
@@ -1556,11 +1559,12 @@ class _DonationScreenState extends State<DonationScreen> {
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: Color(0xFFFF6F61)),
+                          borderSide:
+                              const BorderSide(color: Color(0xFFFF6F61)),
                         ),
                         filled: true,
                         fillColor: Colors.grey[50],
-                        prefixIcon: Icon(Icons.calendar_today,
+                        prefixIcon: const Icon(Icons.calendar_today,
                             color: Color(0xFFFF6F61)),
                       ),
                       child: Text(
@@ -1581,7 +1585,7 @@ class _DonationScreenState extends State<DonationScreen> {
                     child: ElevatedButton(
                       onPressed: _isLoading ? null : _submitPost,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Color(0xFFFF6F61),
+                        backgroundColor: const Color(0xFFFF6F61),
                         foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
