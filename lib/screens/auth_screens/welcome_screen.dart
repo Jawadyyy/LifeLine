@@ -60,8 +60,6 @@ class WelcomeScreen extends StatelessWidget {
               ],
             ),
           ),
-
-          // Bottom white content (merged into background)
           Expanded(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),

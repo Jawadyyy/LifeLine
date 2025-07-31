@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-/// Component: Success Snackbar
 void showSuccessSnackBar(BuildContext context, String title, String message) {
   ScaffoldMessenger.of(context).showSnackBar(
     SnackBar(

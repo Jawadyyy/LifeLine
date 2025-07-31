@@ -289,7 +289,7 @@ class _ChatScreenState extends State<ChatScreen> {
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
-        backgroundColor: Color(0xFFFF6F61),
+        backgroundColor: const Color(0xFFFF6F61),
         elevation: _showAppBarShadow ? 4 : 0,
         title: const Text(
           'Gemini Chat',

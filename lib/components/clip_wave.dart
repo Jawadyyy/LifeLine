@@ -6,10 +6,8 @@ class TopWaveClipper extends CustomClipper<Path> {
   Path getClip(Size size) {
     final path = Path();
 
-    // Start from top-left down to base of wave
     path.lineTo(0, size.height * 0.93);
 
-    // First wave segment (left side - goes slightly up)
     final firstControlPoint = Offset(size.width * 0.25, size.height * 0.86);
     final firstEndPoint = Offset(size.width * 0.5, size.height * 0.93);
     path.quadraticBezierTo(
@@ -19,7 +17,6 @@ class TopWaveClipper extends CustomClipper<Path> {
       firstEndPoint.dy,
     );
 
-    // Second wave segment (right side - dips lower)
     final secondControlPoint = Offset(size.width * 0.75, size.height * 1.02);
     final secondEndPoint = Offset(size.width, size.height * 0.97);
     path.quadraticBezierTo(
@@ -29,7 +26,6 @@ class TopWaveClipper extends CustomClipper<Path> {
       secondEndPoint.dy,
     );
 
-    // Top-right corner
     path.lineTo(size.width, 0);
 
     path.close();

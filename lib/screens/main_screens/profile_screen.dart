@@ -209,7 +209,6 @@ class _ProfilePageState extends State<ProfilePage> {
                 ],
               ),
             ),
-            // Stats Cards
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
               child: Row(
@@ -224,11 +223,10 @@ class _ProfilePageState extends State<ProfilePage> {
                     isBmi: true,
                   ),
                   _buildStatCard(Icons.bloodtype_outlined, 'Blood Type',
-                      currentUser.bloodType ?? 'N/A'),
+                      currentUser.bloodType),
                 ],
               ),
             ),
-            // Menu Options
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Column(
@@ -354,10 +352,10 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Color _getBmiColor(double bmi) {
-    if (bmi < 18.5) return Colors.orange; // Underweight
-    if (bmi < 25.0) return Colors.green; // Normal
-    if (bmi < 30.0) return Colors.amber; // Overweight
-    return Colors.red; // Obese
+    if (bmi < 18.5) return Colors.orange;
+    if (bmi < 25.0) return Colors.green;
+    if (bmi < 30.0) return Colors.amber;
+    return Colors.red;
   }
 
   Widget _buildMenuCard({

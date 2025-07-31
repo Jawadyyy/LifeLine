@@ -147,8 +147,6 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                     style: GoogleFonts.nunito(fontSize: 16),
                   ),
                   const SizedBox(height: 30),
-
-                  /// New Password
                   TextField(
                     controller: _newPasswordController,
                     obscureText: !_isNewPasswordVisible,
@@ -190,10 +188,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                       ),
                     ),
                   ),
-
                   const SizedBox(height: 20),
-
-                  /// Confirm Password
                   TextField(
                     controller: _confirmPasswordController,
                     obscureText: !_isConfirmPasswordVisible,
@@ -237,9 +232,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                       ),
                     ),
                   ),
-
                   const SizedBox(height: 30),
-
                   SizedBox(
                     width: double.infinity,
                     height: 50,
@@ -261,7 +254,6 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                       ),
                     ),
                   ),
-
                   const SizedBox(height: 40),
                 ],
               ),

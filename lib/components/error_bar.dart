@@ -49,7 +49,7 @@ void showErrorSnackBar(BuildContext context, String title, String message) {
             ),
           ),
           Positioned(
-            top: 10, // Adjusted the top value for alignment
+            top: 10,
             right: 16,
             child: Icon(
               Icons.warning_amber_rounded,

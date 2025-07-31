@@ -71,7 +71,6 @@ class _DonationScreenState extends State<DonationScreen> {
   ) {
     final donationTime = (data['donation_time'] as Timestamp).toDate();
     final isUpcoming = donationTime.isAfter(DateTime.now());
-    final isOwner = FirebaseAuth.instance.currentUser?.uid == ownerId;
 
     showDialog(
       context: context,
@@ -89,12 +88,11 @@ class _DonationScreenState extends State<DonationScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Header with close button
               Padding(
                 padding: const EdgeInsets.all(16),
                 child: Row(
                   children: [
-                    const SizedBox(width: 24), // For balance
+                    const SizedBox(width: 24),
                     Expanded(
                       child: Text(
                         'Donation Details',
@@ -113,9 +111,7 @@ class _DonationScreenState extends State<DonationScreen> {
                   ],
                 ),
               ),
-
               Divider(height: 1, color: Colors.grey[200]),
-
               Expanded(
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.symmetric(
@@ -127,26 +123,17 @@ class _DonationScreenState extends State<DonationScreen> {
                     children: [
                       _buildDonorSection(userData, donationTime, isUpcoming),
                       const SizedBox(height: 24),
-
-                      // Donation Details Section
                       _buildDonationDetailsSection(data, donationTime),
                       const SizedBox(height: 24),
-
-                      // Description Section
                       if (data['description'] != null &&
                           data['description'].toString().isNotEmpty)
                         _buildDescriptionSection(data['description']),
-
                       const SizedBox(height: 24),
-
-                      // Additional Information Section
                       _buildAdditionalInfoSection(data, userData),
                     ],
                   ),
                 ),
               ),
-
-              // Action Buttons
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
@@ -258,7 +245,6 @@ class _DonationScreenState extends State<DonationScreen> {
     );
   }
 
-// Helper widget for donor information section
   Widget _buildDonorSection(
     Map<String, dynamic> userData,
     DateTime donationTime,
@@ -688,7 +674,7 @@ class _DonationScreenState extends State<DonationScreen> {
     String bloodGroup = postData['blood_group'];
     DateTime donationTime = (postData['donation_time'] as Timestamp).toDate();
     String description = postData['description'] ?? '';
-    final _descController = TextEditingController(text: description);
+    final descController = TextEditingController(text: description);
 
     showDialog(
       context: context,
@@ -721,8 +707,6 @@ class _DonationScreenState extends State<DonationScreen> {
                     ),
                   ),
                   const SizedBox(height: 24),
-
-                  // Blood Group Dropdown
                   DropdownButtonFormField<String>(
                     value: bloodGroup,
                     items: _bloodGroups
@@ -758,8 +742,6 @@ class _DonationScreenState extends State<DonationScreen> {
                     style: TextStyle(color: Colors.grey[800]),
                   ),
                   const SizedBox(height: 20),
-
-                  // Donation Time Picker
                   InkWell(
                     onTap: () async {
                       final date = await showDatePicker(
@@ -839,10 +821,8 @@ class _DonationScreenState extends State<DonationScreen> {
                     ),
                   ),
                   const SizedBox(height: 20),
-
-                  // Description Field
                   TextFormField(
-                    controller: _descController,
+                    controller: descController,
                     maxLines: 3,
                     decoration: InputDecoration(
                       labelText: 'Description (Optional)',
@@ -866,8 +846,6 @@ class _DonationScreenState extends State<DonationScreen> {
                     ),
                   ),
                   const SizedBox(height: 32),
-
-                  // Save Button
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
@@ -880,7 +858,7 @@ class _DonationScreenState extends State<DonationScreen> {
                             .update({
                           'blood_group': bloodGroup,
                           'donation_time': donationTime,
-                          'description': _descController.text.trim(),
+                          'description': descController.text.trim(),
                         });
 
                         if (mounted) {
@@ -1056,7 +1034,6 @@ class _DonationScreenState extends State<DonationScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header with user info
               Row(
                 children: [
                   CircleAvatar(
@@ -1185,8 +1162,6 @@ class _DonationScreenState extends State<DonationScreen> {
                 ],
               ),
               const SizedBox(height: 16),
-
-              // Blood group and location
               Row(
                 children: [
                   Container(
@@ -1262,8 +1237,6 @@ class _DonationScreenState extends State<DonationScreen> {
                 ],
               ),
               const SizedBox(height: 16),
-
-              // Action buttons
               Row(
                 children: [
                   Expanded(
@@ -1469,8 +1442,6 @@ class _DonationScreenState extends State<DonationScreen> {
                     ),
                   ),
                   const SizedBox(height: 24),
-
-                  // Blood Group Dropdown
                   DropdownButtonFormField<String>(
                     value: _selectedBloodGroup,
                     items: _bloodGroups
@@ -1507,8 +1478,6 @@ class _DonationScreenState extends State<DonationScreen> {
                     style: TextStyle(color: Colors.grey[800]),
                   ),
                   const SizedBox(height: 20),
-
-                  // Description Field
                   TextFormField(
                     controller: _descriptionController,
                     maxLines: 3,
@@ -1539,8 +1508,6 @@ class _DonationScreenState extends State<DonationScreen> {
                         : null,
                   ),
                   const SizedBox(height: 20),
-
-                  // Date Time Picker
                   InkWell(
                     onTap: () => _pickDateTime(context),
                     child: InputDecorator(
@@ -1578,8 +1545,6 @@ class _DonationScreenState extends State<DonationScreen> {
                     ),
                   ),
                   const SizedBox(height: 32),
-
-                  // Save Button
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(

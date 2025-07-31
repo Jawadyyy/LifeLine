@@ -1,13 +1,10 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:lifeline/components/bottom_navbar.dart';
 import 'package:lifeline/components/navigation.dart';
 import 'package:lifeline/screens/auth_screens/forgotpass_screen.dart';
 import 'package:lifeline/screens/auth_screens/signup_screen.dart';
-
 import 'package:lifeline/services/auth_service.dart';
-import 'package:lifeline/screens/main_screens/home_screen.dart';
 import 'package:lifeline/components/clip_wave.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -22,7 +19,6 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _passwordController = TextEditingController();
   bool _isPasswordVisible = false;
 
-  // Custom icons (make sure to add these assets to your project)
   final emailIcon =
       Image.asset('assets/images/icons/email.png', width: 24, height: 24);
   final passwordIcon =
@@ -32,7 +28,6 @@ class _LoginScreenState extends State<LoginScreen> {
   final eyeIcon =
       Image.asset('assets/images/icons/hide.png', width: 24, height: 24);
 
-// Custom border with subtle animation
   final border = OutlineInputBorder(
     borderRadius: BorderRadius.circular(12),
     borderSide: BorderSide(color: Colors.grey.shade300, width: 1.5),
@@ -127,8 +122,6 @@ class _LoginScreenState extends State<LoginScreen> {
               ],
             ),
           ),
-
-          // Bottom content (form)
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
@@ -184,10 +177,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
                   ),
-
                   const SizedBox(height: 20),
-
-// Password TextField
                   TweenAnimationBuilder(
                     duration: const Duration(milliseconds: 300),
                     tween: Tween<double>(begin: 0.98, end: 1.0),

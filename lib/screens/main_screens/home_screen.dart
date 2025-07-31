@@ -130,7 +130,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       final address = await LocationHandler.getAddressFromLatLng(position) ??
           "Address unavailable";
 
-      // Extract city using placemark
       List<Placemark> placemarks = await placemarkFromCoordinates(
         position.latitude,
         position.longitude,
@@ -141,11 +140,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               : placemarks.first.administrativeArea ?? "Unknown City")
           : "Unknown City";
 
-      // Google Maps link
       final mapUrl =
           "https://www.google.com/maps/search/?api=1&query=${position.latitude},${position.longitude}";
 
-      // Format message
       final fallbackMessage = "🚨 EMERGENCY: $emergencyType\n"
           "👤 Name: $username\n"
           "📍 Address: $address\n"

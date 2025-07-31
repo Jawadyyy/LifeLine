@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
-import 'package:flutter_polyline_points/flutter_polyline_points.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:lifeline/services/location_handler.dart';
@@ -23,7 +22,6 @@ class _MapScreenState extends State<MapScreen> {
   bool _showRoute = false;
   Map<String, dynamic>? _selectedHospital;
   List<LatLng> _routePoints = [];
-  final PolylinePoints _polylinePoints = PolylinePoints();
   final Duration _animationDuration = const Duration(milliseconds: 300);
   final Curve _animationCurve = Curves.easeInOut;
 
@@ -296,7 +294,6 @@ class _MapScreenState extends State<MapScreen> {
                       ),
                     MarkerLayer(
                       markers: [
-                        // User marker
                         Marker(
                           point: _currentPosition!,
                           width: 50,
@@ -437,10 +434,10 @@ class _MapScreenState extends State<MapScreen> {
                               );
                             }
                           },
-                          child: Icon(Icons.center_focus_strong,
-                              color: colorScheme.onPrimary),
                           backgroundColor: mainColor,
                           elevation: 2,
+                          child: Icon(Icons.center_focus_strong,
+                              color: colorScheme.onPrimary),
                         ),
                       ],
                     ],

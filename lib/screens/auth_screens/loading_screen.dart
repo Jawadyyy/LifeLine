@@ -63,7 +63,6 @@ class _LoadingScreenState extends State<LoadingScreen>
               ),
             ),
             const SizedBox(height: 20),
-            // Title
             Text(
               'L I F E L I N E',
               style: GoogleFonts.nunito(

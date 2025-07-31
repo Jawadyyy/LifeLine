@@ -8,7 +8,6 @@ class ContactsPage extends StatefulWidget {
   const ContactsPage({super.key});
 
   @override
-  // ignore: library_private_types_in_public_api
   _ContactsPageState createState() => _ContactsPageState();
 }
 
@@ -95,7 +94,6 @@ class _ContactsPageState extends State<ContactsPage> {
       );
 
       await showModalBottomSheet(
-        // ignore: use_build_context_synchronously
         context: context,
         isScrollControlled: true,
         backgroundColor: Colors.transparent,
@@ -146,7 +144,6 @@ class _ContactsPageState extends State<ContactsPage> {
                         itemCount: phoneContacts.length,
                         separatorBuilder: (context, index) => Divider(
                           height: 1,
-                          // ignore: deprecated_member_use
                           color: Colors.grey.withOpacity(0.1),
                         ),
                         itemBuilder: (context, index) {
@@ -248,9 +245,9 @@ class _ContactsPageState extends State<ContactsPage> {
               const TextSpan(text: "Are you sure you want to remove "),
               TextSpan(
                 text: contactName,
-                style: TextStyle(
+                style: const TextStyle(
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFFFF6F61), // main theme color
+                  color: Color(0xFFFF6F61),
                 ),
               ),
               const TextSpan(text: " from your emergency contacts?"),
@@ -262,7 +259,7 @@ class _ContactsPageState extends State<ContactsPage> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: Text(
+            child: const Text(
               "CANCEL",
               style: TextStyle(
                 color: Color(0xFFFF6F61),
@@ -421,7 +418,6 @@ class _ContactsPageState extends State<ContactsPage> {
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: [
                   BoxShadow(
-                    // ignore: deprecated_member_use
                     color: Colors.black.withOpacity(0.05),
                     blurRadius: 8,
                     offset: const Offset(0, 3),
@@ -500,7 +496,6 @@ class _ContactsPageState extends State<ContactsPage> {
                         background: Container(
                           margin: const EdgeInsets.symmetric(vertical: 4),
                           decoration: BoxDecoration(
-                            // ignore: deprecated_member_use
                             color: _errorColor.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -532,7 +527,6 @@ class _ContactsPageState extends State<ContactsPage> {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            // ignore: deprecated_member_use
             color: Colors.grey.withOpacity(0.1),
             blurRadius: 10,
             spreadRadius: 2,

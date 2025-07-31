@@ -161,15 +161,12 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen> {
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-            // Username Field
             _buildInputField(
               controller: _usernameController,
               label: 'Username',
               icon: Icons.person_outline,
             ),
             const SizedBox(height: 16),
-
-            // Phone Field
             _buildInputField(
               controller: _phoneController,
               label: 'Phone Number',
@@ -177,8 +174,6 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen> {
               keyboardType: TextInputType.phone,
             ),
             const SizedBox(height: 16),
-
-            //Age Field
             _buildInputField(
               controller: _ageController,
               label: 'Age',
@@ -186,8 +181,6 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen> {
               keyboardType: TextInputType.number,
             ),
             const SizedBox(height: 16),
-
-            // Disease Dropdown
             _buildDropdown(
               value: _selectedDisease,
               items: const [
@@ -213,8 +206,6 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen> {
               onChanged: (value) => setState(() => _selectedDisease = value),
             ),
             const SizedBox(height: 16),
-
-            // Allergy Dropdown
             _buildDropdown(
               value: _selectedAllergy,
               items: const [
@@ -239,8 +230,6 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen> {
               onChanged: (value) => setState(() => _selectedAllergy = value),
             ),
             const SizedBox(height: 16),
-
-            // Blood Group Dropdown
             _buildDropdown(
               value: _selectedBloodGroup,
               items: const [
@@ -259,8 +248,6 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen> {
               onChanged: (value) => setState(() => _selectedBloodGroup = value),
             ),
             const SizedBox(height: 16),
-
-            // Height Field
             _buildInputField(
               controller: _heightController,
               label: 'Height (cm)',
@@ -268,8 +255,6 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen> {
               keyboardType: TextInputType.number,
             ),
             const SizedBox(height: 16),
-
-            // Weight Field
             _buildInputField(
               controller: _weightController,
               label: 'Weight (lbs)',
@@ -277,24 +262,18 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen> {
               keyboardType: TextInputType.number,
             ),
             const SizedBox(height: 16),
-
-            // Emergency Message Field
             _buildInputField(
               controller: _emergencyTextController,
               label: 'Custom Emergency Message',
               icon: Icons.sms,
             ),
             const SizedBox(height: 16),
-
-            // Address Field
             _buildInputField(
               controller: _addressController,
               label: 'Home Address',
               icon: Icons.home,
             ),
             const SizedBox(height: 32),
-
-            // Action Buttons
             Row(
               children: [
                 Expanded(

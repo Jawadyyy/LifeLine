@@ -129,8 +129,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     ),
                   ),
                   const SizedBox(height: 16),
-
-                  /// Full Name
                   TextField(
                     controller: _fullNameController,
                     style: GoogleFonts.nunito(fontSize: 16),
@@ -157,8 +155,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     ),
                   ),
                   const SizedBox(height: 20),
-
-                  /// Email
                   TextField(
                     controller: _emailController,
                     style: GoogleFonts.nunito(fontSize: 16),
@@ -185,8 +181,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     ),
                   ),
                   const SizedBox(height: 20),
-
-                  /// Password
                   TextField(
                     controller: _passwordController,
                     obscureText: !_isPasswordVisible,
@@ -228,8 +222,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     ),
                   ),
                   const SizedBox(height: 20),
-
-                  /// Phone Number
                   PhoneForm(
                     onPhoneChanged: (phone) {
                       setState(() {
@@ -237,9 +229,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       });
                     },
                   ),
-
                   const SizedBox(height: 30),
-
                   SizedBox(
                     width: double.infinity,
                     height: 50,
@@ -261,7 +251,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       ),
                     ),
                   ),
-
                   const SizedBox(height: 20),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
