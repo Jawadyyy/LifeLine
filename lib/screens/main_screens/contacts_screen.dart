@@ -2,6 +2,7 @@ import 'package:flutter_contacts/flutter_contacts.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class ContactsPage extends StatefulWidget {
   const ContactsPage({super.key});
@@ -555,9 +556,7 @@ class _ContactsPageState extends State<ContactsPage> {
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: [
-                        // ignore: deprecated_member_use
                         _primaryColor.withOpacity(0.2),
-                        // ignore: deprecated_member_use
                         _primaryColor.withOpacity(0.4),
                       ],
                       begin: Alignment.topLeft,
@@ -608,7 +607,14 @@ class _ContactsPageState extends State<ContactsPage> {
                     color: _primaryColor,
                     size: 24,
                   ),
-                  onPressed: () {},
+                  onPressed: () async {
+                    final Uri phoneUri =
+                        Uri(scheme: 'tel', path: contact['phone']);
+                    if (!await launchUrl(phoneUri,
+                        mode: LaunchMode.externalApplication)) {
+                      debugPrint('Could not launch $phoneUri');
+                    }
+                  },
                 ),
               ],
             ),

@@ -1,5 +1,7 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:geocoding/geocoding.dart';
 import 'package:lifeline/chatbot/screens/chat_homeScreen.dart';
 import 'package:lifeline/services/location_handler.dart';
 import 'package:lifeline/services/firestore_service.dart';
@@ -110,19 +112,54 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         return;
       }
 
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get();
+
+      final customMessage =
+          userDoc.data()?['emergency_text']?.toString().trim();
+      final username = userDoc.data()?['username'] ?? 'User';
+
       final position = await LocationHandler.getCurrentPosition();
       if (position == null) {
         Navigator.pop(context);
         return;
       }
 
-      final address = await LocationHandler.getAddressFromLatLng(position);
-      String message =
-          "🚨 EMERGENCY: $emergencyType\n📍 Location: $address\n🕒 ${DateTime.now().toString().substring(0, 16)}";
+      final address = await LocationHandler.getAddressFromLatLng(position) ??
+          "Address unavailable";
+
+      // Extract city using placemark
+      List<Placemark> placemarks = await placemarkFromCoordinates(
+        position.latitude,
+        position.longitude,
+      );
+      String city = placemarks.isNotEmpty
+          ? (placemarks.first.locality?.isNotEmpty == true
+              ? placemarks.first.locality!
+              : placemarks.first.administrativeArea ?? "Unknown City")
+          : "Unknown City";
+
+      // Google Maps link
+      final mapUrl =
+          "https://www.google.com/maps/search/?api=1&query=${position.latitude},${position.longitude}";
+
+      // Format message
+      final fallbackMessage = "🚨 EMERGENCY: $emergencyType\n"
+          "👤 Name: $username\n"
+          "📍 Address: $address\n"
+          "🌆 City: $city\n"
+          "🗺️ Location: $mapUrl\n"
+          "🕒 ${DateTime.now().toString().substring(0, 16)}";
+
+      final message = (customMessage == null || customMessage.isEmpty)
+          ? fallbackMessage
+          : "$customMessage\n📍 Address: $address\n🌆 City: $city\n🗺️ Location: $mapUrl\n🕒 ${DateTime.now().toString().substring(0, 16)}";
 
       for (String contact in contacts) {
         final whatsappUrl =
-            'https://wa.me/$contact?text=${Uri.encodeFull(message)}';
+            'https://wa.me/$contact?text=${Uri.encodeComponent(message)}';
         try {
           await launch(whatsappUrl);
           await Future.delayed(const Duration(seconds: 2));

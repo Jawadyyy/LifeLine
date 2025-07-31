@@ -37,7 +37,8 @@ abstract class LocationHandler {
 
   static Future<String?> getAddressFromLatLng(Position position) async {
     try {
-      List<Placemark> placeMarks = await placemarkFromCoordinates(position.latitude, position.longitude);
+      List<Placemark> placeMarks =
+          await placemarkFromCoordinates(position.latitude, position.longitude);
       Placemark place = placeMarks[0];
       return "${place.street}, ${place.subLocality},${place.subAdministrativeArea}, ${place.postalCode}";
     } catch (e) {
