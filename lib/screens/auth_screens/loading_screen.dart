@@ -34,16 +34,16 @@ class _LoadingScreenState extends State<LoadingScreen>
 
     Future.delayed(const Duration(seconds: 3), () async {
       final user = FirebaseAuth.instance.currentUser;
+      await user?.reload();
+      final refreshedUser = FirebaseAuth.instance.currentUser;
 
-      if (user != null) {
+      if (refreshedUser != null) {
         Navigator.pushReplacement(
-          // ignore: use_build_context_synchronously
           context,
           MaterialPageRoute(builder: (_) => const MainNavigationScreen()),
         );
       } else {
         Navigator.pushReplacement(
-          // ignore: use_build_context_synchronously
           context,
           MaterialPageRoute(builder: (_) => const LoginScreen()),
         );

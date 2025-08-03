@@ -291,10 +291,12 @@ class _ProfilePageState extends State<ProfilePage> {
                     icon: Icons.logout,
                     title: 'Logout',
                     subtitle: 'Sign out of your account',
-                    onTap: () {
-                      Navigator.of(context).pushReplacement(
-                        MaterialPageRoute(
-                            builder: (context) => const LoginScreen()),
+                    onTap: () async {
+                      await AuthService().signOut();
+                      Navigator.pushAndRemoveUntil(
+                        context,
+                        MaterialPageRoute(builder: (_) => const LoginScreen()),
+                        (route) => false,
                       );
                     },
                   ),
