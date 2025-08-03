@@ -85,7 +85,7 @@ class _LoginScreenState extends State<LoginScreen> {
               pageBuilder: (context, animation, secondaryAnimation) =>
                   isProfileComplete
                       ? const MainNavigationScreen()
-                      : const ProfileSetupScreen(),
+                      : const MainNavigationScreen(),
               transitionsBuilder:
                   (context, animation, secondaryAnimation, child) =>
                       FadeTransition(opacity: animation, child: child),
