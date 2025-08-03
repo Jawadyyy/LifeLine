@@ -3,7 +3,7 @@ import 'package:lifeline/components/bottom_navbar.dart';
 import 'package:lifeline/screens/main_screens/contacts_screen.dart';
 import 'package:lifeline/screens/main_screens/home_screen.dart';
 import 'package:lifeline/screens/main_screens/map_screen.dart';
-import 'package:lifeline/screens/main_screens/profile_screen.dart';
+import 'package:lifeline/screens/main_screens/profile/profile_screen.dart';
 
 class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({super.key});

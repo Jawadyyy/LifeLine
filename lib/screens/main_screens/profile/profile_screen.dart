@@ -6,7 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:lifeline/screens/auth_screens/change_password.dart';
 import 'package:lifeline/screens/auth_screens/login_screen.dart';
-import 'package:lifeline/screens/main_screens/profile_setting_screen.dart';
+import 'package:lifeline/screens/main_screens/profile/profile_setting_screen.dart';
 import 'package:lifeline/services/auth_service.dart';
 import 'package:lifeline/models/user_model.dart';
 
