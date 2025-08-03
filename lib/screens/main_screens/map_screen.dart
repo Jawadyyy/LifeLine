@@ -251,7 +251,7 @@ class _MapScreenState extends State<MapScreen> {
                         ? "Finding your location..."
                         : "Location unavailable",
                     style: textTheme.bodyLarge?.copyWith(
-                      color: colorScheme.onBackground,
+                      color: colorScheme.onSurface,
                     ),
                   ),
                 ],
@@ -548,7 +548,7 @@ class _MapScreenState extends State<MapScreen> {
                                     value:
                                         (1.0 - (distanceInKm.clamp(0, 10) / 10))
                                             .toDouble(),
-                                    backgroundColor: colorScheme.surfaceVariant,
+                                    backgroundColor: colorScheme.surfaceContainerHighest,
                                     color: mainColor,
                                     minHeight: 4,
                                     borderRadius: BorderRadius.circular(2),

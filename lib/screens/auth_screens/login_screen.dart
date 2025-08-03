@@ -5,7 +5,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:lifeline/components/navigation.dart';
 import 'package:lifeline/screens/auth_screens/forgotpass_screen.dart';
 import 'package:lifeline/screens/auth_screens/signup_screen.dart';
-import 'package:lifeline/screens/profile_setup_screens/profileSetup_screen.dart';
 import 'package:lifeline/services/auth_service.dart';
 import 'package:lifeline/components/clip_wave.dart';
 

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:lifeline/screens/auth_screens/welcome_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:lifeline/components/navigation.dart';
+import 'package:lifeline/screens/auth_screens/login_screen.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class LoadingScreen extends StatefulWidget {
   const LoadingScreen({super.key});
@@ -30,13 +32,22 @@ class _LoadingScreenState extends State<LoadingScreen>
       ),
     );
 
-    Future.delayed(const Duration(seconds: 5), () {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) => const WelcomeScreen(),
-        ),
-      );
+    Future.delayed(const Duration(seconds: 3), () async {
+      final user = FirebaseAuth.instance.currentUser;
+
+      if (user != null) {
+        Navigator.pushReplacement(
+          // ignore: use_build_context_synchronously
+          context,
+          MaterialPageRoute(builder: (_) => const MainNavigationScreen()),
+        );
+      } else {
+        Navigator.pushReplacement(
+          // ignore: use_build_context_synchronously
+          context,
+          MaterialPageRoute(builder: (_) => const LoginScreen()),
+        );
+      }
     });
   }
 

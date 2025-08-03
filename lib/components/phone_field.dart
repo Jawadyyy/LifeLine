@@ -8,6 +8,7 @@ class PhoneForm extends StatefulWidget {
   const PhoneForm({super.key, required this.onPhoneChanged});
 
   @override
+  // ignore: library_private_types_in_public_api
   _PhoneFormState createState() => _PhoneFormState();
 }
 
@@ -69,9 +70,7 @@ class _PhoneFormState extends State<PhoneForm> {
       onChanged: (phone) {
         widget.onPhoneChanged(phone.completeNumber);
       },
-      onCountryChanged: (country) {
-        print('Country changed to: ${country.name}');
-      },
+      onCountryChanged: (country) {},
     );
   }
 }

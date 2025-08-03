@@ -75,7 +75,7 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen> {
         _ageController.text = data['age'] ?? '';
       });
     } catch (e) {
-      print('Error loading user data: $e');
+      return;
     }
   }
 
@@ -122,7 +122,6 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen> {
         );
       }
     } catch (e) {
-      print('Error updating user data: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

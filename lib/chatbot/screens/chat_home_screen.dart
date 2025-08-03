@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:lifeline/chatbot/screens/chat_historyScreen.dart';
+import 'package:lifeline/chatbot/screens/history_screen.dart';
 import 'chat_screen.dart';
 
 class ChatHomeScreen extends StatefulWidget {

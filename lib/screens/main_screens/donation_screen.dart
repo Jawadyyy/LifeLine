@@ -1380,8 +1380,9 @@ class _DonationScreenState extends State<DonationScreen> {
                     .orderBy('timestamp', descending: true)
                     .snapshots(),
                 builder: (context, postSnap) {
-                  if (!postSnap.hasData || postSnap.data!.docs.isEmpty)
+                  if (!postSnap.hasData || postSnap.data!.docs.isEmpty) {
                     return const SizedBox.shrink();
+                  }
                   return Column(
                     children: postSnap.data!.docs.map((postDoc) {
                       final data = postDoc.data() as Map<String, dynamic>;

@@ -120,7 +120,6 @@ class AuthService {
     try {
       final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
       if (googleUser == null) {
-        print("Google Sign-In canceled by user.");
         return null;
       }
 
@@ -157,9 +156,7 @@ class AuthService {
       }
 
       return user;
-    } catch (e, stack) {
-      print('Google Sign-In Error: $e');
-      print(stack);
+    } catch (e) {
       Fluttertoast.showToast(
         msg: 'Google sign-in failed: ${e.toString()}',
         toastLength: Toast.LENGTH_LONG,

@@ -85,11 +85,9 @@ class _ProfilePageState extends State<ProfilePage> {
         final imageUrl = data['data']['url'];
         return imageUrl;
       } else {
-        print('Image upload failed: ${res.body}');
         return null;
       }
     } catch (e) {
-      print('Upload error: $e');
       return null;
     }
   }

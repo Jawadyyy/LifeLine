@@ -8,6 +8,7 @@ class ContactsPage extends StatefulWidget {
   const ContactsPage({super.key});
 
   @override
+  // ignore: library_private_types_in_public_api
   _ContactsPageState createState() => _ContactsPageState();
 }
 
