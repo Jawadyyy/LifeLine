@@ -21,10 +21,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   bool _showEmergencyOptions = false;
   bool _isLocationFetched = false;
   bool _isLoadingLocation = false;
+  final Color _primaryColor = const Color(0xFFFF6F61);
+  final Color _primaryLightColor = const Color(0xFFFFE8E5);
 
   late AnimationController _animationController;
   late Animation<double> _scaleAnimation;
-  final Color _primaryColor = const Color(0xFFFF6F61);
 
   @override
   void initState() {
@@ -231,13 +232,15 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 color: theme.colorScheme.onSurface.withOpacity(0.6),
               ),
             ),
-            const SizedBox(height: 2),
+            const SizedBox(height: 4),
             SizedBox(
               width: size.width * 0.6,
               child: _isLoadingLocation
-                  ? const SizedBox(
-                      height: 20,
-                      child: LinearProgressIndicator(),
+                  ? LinearProgressIndicator(
+                      minHeight: 4,
+                      color: _primaryColor,
+                      backgroundColor: _primaryLightColor,
+                      borderRadius: BorderRadius.circular(4),
                     )
                   : Text(
                       _currentAddress,
@@ -253,10 +256,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         actions: [
           IconButton(
             onPressed: _getUserLocation,
-            icon: Icon(
-              Icons.refresh,
-              color: theme.colorScheme.primary,
-            ),
+            icon: const Icon(Icons.refresh, color: Colors.black),
             tooltip: "Refresh location",
           ),
         ],

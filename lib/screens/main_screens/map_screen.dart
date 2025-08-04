@@ -54,25 +54,53 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   Future<void> _showLocationServiceDialog() async {
+    final theme = Theme.of(context);
+    final mainColor = theme.colorScheme.primary;
+
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(20),
           ),
-          title: const Text(
-            'Location Services Required',
-            style: TextStyle(fontWeight: FontWeight.bold),
+          titlePadding: const EdgeInsets.only(top: 20, left: 20, right: 20),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+          actionsPadding: const EdgeInsets.only(bottom: 10, right: 10),
+          title: Row(
+            children: [
+              Icon(Icons.location_on, color: mainColor),
+              const SizedBox(width: 10),
+              Text(
+                'Location Required',
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: mainColor,
+                ),
+              ),
+            ],
           ),
-          content: const Text(
-              'To provide accurate directions, we need access to your location. Please enable location services in your device settings.'),
+          content: Text(
+            'To provide accurate directions, we need access to your location. Please enable location services in your device settings.',
+            style: theme.textTheme.bodyMedium,
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Not Now'),
+              child: Text(
+                'Not Now',
+                style: TextStyle(color: theme.colorScheme.onSurface),
+              ),
             ),
-            TextButton(
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: mainColor,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
               onPressed: () async {
                 Navigator.of(context).pop();
                 await Geolocator.openLocationSettings();
@@ -344,9 +372,7 @@ class _MapScreenState extends State<MapScreen> {
                                         : colorScheme.errorContainer,
                                     shape: BoxShape.circle,
                                     border: Border.all(
-                                      color: _selectedHospital == hospital
-                                          ? colorScheme.secondary
-                                          : colorScheme.error,
+                                      color: mainColor,
                                       width: 2,
                                     ),
                                     boxShadow: [
@@ -359,9 +385,7 @@ class _MapScreenState extends State<MapScreen> {
                                   ),
                                   child: Icon(
                                     Icons.local_hospital,
-                                    color: _selectedHospital == hospital
-                                        ? colorScheme.secondary
-                                        : colorScheme.error,
+                                    color: mainColor,
                                     size: 20,
                                   ),
                                 ),
@@ -386,7 +410,7 @@ class _MapScreenState extends State<MapScreen> {
                                 color: mainColor,
                                 shape: BoxShape.circle,
                                 border: Border.all(
-                                  color: colorScheme.secondary,
+                                  color: Colors.black,
                                   width: 3,
                                 ),
                                 boxShadow: [
@@ -399,7 +423,7 @@ class _MapScreenState extends State<MapScreen> {
                               ),
                               child: Icon(
                                 Icons.local_hospital,
-                                color: colorScheme.secondary,
+                                color: Colors.black,
                                 size: 30,
                               ),
                             ),
@@ -548,7 +572,8 @@ class _MapScreenState extends State<MapScreen> {
                                     value:
                                         (1.0 - (distanceInKm.clamp(0, 10) / 10))
                                             .toDouble(),
-                                    backgroundColor: colorScheme.surfaceContainerHighest,
+                                    backgroundColor:
+                                        colorScheme.surfaceContainerHighest,
                                     color: mainColor,
                                     minHeight: 4,
                                     borderRadius: BorderRadius.circular(2),
