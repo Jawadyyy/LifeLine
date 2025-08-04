@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
@@ -86,6 +87,30 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
     }
   }
 
+  Future<void> _loadUserData() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+
+    final doc =
+        await FirebaseFirestore.instance.collection('users').doc(uid).get();
+    if (!doc.exists) return;
+
+    final data = doc.data()!;
+
+    setState(() {
+      _phoneController.text = data['phone'] ?? '';
+      _ageController.text = data['age'] ?? '';
+      _heightController.text = data['height'] ?? '';
+      _weightController.text = data['weight'] ?? '';
+      _addressController.text = data['address'] ?? '';
+      _emergencyTextController.text = data['emergencyText'] ?? '';
+      _selectedBloodGroup = data['bloodType'] ?? 'None';
+      _selectedDisease = data['disease'] ?? 'None';
+      _selectedAllergy = data['allergy'] ?? 'None';
+      if (data['profileImage'] != null && data['profileImage'] != '') {}
+    });
+  }
+
   Future<void> _updateUserData() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -94,6 +119,32 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
     try {
       final uid = FirebaseAuth.instance.currentUser?.uid;
       if (uid == null) return;
+
+      final phone = _phoneController.text.trim();
+
+      final existing = await FirebaseFirestore.instance
+          .collection('users')
+          .where('phone', isEqualTo: phone)
+          .get();
+
+      final alreadyExists = existing.docs.any((doc) => doc.id != uid);
+
+      if (alreadyExists) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'This phone number is already in use.',
+              style: GoogleFonts.poppins(color: Colors.white),
+            ),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+        );
+        return;
+      }
 
       final double height = double.tryParse(_heightController.text.trim()) ?? 0;
       final double weight = double.tryParse(_weightController.text.trim()) ?? 0;
@@ -119,7 +170,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
         weight: weight.toStringAsFixed(1),
         profileImage: profileImageUrl,
         email: FirebaseAuth.instance.currentUser?.email ?? '',
-        phone: _phoneController.text.trim(),
+        phone: phone,
         age: _ageController.text.trim(),
         bmi: bmi.toStringAsFixed(1),
         disease: _selectedDisease ?? 'None',
@@ -130,16 +181,24 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
 
       await _userService.updateCurrentUser(newUser);
 
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(uid)
+          .update({'isProfileComplete': true});
+
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Profile updated successfully!',
-              style: GoogleFonts.poppins(color: Colors.white)),
+          content: Text(
+            'Profile updated successfully!',
+            style: GoogleFonts.poppins(color: Colors.white),
+          ),
           backgroundColor: Colors.green,
           behavior: SnackBarBehavior.floating,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
         ),
       );
 
@@ -152,12 +211,15 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error updating profile: $e',
-              style: GoogleFonts.poppins(color: Colors.white)),
+          content: Text(
+            'Error updating profile: $e',
+            style: GoogleFonts.poppins(color: Colors.white),
+          ),
           backgroundColor: Colors.red,
           behavior: SnackBarBehavior.floating,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
         ),
       );
     } finally {
@@ -165,6 +227,12 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
         setState(() => _isLoading = false);
       }
     }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
   }
 
   @override

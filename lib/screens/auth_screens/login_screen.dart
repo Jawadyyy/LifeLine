@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:lifeline/components/navigation.dart';
 import 'package:lifeline/screens/auth_screens/forgotpass_screen.dart';
 import 'package:lifeline/screens/auth_screens/signup_screen.dart';
+import 'package:lifeline/screens/main_screens/profile/profile_setup_screen.dart';
 import 'package:lifeline/services/auth_service.dart';
 import 'package:lifeline/components/clip_wave.dart';
 
@@ -74,9 +75,7 @@ class _LoginScreenState extends State<LoginScreen> {
               .get();
 
           final data = doc.data();
-          final isProfileComplete = data?['bloodGroup'] != null &&
-              data?['height'] != null &&
-              data?['emergencyMessage'] != null;
+          final isProfileComplete = data?['isProfileComplete'] == true;
 
           Navigator.pushReplacement(
             context,
@@ -84,7 +83,7 @@ class _LoginScreenState extends State<LoginScreen> {
               pageBuilder: (context, animation, secondaryAnimation) =>
                   isProfileComplete
                       ? const MainNavigationScreen()
-                      : const MainNavigationScreen(),
+                      : const ProfileSetupScreen(),
               transitionsBuilder:
                   (context, animation, secondaryAnimation, child) =>
                       FadeTransition(opacity: animation, child: child),
@@ -111,6 +110,44 @@ class _LoginScreenState extends State<LoginScreen> {
       }
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(message), backgroundColor: Colors.red),
+      );
+    }
+  }
+
+  Future<void> onValidateGoogle(BuildContext context) async {
+    try {
+      final user = await AuthService().signInWithGoogle();
+      if (user != null) {
+        final doc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .get();
+
+        final data = doc.data();
+        final isProfileComplete = data?['isProfileComplete'] == true;
+
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => isProfileComplete
+                ? const MainNavigationScreen()
+                : const ProfileSetupScreen(),
+          ),
+        );
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Login successful"),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Google Sign-In Failed: ${e.toString()}"),
+          backgroundColor: Colors.red,
+        ),
       );
     }
   }
@@ -327,27 +364,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     width: double.infinity,
                     height: 50,
                     child: ElevatedButton.icon(
-                      onPressed: () async {
-                        try {
-                          final user = await AuthService().signInWithGoogle();
-                          if (user != null) {
-                            Navigator.pushReplacement(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (context) =>
-                                      const MainNavigationScreen()),
-                            );
-                          }
-                        } catch (e) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(
-                                  "Google Sign-In Failed: ${e.toString()}"),
-                              backgroundColor: Colors.red,
-                            ),
-                          );
-                        }
-                      },
+                      onPressed: () => onValidateGoogle(context),
                       icon: Image.asset('assets/images/icons/google.png',
                           width: 24, height: 24),
                       label: Text(

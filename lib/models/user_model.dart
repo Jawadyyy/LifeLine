@@ -12,6 +12,7 @@ class UserModel {
   final String? age;
   final String? emergencyText;
   final String? bmi;
+  final bool isProfileComplete;
 
   UserModel({
     required this.name,
@@ -27,6 +28,7 @@ class UserModel {
     this.age,
     this.emergencyText,
     this.bmi,
+    this.isProfileComplete = false,
   });
 
   factory UserModel.fromMap(Map<String, dynamic> map) {
@@ -44,6 +46,7 @@ class UserModel {
       age: map['age'],
       emergencyText: map['emergency_text'],
       bmi: map['bmi'],
+      isProfileComplete: map['isProfileComplete'] == true,
     );
   }
 
@@ -62,6 +65,7 @@ class UserModel {
       'age': age,
       'emergency_text': emergencyText,
       'bmi': bmi,
+      'isProfileComplete': isProfileComplete,
     };
   }
 }
@@ -80,4 +84,5 @@ UserModel currentUser = UserModel(
   age: "N/A",
   emergencyText: "N/A",
   bmi: "N/A",
+  isProfileComplete: false,
 );

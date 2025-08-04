@@ -14,7 +14,7 @@ class AuthService {
   final key = encrypt.Key.fromLength(32);
   final iv = encrypt.IV.fromLength(16);
 
-  Future<void> signup({
+  Future<User?> signup({
     required String email,
     required String password,
     required String username,
@@ -31,7 +31,6 @@ class AuthService {
 
       if (user != null) {
         final encrypter = encrypt.Encrypter(encrypt.AES(key));
-
         final encryptedPassword = encrypter.encrypt(password, iv: iv);
 
         await _firestore.collection('users').doc(user.uid).set({
@@ -39,11 +38,14 @@ class AuthService {
           'email': email,
           'phone': phone,
           'password': encryptedPassword.base64,
+          'isProfileComplete': false,
           'created_at': FieldValue.serverTimestamp(),
         });
 
         await user.sendEmailVerification();
       }
+
+      return user;
     } on FirebaseAuthException catch (e) {
       String message = '';
       if (e.code == 'weak-password') {
@@ -59,6 +61,7 @@ class AuthService {
         textColor: Colors.white,
         fontSize: 14.0,
       );
+      return null;
     } catch (e) {
       Fluttertoast.showToast(
         msg: 'An error occurred. Please try again.',
@@ -68,6 +71,7 @@ class AuthService {
         textColor: Colors.white,
         fontSize: 14.0,
       );
+      return null;
     }
   }
 
@@ -151,6 +155,7 @@ class AuthService {
             'email': user.email,
             'phone': '',
             'created_at': FieldValue.serverTimestamp(),
+            'isProfileComplete': false,
           });
         }
       }
