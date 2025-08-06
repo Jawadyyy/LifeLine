@@ -117,27 +117,35 @@ class _MapScreenState extends State<MapScreen> {
   Future<void> _loadCurrentLocation() async {
     try {
       Position? position = await LocationHandler.getCurrentPosition();
+      if (!mounted) return;
+
       if (position != null) {
         setState(() {
           _currentPosition = LatLng(position.latitude, position.longitude);
         });
 
         String? address = await LocationHandler.getAddressFromLatLng(position);
+        if (!mounted) return;
+
         if (address != null) {
           setState(() {
             _currentAddress = address;
           });
         }
 
-        if (_isMapReady) {
+        if (_isMapReady && _currentPosition != null) {
           _mapController.move(_currentPosition!, 15.0);
         }
 
         _hospitals =
             await HospitalService.getNearbyHospitals(_currentPosition!);
+        if (!mounted) return;
+
         setState(() {});
       }
     } catch (e) {
+      if (!mounted) return;
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error loading location: ${e.toString()}'),

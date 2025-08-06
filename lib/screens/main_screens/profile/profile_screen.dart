@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
@@ -28,12 +29,6 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   void initState() {
     super.initState();
-    _fetchUserData();
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
     _fetchUserData();
   }
 
@@ -131,11 +126,6 @@ class _ProfilePageState extends State<ProfilePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: _backgroundColor,
-      floatingActionButton: FloatingActionButton(
-        onPressed: _fetchUserData,
-        backgroundColor: _primaryColor,
-        child: const Icon(Icons.refresh, color: Colors.white),
-      ),
       body: SingleChildScrollView(
         child: Column(
           children: [
@@ -179,10 +169,14 @@ class _ProfilePageState extends State<ProfilePage> {
                           backgroundColor: Colors.white,
                           child: CircleAvatar(
                             radius: 48,
+                            backgroundColor: Colors.grey[100],
                             backgroundImage: currentUser.profileImage.isNotEmpty
                                 ? NetworkImage(currentUser.profileImage)
-                                : const NetworkImage(
-                                    'https://via.placeholder.com/150'),
+                                : null,
+                            child: currentUser.profileImage.isEmpty
+                                ? Icon(Icons.person,
+                                    color: _primaryColor, size: 48)
+                                : null,
                           ),
                         ),
                         Positioned(
@@ -252,9 +246,22 @@ class _ProfilePageState extends State<ProfilePage> {
                     onTap: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(
-                            builder: (context) => const ProfileSettingScreen()),
-                      );
+                        PageRouteBuilder(
+                          pageBuilder:
+                              (context, animation, secondaryAnimation) =>
+                                  const ProfileSettingScreen(),
+                          transitionsBuilder:
+                              (context, animation, secondaryAnimation, child) {
+                            return FadeTransition(
+                              opacity: animation,
+                              child: child,
+                            );
+                          },
+                          transitionDuration: const Duration(milliseconds: 500),
+                        ),
+                      ).then((_) {
+                        _fetchUserData();
+                      });
                     },
                   ),
                   const SizedBox(height: 15),
@@ -271,7 +278,9 @@ class _ProfilePageState extends State<ProfilePage> {
                     icon: Icons.lock_outline,
                     title: 'Change Password',
                     subtitle: 'Update your account password',
-                    onTap: () {
+                    onTap: () async {
+                      await FirebaseAuth.instance.signOut();
+
                       Navigator.pushReplacement(
                         context,
                         PageRouteBuilder(

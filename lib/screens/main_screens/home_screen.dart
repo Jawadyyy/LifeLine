@@ -56,27 +56,36 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 
   Future<void> _getUserLocation() async {
+    if (!mounted) return;
     setState(() {
       _isLoadingLocation = true;
     });
+
     try {
       final position = await LocationHandler.getCurrentPosition();
+      if (!mounted) return;
+
       if (position != null) {
         final address = await LocationHandler.getAddressFromLatLng(position);
+        if (!mounted) return;
+
         setState(() {
           _currentAddress = address ?? "Location unavailable";
           _isLocationFetched = true;
         });
       } else {
+        if (!mounted) return;
         setState(() {
           _currentAddress = "Location permission denied";
         });
       }
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _currentAddress = "Error getting location";
       });
     } finally {
+      if (!mounted) return;
       setState(() {
         _isLoadingLocation = false;
       });

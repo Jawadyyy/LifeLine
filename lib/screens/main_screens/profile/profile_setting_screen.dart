@@ -104,7 +104,7 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen> {
       }
 
       await _firestore.collection('users').doc(userId).update(userData);
-      await _loadUserData(); // Optional: reload after update
+      await _loadUserData();
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -120,6 +120,7 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen> {
             ),
           ),
         );
+        Navigator.pop(context);
       }
     } catch (e) {
       if (mounted) {

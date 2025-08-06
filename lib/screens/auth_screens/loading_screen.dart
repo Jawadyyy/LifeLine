@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lifeline/components/navigation.dart';
-import 'package:lifeline/screens/auth_screens/login_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:lifeline/screens/auth_screens/welcome_screen.dart';
 
 class LoadingScreen extends StatefulWidget {
   const LoadingScreen({super.key});
@@ -45,7 +45,7 @@ class _LoadingScreenState extends State<LoadingScreen>
       } else {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (_) => const LoginScreen()),
+          MaterialPageRoute(builder: (_) => const WelcomeScreen()),
         );
       }
     });
