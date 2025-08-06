@@ -36,6 +36,7 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   Future<void> _checkLocationServiceAndLoadLocation() async {
+    if (!mounted) return;
     setState(() {
       _isLoading = true;
       _showRoute = false;
@@ -45,11 +46,15 @@ class _MapScreenState extends State<MapScreen> {
 
     bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
+      if (!mounted) return;
       setState(() => _isLoading = false);
       _showLocationServiceDialog();
       return;
     }
+
     await _loadCurrentLocation();
+
+    if (!mounted) return;
     setState(() => _isLoading = false);
   }
 
