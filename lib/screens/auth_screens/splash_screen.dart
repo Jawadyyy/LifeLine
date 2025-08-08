@@ -2,16 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lifeline/components/navigation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:lifeline/constants/app_colors.dart';
 import 'package:lifeline/screens/auth_screens/welcome_screen.dart';
 
-class LoadingScreen extends StatefulWidget {
-  const LoadingScreen({super.key});
+class SplashScreen extends StatefulWidget {
+  const SplashScreen({super.key});
 
   @override
-  State<LoadingScreen> createState() => _LoadingScreenState();
+  State<SplashScreen> createState() => _LoadingScreenState();
 }
 
-class _LoadingScreenState extends State<LoadingScreen>
+class _LoadingScreenState extends State<SplashScreen>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _heartbeatAnimation;
@@ -60,7 +61,7 @@ class _LoadingScreenState extends State<LoadingScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFF6F61),
+      backgroundColor: AppColors.primary,
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -78,7 +79,7 @@ class _LoadingScreenState extends State<LoadingScreen>
               'L I F E L I N E',
               style: GoogleFonts.nunito(
                 fontSize: 42,
-                color: Colors.white,
+                color: AppColors.textTertiary,
               ),
             ),
           ],

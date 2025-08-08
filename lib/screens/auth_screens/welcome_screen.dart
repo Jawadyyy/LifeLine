@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lifeline/components/clip_wave.dart';
+import 'package:lifeline/constants/app_colors.dart';
 import 'package:lifeline/screens/auth_screens/login_screen.dart';
 
 class WelcomeScreen extends StatelessWidget {
@@ -50,7 +51,7 @@ class WelcomeScreen extends StatelessWidget {
                         style: GoogleFonts.nunito(
                           fontSize: 36,
                           fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                          color: AppColors.textTertiary,
                           height: 1.2,
                         ),
                       ),
@@ -71,7 +72,7 @@ class WelcomeScreen extends StatelessWidget {
                     style: GoogleFonts.nunito(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
-                      color: Colors.black87,
+                      color: AppColors.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -79,7 +80,7 @@ class WelcomeScreen extends StatelessWidget {
                     'Access emergency help, find nearby hospitals, and stay safe with real-time support.',
                     style: GoogleFonts.nunito(
                       fontSize: 16,
-                      color: Colors.grey[600],
+                      color: AppColors.textGrey,
                       height: 1.5,
                     ),
                   ),
@@ -88,7 +89,7 @@ class WelcomeScreen extends StatelessWidget {
                     alignment: Alignment.bottomRight,
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFFF6F61),
+                        backgroundColor: AppColors.primary,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(30),
                         ),
@@ -124,13 +125,13 @@ class WelcomeScreen extends StatelessWidget {
                             style: GoogleFonts.nunito(
                               fontSize: 18,
                               fontWeight: FontWeight.w600,
-                              color: Colors.white,
+                              color: AppColors.textTertiary,
                             ),
                           ),
                           const SizedBox(width: 10),
                           const Icon(
                             Icons.arrow_forward,
-                            color: Colors.white,
+                            color: AppColors.textTertiary,
                             size: 20,
                           ),
                         ],
