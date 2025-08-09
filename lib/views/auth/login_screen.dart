@@ -3,9 +3,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lifeline/components/navigation.dart';
-import 'package:lifeline/screens/auth_screens/forgotpass_screen.dart';
-import 'package:lifeline/screens/auth_screens/signup_screen.dart';
-import 'package:lifeline/screens/main_screens/profile/profile_setup_screen.dart';
+import 'package:lifeline/views/auth/forgotpass_screen.dart';
+import 'package:lifeline/views/auth/signup_screen.dart';
+import 'package:lifeline/views/main/profile/profile_setup_screen.dart';
 import 'package:lifeline/services/auth_service.dart';
 import 'package:lifeline/components/clip_wave.dart';
 

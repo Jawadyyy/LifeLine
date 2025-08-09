@@ -2,7 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:geocoding/geocoding.dart';
-import 'package:lifeline/chatbot/screens/chat_home_screen.dart';
+import 'package:lifeline/views/chatbot/screens/chat_home_screen.dart';
 import 'package:lifeline/services/location_handler.dart';
 import 'package:lifeline/services/firestore_service.dart';
 import 'package:url_launcher/url_launcher.dart';

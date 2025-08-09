@@ -3,16 +3,16 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:lifeline/components/navigation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:lifeline/constants/app_colors.dart';
-import 'package:lifeline/screens/auth_screens/welcome_screen.dart';
+import 'package:lifeline/views/entry/welcome_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
   @override
-  State<SplashScreen> createState() => _LoadingScreenState();
+  State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _LoadingScreenState extends State<SplashScreen>
+class _SplashScreenState extends State<SplashScreen>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _heartbeatAnimation;

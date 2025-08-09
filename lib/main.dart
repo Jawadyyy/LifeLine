@@ -2,7 +2,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/adapters.dart';
 import 'package:lifeline/firebase/firebase_options.dart';
-import 'package:lifeline/screens/auth_screens/splash_screen.dart';
+import 'package:lifeline/views/entry/splash_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 Future<void> main() async {

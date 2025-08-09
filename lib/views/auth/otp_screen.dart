@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:lifeline/screens/auth_screens/change_password.dart';
+import 'package:lifeline/views/auth/change_password.dart';
 import 'package:lifeline/components/clip_wave.dart';
 
 class OTPScreen extends StatefulWidget {

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:lifeline/chatbot/history/chat_history.dart';
+import 'package:lifeline/views/chatbot/history/chat_history.dart';
 import 'chat_screen.dart';
 
 class HistoryScreen extends StatefulWidget {

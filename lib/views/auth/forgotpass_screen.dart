@@ -4,7 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:lifeline/components/phone_field.dart';
-import 'package:lifeline/screens/auth_screens/otp_screen.dart';
+import 'package:lifeline/views/auth/otp_screen.dart';
 import 'package:lifeline/components/clip_wave.dart';
 
 class ForgotpassScreen extends StatefulWidget {

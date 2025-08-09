@@ -2,8 +2,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
-import 'package:lifeline/chatbot/api_service/api.dart';
-import 'package:lifeline/chatbot/history/chat_history.dart';
+import 'package:lifeline/views/chatbot/api_service/api.dart';
+import 'package:lifeline/views/chatbot/history/chat_history.dart';
 
 class ChatScreen extends StatefulWidget {
   final List<Map<String, dynamic>>? restoredSession;

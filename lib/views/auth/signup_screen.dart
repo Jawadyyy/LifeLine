@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lifeline/components/clip_wave.dart';
 import 'package:lifeline/components/phone_field.dart';
-import 'package:lifeline/screens/auth_screens/login_screen.dart';
+import 'package:lifeline/views/auth/login_screen.dart';
 import 'package:lifeline/services/auth_service.dart';
 
 class SignUpScreen extends StatefulWidget {
