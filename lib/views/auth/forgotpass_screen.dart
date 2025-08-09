@@ -2,10 +2,12 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:lifeline/components/custom_button.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:lifeline/components/phone_field.dart';
 import 'package:lifeline/views/auth/otp_screen.dart';
 import 'package:lifeline/components/clip_wave.dart';
+import 'package:lifeline/constants/app_colors.dart';
 
 class ForgotpassScreen extends StatefulWidget {
   const ForgotpassScreen({super.key});
@@ -52,29 +54,26 @@ class _ForgotpassScreenState extends State<ForgotpassScreen> {
         ),
       );
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text("Error: $e"),
-          backgroundColor: Colors.red,
-          duration: const Duration(seconds: 2),
-        ),
-      );
+      _showSnackBar("Error: $e", AppColors.error);
     }
   }
 
   void _validateAndSend() {
     if (_phoneNumber.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Please enter a valid phone number"),
-          backgroundColor: Colors.red,
-          duration: Duration(seconds: 2),
-        ),
-      );
+      _showSnackBar("Please enter a valid phone number", AppColors.error);
       return;
     }
-
     _sendOTP(_phoneNumber);
+  }
+
+  void _showSnackBar(String message, Color color) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: color,
+        duration: const Duration(seconds: 2),
+      ),
+    );
   }
 
   @override
@@ -82,7 +81,7 @@ class _ForgotpassScreenState extends State<ForgotpassScreen> {
     final size = MediaQuery.of(context).size;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.surface,
       body: Column(
         children: [
           SizedBox(
@@ -97,7 +96,7 @@ class _ForgotpassScreenState extends State<ForgotpassScreen> {
                       gradient: LinearGradient(
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
-                        colors: [Color(0xFFFF6F61), Color(0xFFFF6F61)],
+                        colors: [AppColors.primary, AppColors.primary],
                       ),
                     ),
                   ),
@@ -106,7 +105,8 @@ class _ForgotpassScreenState extends State<ForgotpassScreen> {
                   child: Padding(
                     padding: const EdgeInsets.only(left: 10, top: 10),
                     child: IconButton(
-                      icon: const Icon(Icons.arrow_back, color: Colors.white),
+                      icon: const Icon(Icons.arrow_back,
+                          color: AppColors.textTertiary),
                       onPressed: () => Navigator.pop(context),
                     ),
                   ),
@@ -125,12 +125,16 @@ class _ForgotpassScreenState extends State<ForgotpassScreen> {
                     style: GoogleFonts.nunito(
                       fontWeight: FontWeight.bold,
                       fontSize: 32,
+                      color: AppColors.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 10),
                   Text(
                     "Don’t worry! Enter your phone number and we’ll send you an OTP via WhatsApp.",
-                    style: GoogleFonts.nunito(fontSize: 16),
+                    style: GoogleFonts.nunito(
+                      fontSize: 16,
+                      color: AppColors.textSecondary,
+                    ),
                   ),
                   const SizedBox(height: 30),
                   PhoneForm(
@@ -144,22 +148,9 @@ class _ForgotpassScreenState extends State<ForgotpassScreen> {
                   SizedBox(
                     width: double.infinity,
                     height: 50,
-                    child: ElevatedButton(
+                    child: CustomButton(
+                      text: "Send OTP via WhatsApp",
                       onPressed: _validateAndSend,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFFF6F61),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(30),
-                        ),
-                      ),
-                      child: Text(
-                        "Send OTP via WhatsApp",
-                        style: GoogleFonts.nunito(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
-                      ),
                     ),
                   ),
                   const SizedBox(height: 20),

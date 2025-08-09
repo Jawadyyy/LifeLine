@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lifeline/components/clip_wave.dart';
+import 'package:lifeline/components/custom_button.dart';
 import 'package:lifeline/components/phone_field.dart';
+import 'package:lifeline/components/custom_text_field.dart';
+import 'package:lifeline/constants/app_colors.dart';
 import 'package:lifeline/views/auth/login_screen.dart';
 import 'package:lifeline/services/auth_service.dart';
 
@@ -21,11 +24,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
   final RegExp _emailRegex =
       RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$');
-
-  final border = OutlineInputBorder(
-    borderRadius: BorderRadius.circular(12),
-    borderSide: BorderSide(color: Colors.grey.shade300, width: 1.5),
-  );
 
   final emailIcon =
       Image.asset('assets/images/icons/email.png', width: 24, height: 24);
@@ -81,7 +79,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: isSuccess ? Colors.green : Colors.red,
+        backgroundColor: isSuccess ? AppColors.success : AppColors.error,
         duration: const Duration(seconds: 2),
       ),
     );
@@ -92,7 +90,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
     final size = MediaQuery.of(context).size;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.surface,
       body: Column(
         children: [
           SizedBox(
@@ -107,7 +105,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       gradient: LinearGradient(
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
-                        colors: [Color(0xFFFF6F61), Color(0xFFFF6F61)],
+                        colors: [AppColors.primary, AppColors.accent],
                       ),
                     ),
                   ),
@@ -126,100 +124,34 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     style: GoogleFonts.nunito(
                       fontWeight: FontWeight.bold,
                       fontSize: 32,
+                      color: AppColors.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 16),
-                  TextField(
+                  CustomTextField(
                     controller: _fullNameController,
-                    style: GoogleFonts.nunito(fontSize: 16),
-                    decoration: InputDecoration(
-                      filled: true,
-                      fillColor: Colors.grey.shade50,
-                      prefixIcon: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: SizedBox(width: 24, child: userIcon),
-                      ),
-                      hintText: 'Full Name',
-                      hintStyle: GoogleFonts.nunito(
-                        color: Colors.grey[500],
-                        fontWeight: FontWeight.w500,
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(vertical: 18),
-                      enabledBorder: border,
-                      focusedBorder: border.copyWith(
-                        borderSide: const BorderSide(
-                          color: Color(0xFFFF6F61),
-                          width: 2,
-                        ),
-                      ),
-                    ),
+                    hintText: "Full Name",
+                    prefixIcon: userIcon,
                   ),
                   const SizedBox(height: 20),
-                  TextField(
+                  CustomTextField(
                     controller: _emailController,
-                    style: GoogleFonts.nunito(fontSize: 16),
-                    decoration: InputDecoration(
-                      filled: true,
-                      fillColor: Colors.grey.shade50,
-                      prefixIcon: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: SizedBox(width: 24, child: emailIcon),
-                      ),
-                      hintText: 'Email Address',
-                      hintStyle: GoogleFonts.nunito(
-                        color: Colors.grey[500],
-                        fontWeight: FontWeight.w500,
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(vertical: 18),
-                      enabledBorder: border,
-                      focusedBorder: border.copyWith(
-                        borderSide: const BorderSide(
-                          color: Color(0xFFFF6F61),
-                          width: 2,
-                        ),
-                      ),
-                    ),
+                    hintText: "Email Address",
+                    prefixIcon: emailIcon,
+                    keyboardType: TextInputType.emailAddress,
                   ),
                   const SizedBox(height: 20),
-                  TextField(
+                  CustomTextField(
                     controller: _passwordController,
+                    hintText: "Password",
+                    prefixIcon: passwordIcon,
                     obscureText: !_isPasswordVisible,
-                    style: GoogleFonts.nunito(fontSize: 16),
-                    decoration: InputDecoration(
-                      filled: true,
-                      fillColor: Colors.grey.shade50,
-                      prefixIcon: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: SizedBox(width: 24, child: passwordIcon),
-                      ),
-                      suffixIcon: Padding(
-                        padding: const EdgeInsets.only(right: 12),
-                        child: IconButton(
-                          icon: SizedBox(
-                            width: 24,
-                            child: _isPasswordVisible ? eyeSlashIcon : eyeIcon,
-                          ),
-                          onPressed: () {
-                            setState(() {
-                              _isPasswordVisible = !_isPasswordVisible;
-                            });
-                          },
-                        ),
-                      ),
-                      hintText: 'Password',
-                      hintStyle: GoogleFonts.nunito(
-                        color: Colors.grey[500],
-                        fontWeight: FontWeight.w500,
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(vertical: 18),
-                      enabledBorder: border,
-                      focusedBorder: border.copyWith(
-                        borderSide: const BorderSide(
-                          color: Color(0xFFFF6F61),
-                          width: 2,
-                        ),
-                      ),
-                    ),
+                    suffixIcon: _isPasswordVisible ? eyeSlashIcon : eyeIcon,
+                    onSuffixTap: () {
+                      setState(() {
+                        _isPasswordVisible = !_isPasswordVisible;
+                      });
+                    },
                   ),
                   const SizedBox(height: 20),
                   PhoneForm(
@@ -233,30 +165,21 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   SizedBox(
                     width: double.infinity,
                     height: 50,
-                    child: ElevatedButton(
+                    child: CustomButton(
+                      text: "Sign Ups",
                       onPressed: _registerAccount,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFFF6F61),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(30),
-                        ),
-                      ),
-                      child: Text(
-                        "Sign Up",
-                        style: GoogleFonts.nunito(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
-                      ),
                     ),
                   ),
                   const SizedBox(height: 20),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text("Already have an account? ",
-                          style: GoogleFonts.nunito()),
+                      Text(
+                        "Already have an account? ",
+                        style: GoogleFonts.nunito(
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
                       GestureDetector(
                         onTap: () {
                           Navigator.of(context).push(
@@ -279,7 +202,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         child: Text(
                           "Log In",
                           style: GoogleFonts.nunito(
-                            color: const Color(0xFFFF6F61),
+                            color: AppColors.primary,
                             fontWeight: FontWeight.bold,
                           ),
                         ),

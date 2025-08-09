@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:lifeline/components/bottom_navbar.dart';
+import 'package:lifeline/components/custom_bottom_navbar.dart';
 import 'package:lifeline/views/main/contacts_screen.dart';
 import 'package:lifeline/views/main/home_screen.dart';
 import 'package:lifeline/views/main/map_screen.dart';

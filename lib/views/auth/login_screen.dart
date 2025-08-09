@@ -2,12 +2,15 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:lifeline/components/custom_button.dart';
 import 'package:lifeline/components/navigation.dart';
 import 'package:lifeline/views/auth/forgotpass_screen.dart';
 import 'package:lifeline/views/auth/signup_screen.dart';
 import 'package:lifeline/views/main/profile/profile_setup_screen.dart';
 import 'package:lifeline/services/auth_service.dart';
 import 'package:lifeline/components/clip_wave.dart';
+import 'package:lifeline/components/custom_text_field.dart';
+import 'package:lifeline/constants/app_colors.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -30,11 +33,6 @@ class _LoginScreenState extends State<LoginScreen> {
   final eyeIcon =
       Image.asset('assets/images/icons/hide.png', width: 24, height: 24);
 
-  final border = OutlineInputBorder(
-    borderRadius: BorderRadius.circular(12),
-    borderSide: BorderSide(color: Colors.grey.shade300, width: 1.5),
-  );
-
   final RegExp _emailRegex =
       RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$');
 
@@ -46,7 +44,7 @@ class _LoginScreenState extends State<LoginScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text("Wrong email format"),
-          backgroundColor: Colors.red,
+          backgroundColor: AppColors.error,
         ),
       );
       return;
@@ -56,7 +54,7 @@ class _LoginScreenState extends State<LoginScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text("Password cannot be empty"),
-          backgroundColor: Colors.red,
+          backgroundColor: AppColors.error,
         ),
       );
       return;
@@ -94,7 +92,7 @@ class _LoginScreenState extends State<LoginScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text("Login successful"),
-              backgroundColor: Colors.green,
+              backgroundColor: AppColors.secondary,
             ),
           );
         }
@@ -109,7 +107,7 @@ class _LoginScreenState extends State<LoginScreen> {
         }
       }
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message), backgroundColor: Colors.red),
+        SnackBar(content: Text(message), backgroundColor: AppColors.error),
       );
     }
   }
@@ -138,7 +136,7 @@ class _LoginScreenState extends State<LoginScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text("Login successful"),
-            backgroundColor: Colors.green,
+            backgroundColor: AppColors.secondary,
           ),
         );
       }
@@ -146,7 +144,7 @@ class _LoginScreenState extends State<LoginScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text("Google Sign-In Failed: ${e.toString()}"),
-          backgroundColor: Colors.red,
+          backgroundColor: AppColors.error,
         ),
       );
     }
@@ -157,7 +155,7 @@ class _LoginScreenState extends State<LoginScreen> {
     final size = MediaQuery.of(context).size;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.surface,
       body: Column(
         children: [
           SizedBox(
@@ -173,8 +171,8 @@ class _LoginScreenState extends State<LoginScreen> {
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                         colors: [
-                          Color(0xFFFF6F61),
-                          Color(0xFFFF6F61),
+                          AppColors.primary,
+                          AppColors.primary,
                         ],
                       ),
                     ),
@@ -194,107 +192,28 @@ class _LoginScreenState extends State<LoginScreen> {
                     style: GoogleFonts.nunito(
                       fontWeight: FontWeight.bold,
                       fontSize: 32,
+                      color: AppColors.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 16),
-                  TweenAnimationBuilder(
-                    duration: const Duration(milliseconds: 300),
-                    tween: Tween<double>(begin: 0.98, end: 1.0),
-                    builder: (context, scale, child) {
-                      return Transform.scale(
-                        scale: scale,
-                        child: child,
-                      );
-                    },
-                    child: TextField(
-                      controller: _emailController,
-                      style: GoogleFonts.nunito(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.grey[800],
-                      ),
-                      decoration: InputDecoration(
-                        filled: true,
-                        fillColor: Colors.grey.shade50,
-                        prefixIcon: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: SizedBox(width: 24, child: emailIcon),
-                        ),
-                        hintText: 'Email Address',
-                        hintStyle: GoogleFonts.nunito(
-                          color: Colors.grey[500],
-                          fontWeight: FontWeight.w500,
-                        ),
-                        contentPadding:
-                            const EdgeInsets.symmetric(vertical: 18),
-                        enabledBorder: border,
-                        focusedBorder: border.copyWith(
-                          borderSide: const BorderSide(
-                            color: Color(0xFFFF6F61),
-                            width: 2,
-                          ),
-                        ),
-                        border: border,
-                      ),
-                    ),
+                  CustomTextField(
+                    controller: _emailController,
+                    hintText: "Email Address",
+                    prefixIcon: emailIcon,
+                    keyboardType: TextInputType.emailAddress,
                   ),
                   const SizedBox(height: 20),
-                  TweenAnimationBuilder(
-                    duration: const Duration(milliseconds: 300),
-                    tween: Tween<double>(begin: 0.98, end: 1.0),
-                    builder: (context, scale, child) {
-                      return Transform.scale(
-                        scale: scale,
-                        child: child,
-                      );
+                  CustomTextField(
+                    controller: _passwordController,
+                    hintText: "Password",
+                    prefixIcon: passwordIcon,
+                    suffixIcon: _isPasswordVisible ? eyeSlashIcon : eyeIcon,
+                    obscureText: !_isPasswordVisible,
+                    onSuffixTap: () {
+                      setState(() {
+                        _isPasswordVisible = !_isPasswordVisible;
+                      });
                     },
-                    child: TextField(
-                      controller: _passwordController,
-                      obscureText: !_isPasswordVisible,
-                      style: GoogleFonts.nunito(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.grey[800],
-                      ),
-                      decoration: InputDecoration(
-                        filled: true,
-                        fillColor: Colors.grey.shade50,
-                        prefixIcon: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: SizedBox(width: 24, child: passwordIcon),
-                        ),
-                        suffixIcon: Padding(
-                          padding: const EdgeInsets.only(right: 12),
-                          child: IconButton(
-                            icon: SizedBox(
-                              width: 24,
-                              child:
-                                  _isPasswordVisible ? eyeSlashIcon : eyeIcon,
-                            ),
-                            onPressed: () {
-                              setState(() {
-                                _isPasswordVisible = !_isPasswordVisible;
-                              });
-                            },
-                          ),
-                        ),
-                        hintText: 'Password',
-                        hintStyle: GoogleFonts.nunito(
-                          color: Colors.grey[500],
-                          fontWeight: FontWeight.w500,
-                        ),
-                        contentPadding:
-                            const EdgeInsets.symmetric(vertical: 18),
-                        enabledBorder: border,
-                        focusedBorder: border.copyWith(
-                          borderSide: const BorderSide(
-                            color: Color(0xFFFF6F61),
-                            width: 2,
-                          ),
-                        ),
-                        border: border,
-                      ),
-                    ),
                   ),
                   Align(
                     alignment: Alignment.centerRight,
@@ -320,7 +239,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       child: Text(
                         "Forgot Password?",
                         style: GoogleFonts.nunito(
-                          color: Color(0xFFFF6F61),
+                          color: AppColors.primary,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -330,22 +249,9 @@ class _LoginScreenState extends State<LoginScreen> {
                   SizedBox(
                     width: double.infinity,
                     height: 50,
-                    child: ElevatedButton(
+                    child: CustomButton(
+                      text: "Login",
                       onPressed: _validateAndLogin,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFFF6F61),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(30),
-                        ),
-                      ),
-                      child: Text(
-                        "Login",
-                        style: GoogleFonts.nunito(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
-                      ),
                     ),
                   ),
                   const SizedBox(height: 20),
@@ -370,12 +276,12 @@ class _LoginScreenState extends State<LoginScreen> {
                       label: Text(
                         "Login with Google",
                         style: GoogleFonts.nunito(
-                          color: Colors.black87,
+                          color: AppColors.textPrimary,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFE0E0E0),
+                        backgroundColor: AppColors.tertiary,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(30),
                         ),
@@ -388,7 +294,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     children: [
                       Text(
                         "Don't have an account? ",
-                        style: GoogleFonts.nunito(),
+                        style: GoogleFonts.nunito(
+                          color: AppColors.textPrimary,
+                        ),
                       ),
                       GestureDetector(
                         onTap: () {
@@ -412,7 +320,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         child: Text(
                           "Sign Up",
                           style: GoogleFonts.nunito(
-                            color: const Color(0xFFFF6F61),
+                            color: AppColors.primary,
                             fontWeight: FontWeight.bold,
                           ),
                         ),

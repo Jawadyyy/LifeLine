@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl_phone_field/intl_phone_field.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:lifeline/constants/app_colors.dart';
 
 class PhoneForm extends StatefulWidget {
   final Function(String) onPhoneChanged;
@@ -20,7 +21,7 @@ class _PhoneFormState extends State<PhoneForm> {
   Widget build(BuildContext context) {
     final border = OutlineInputBorder(
       borderRadius: BorderRadius.circular(12),
-      borderSide: BorderSide(color: Colors.grey.shade300, width: 1.5),
+      borderSide: const BorderSide(color: AppColors.textGrey, width: 1.5),
     );
 
     return IntlPhoneField(
@@ -29,7 +30,7 @@ class _PhoneFormState extends State<PhoneForm> {
       style: GoogleFonts.nunito(
         fontSize: 16,
         fontWeight: FontWeight.w500,
-        color: Colors.grey[800],
+        color: AppColors.textPrimary,
       ),
       decoration: InputDecoration(
         filled: true,
@@ -47,14 +48,14 @@ class _PhoneFormState extends State<PhoneForm> {
         ),
         hintText: 'Phone Number',
         hintStyle: GoogleFonts.nunito(
-          color: Colors.grey[500],
+          color: AppColors.textGrey,
           fontWeight: FontWeight.w500,
         ),
         contentPadding: const EdgeInsets.symmetric(vertical: 18),
         enabledBorder: border,
         focusedBorder: border.copyWith(
           borderSide: const BorderSide(
-            color: Color(0xFFFF6F61),
+            color: AppColors.primary,
             width: 2,
           ),
         ),
@@ -63,10 +64,10 @@ class _PhoneFormState extends State<PhoneForm> {
       dropdownIconPosition: IconPosition.trailing,
       dropdownDecoration: BoxDecoration(
         borderRadius: BorderRadius.circular(8),
-        color: Colors.transparent,
+        color: AppColors.transparent,
       ),
       flagsButtonPadding: const EdgeInsets.only(left: 10),
-      initialCountryCode: 'US',
+      initialCountryCode: 'PK',
       onChanged: (phone) {
         widget.onPhoneChanged(phone.completeNumber);
       },

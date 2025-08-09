@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:lifeline/components/custom_button.dart';
 import 'package:lifeline/views/auth/change_password.dart';
 import 'package:lifeline/components/clip_wave.dart';
+import 'package:lifeline/constants/app_colors.dart';
 
 class OTPScreen extends StatefulWidget {
   final String phone;
@@ -39,12 +41,7 @@ class _OTPScreenState extends State<OTPScreen> {
 
   void _verifyOTP() {
     if (!_isOTPFilled()) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Please enter the full OTP."),
-          backgroundColor: Colors.red,
-        ),
-      );
+      _showSnackBar("Please enter the full OTP.", AppColors.error);
       return;
     }
 
@@ -64,13 +61,18 @@ class _OTPScreenState extends State<OTPScreen> {
         ),
       );
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Invalid OTP. Please try again."),
-          backgroundColor: Colors.red,
-        ),
-      );
+      _showSnackBar("Invalid OTP. Please try again.", AppColors.error);
     }
+  }
+
+  void _showSnackBar(String message, Color bgColor) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: bgColor,
+        duration: const Duration(seconds: 2),
+      ),
+    );
   }
 
   @override
@@ -78,7 +80,7 @@ class _OTPScreenState extends State<OTPScreen> {
     final size = MediaQuery.of(context).size;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.surface,
       body: Column(
         children: [
           SizedBox(
@@ -93,7 +95,7 @@ class _OTPScreenState extends State<OTPScreen> {
                       gradient: LinearGradient(
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
-                        colors: [Color(0xFFFF6F61), Color(0xFFFF6F61)],
+                        colors: [AppColors.primary, AppColors.primary],
                       ),
                     ),
                   ),
@@ -102,7 +104,8 @@ class _OTPScreenState extends State<OTPScreen> {
                   child: Padding(
                     padding: const EdgeInsets.only(left: 10, top: 10),
                     child: IconButton(
-                      icon: const Icon(Icons.arrow_back, color: Colors.white),
+                      icon: const Icon(Icons.arrow_back,
+                          color: AppColors.textTertiary),
                       onPressed: () => Navigator.pop(context),
                     ),
                   ),
@@ -121,12 +124,16 @@ class _OTPScreenState extends State<OTPScreen> {
                     style: GoogleFonts.nunito(
                       fontWeight: FontWeight.bold,
                       fontSize: 32,
+                      color: AppColors.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 10),
                   Text(
                     "Enter the OTP code sent to ${widget.phone}.",
-                    style: GoogleFonts.nunito(fontSize: 16),
+                    style: GoogleFonts.nunito(
+                      fontSize: 16,
+                      color: AppColors.textSecondary,
+                    ),
                   ),
                   const SizedBox(height: 40),
                   Row(
@@ -136,7 +143,7 @@ class _OTPScreenState extends State<OTPScreen> {
                         height: 55,
                         width: 50,
                         decoration: BoxDecoration(
-                          color: const Color.fromARGB(255, 224, 224, 224),
+                          color: AppColors.tertiary,
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Center(
@@ -146,7 +153,11 @@ class _OTPScreenState extends State<OTPScreen> {
                             textAlign: TextAlign.center,
                             keyboardType: TextInputType.number,
                             maxLength: 1,
-                            style: const TextStyle(fontSize: 20),
+                            style: GoogleFonts.nunito(
+                              fontSize: 20,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.textPrimary,
+                            ),
                             decoration: const InputDecoration(
                               border: InputBorder.none,
                               counterText: '',
@@ -167,22 +178,9 @@ class _OTPScreenState extends State<OTPScreen> {
                   SizedBox(
                     width: double.infinity,
                     height: 50,
-                    child: ElevatedButton(
+                    child: CustomButton(
+                      text: "Verify",
                       onPressed: _verifyOTP,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFFF6F61),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(30),
-                        ),
-                      ),
-                      child: Text(
-                        "Verify",
-                        style: GoogleFonts.nunito(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
-                      ),
                     ),
                   ),
                   const SizedBox(height: 20),
