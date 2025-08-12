@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:lifeline/constants/app_colors.dart';
 
 class ProfileSettingScreen extends StatefulWidget {
   const ProfileSettingScreen({super.key});
@@ -26,10 +27,6 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen> {
 
   final _auth = FirebaseAuth.instance;
   final _firestore = FirebaseFirestore.instance;
-  final Color _primaryColor = const Color(0xFFFF6F61);
-  final Color _backgroundColor = const Color(0xFFF9F9F9);
-  final Color _cardColor = Colors.white;
-  final Color _textColor = const Color(0xFF333333);
 
   @override
   void initState() {
@@ -111,9 +108,9 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen> {
           SnackBar(
             content: Text(
               'Profile updated successfully!',
-              style: GoogleFonts.poppins(color: Colors.white),
+              style: GoogleFonts.poppins(color: AppColors.textTertiary),
             ),
-            backgroundColor: _primaryColor,
+            backgroundColor: AppColors.primary,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(10),
@@ -128,9 +125,9 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen> {
           SnackBar(
             content: Text(
               'Failed to update profile.',
-              style: GoogleFonts.poppins(color: Colors.white),
+              style: GoogleFonts.poppins(color: AppColors.textTertiary),
             ),
-            backgroundColor: Colors.red,
+            backgroundColor: AppColors.error,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(10),
@@ -144,12 +141,12 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _backgroundColor,
+      backgroundColor: AppColors.background,
       appBar: AppBar(
         elevation: 0,
-        backgroundColor: _primaryColor,
+        backgroundColor: AppColors.primary,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
+          icon: const Icon(Icons.arrow_back_ios, color: AppColors.textTertiary),
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
@@ -157,7 +154,7 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen> {
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
-            color: Colors.white,
+            color: AppColors.textTertiary,
           ),
         ),
         centerTitle: true,
@@ -291,7 +288,7 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen> {
                     onPressed: () => Navigator.pop(context),
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 16),
-                      side: BorderSide(color: _primaryColor, width: 2),
+                      side: BorderSide(color: AppColors.primary, width: 2),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
@@ -300,7 +297,7 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen> {
                       'CANCEL',
                       style: GoogleFonts.poppins(
                         fontWeight: FontWeight.bold,
-                        color: _primaryColor,
+                        color: AppColors.primary,
                       ),
                     ),
                   ),
@@ -310,7 +307,7 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen> {
                   child: ElevatedButton(
                     onPressed: _updateUserData,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: _primaryColor,
+                      backgroundColor: AppColors.primary,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -321,7 +318,7 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen> {
                       'UPDATE PROFILE',
                       style: GoogleFonts.poppins(
                         fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                        color: AppColors.textTertiary,
                       ),
                     ),
                   ),
@@ -343,13 +340,13 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen> {
     return TextField(
       controller: controller,
       keyboardType: keyboardType,
-      style: GoogleFonts.poppins(color: _textColor),
+      style: GoogleFonts.poppins(color: AppColors.textPrimary),
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: GoogleFonts.poppins(color: Colors.grey.shade600),
-        prefixIcon: Icon(icon, color: _primaryColor),
+        labelStyle: GoogleFonts.poppins(color: AppColors.textGrey),
+        prefixIcon: Icon(icon, color: AppColors.primary),
         filled: true,
-        fillColor: _cardColor,
+        fillColor: AppColors.surface,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide.none,
@@ -369,11 +366,11 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12),
       decoration: BoxDecoration(
-        color: _cardColor,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: AppColors.textGrey.withOpacity(0.1),
             blurRadius: 6,
             spreadRadius: 2,
             offset: const Offset(0, 3),
@@ -384,13 +381,13 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen> {
         value: value,
         decoration: InputDecoration(
           labelText: label,
-          labelStyle: GoogleFonts.poppins(color: Colors.grey.shade600),
+          labelStyle: GoogleFonts.poppins(color: AppColors.textGrey),
           border: InputBorder.none,
-          prefixIcon: Icon(icon, color: _primaryColor),
+          prefixIcon: Icon(icon, color: AppColors.primary),
         ),
-        dropdownColor: _cardColor,
-        icon: Icon(Icons.arrow_drop_down, color: _primaryColor),
-        style: GoogleFonts.poppins(color: _textColor),
+        dropdownColor: AppColors.surface,
+        icon: Icon(Icons.arrow_drop_down, color: AppColors.primary),
+        style: GoogleFonts.poppins(color: AppColors.textPrimary),
         items: items.map((String value) {
           return DropdownMenuItem<String>(
             value: value,

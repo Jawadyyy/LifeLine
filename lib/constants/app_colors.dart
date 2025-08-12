@@ -14,6 +14,8 @@ class AppColors {
   static const Color textSecondary = Colors.black54;
   static const Color textTertiary = Colors.white;
   static const Color textGrey = Color(0xFF757575);
+  static const Color textMedium = Color(0xFF616161);
+  static const Color textLight = Color(0xFF9E9E9E);
 
   static const Color error = Colors.redAccent;
   static const Color success = Colors.green;

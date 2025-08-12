@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:lifeline/constants/app_colors.dart';
 
 class DonationScreen extends StatefulWidget {
   const DonationScreen({super.key});
@@ -21,7 +22,6 @@ class _DonationScreenState extends State<DonationScreen> {
   String _selectedBloodGroup = 'O+';
   bool _isLoading = false;
 
-  final Color mainColor = const Color(0xFFFF6F61);
   final List<String> _bloodGroups = [
     'A+',
     'A-',
@@ -80,7 +80,7 @@ class _DonationScreenState extends State<DonationScreen> {
           borderRadius: BorderRadius.circular(20),
         ),
         child: Container(
-          color: const Color.fromARGB(143, 255, 255, 255),
+          color: AppColors.surface.withOpacity(0.9),
           constraints: BoxConstraints(
             maxWidth: MediaQuery.of(context).size.width * 0.9,
             maxHeight: MediaQuery.of(context).size.height * 0.85,
@@ -100,18 +100,18 @@ class _DonationScreenState extends State<DonationScreen> {
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w600,
-                          color: Colors.grey[800],
+                          color: AppColors.textPrimary,
                         ),
                       ),
                     ),
                     IconButton(
-                      icon: Icon(Icons.close, color: Colors.grey[600]),
+                      icon: Icon(Icons.close, color: AppColors.textGrey),
                       onPressed: () => Navigator.pop(context),
                     ),
                   ],
                 ),
               ),
-              Divider(height: 1, color: Colors.grey[200]),
+              Divider(height: 1, color: AppColors.textGrey.withOpacity(0.2)),
               Expanded(
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.symmetric(
@@ -137,7 +137,7 @@ class _DonationScreenState extends State<DonationScreen> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.grey[50],
+                  color: AppColors.background,
                   borderRadius: const BorderRadius.only(
                     bottomLeft: Radius.circular(20),
                     bottomRight: Radius.circular(20),
@@ -154,14 +154,14 @@ class _DonationScreenState extends State<DonationScreen> {
                             borderRadius: BorderRadius.circular(12),
                           ),
                           side: BorderSide(
-                            color: mainColor,
+                            color: AppColors.primary,
                             width: 1.5,
                           ),
                         ),
                         child: Text(
                           'Close',
                           style: TextStyle(
-                            color: mainColor,
+                            color: AppColors.primary,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -208,27 +208,28 @@ class _DonationScreenState extends State<DonationScreen> {
                           }
                         },
                         style: ElevatedButton.styleFrom(
-                          foregroundColor: Colors.white,
-                          backgroundColor: mainColor,
+                          foregroundColor: AppColors.surface,
+                          backgroundColor: AppColors.primary,
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
                           elevation: 0,
                         ),
-                        child: const Row(
+                        child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Icon(
                               Icons.message_outlined,
                               size: 20,
-                              color: Colors.white,
+                              color: AppColors.textTertiary,
                             ),
-                            SizedBox(width: 8),
+                            const SizedBox(width: 8),
                             Text(
                               'Contact',
                               style: TextStyle(
                                 fontWeight: FontWeight.w500,
+                                color: AppColors.textTertiary,
                               ),
                             ),
                           ],
@@ -258,7 +259,7 @@ class _DonationScreenState extends State<DonationScreen> {
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w600,
-            color: Colors.grey[700],
+            color: AppColors.textPrimary,
           ),
         ),
         const SizedBox(height: 12),
@@ -266,12 +267,12 @@ class _DonationScreenState extends State<DonationScreen> {
           children: [
             CircleAvatar(
               radius: 30,
-              backgroundColor: Colors.grey[100],
+              backgroundColor: AppColors.background,
               backgroundImage: userData['profileImageUrl'] != null
                   ? NetworkImage(userData['profileImageUrl'])
                   : null,
               child: userData['profileImageUrl'] == null
-                  ? Icon(Icons.person, color: mainColor, size: 30)
+                  ? Icon(Icons.person, color: AppColors.primary, size: 30)
                   : null,
             ),
             const SizedBox(width: 16),
@@ -290,7 +291,7 @@ class _DonationScreenState extends State<DonationScreen> {
                   Text(
                     DateFormat('MMMM d, y • h:mm a').format(donationTime),
                     style: TextStyle(
-                      color: Colors.grey[600],
+                      color: AppColors.textGrey,
                       fontSize: 13,
                     ),
                   ),
@@ -302,17 +303,17 @@ class _DonationScreenState extends State<DonationScreen> {
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: mainColor.withOpacity(0.1),
+                        color: AppColors.primary.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: mainColor.withOpacity(0.3),
+                          color: AppColors.primary.withOpacity(0.3),
                           width: 1,
                         ),
                       ),
                       child: Text(
                         'Upcoming Donation',
                         style: TextStyle(
-                          color: mainColor,
+                          color: AppColors.primary,
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
                         ),
@@ -340,17 +341,17 @@ class _DonationScreenState extends State<DonationScreen> {
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w600,
-            color: Colors.grey[700],
+            color: AppColors.textPrimary,
           ),
         ),
         const SizedBox(height: 12),
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.grey[50],
+            color: AppColors.background,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: Colors.grey[200]!,
+              color: AppColors.textGrey.withOpacity(0.2),
               width: 1,
             ),
           ),
@@ -396,7 +397,7 @@ class _DonationScreenState extends State<DonationScreen> {
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w600,
-            color: Colors.grey[700],
+            color: AppColors.textPrimary,
           ),
         ),
         const SizedBox(height: 12),
@@ -404,10 +405,10 @@ class _DonationScreenState extends State<DonationScreen> {
           width: double.infinity,
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.grey[50],
+            color: AppColors.background,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: Colors.grey[200]!,
+              color: AppColors.textGrey.withOpacity(0.2),
               width: 1,
             ),
           ),
@@ -415,7 +416,7 @@ class _DonationScreenState extends State<DonationScreen> {
             description,
             style: TextStyle(
               fontSize: 14,
-              color: Colors.grey[800],
+              color: AppColors.textPrimary,
               height: 1.5,
             ),
           ),
@@ -436,7 +437,7 @@ class _DonationScreenState extends State<DonationScreen> {
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w600,
-            color: Colors.grey[700],
+            color: AppColors.textPrimary,
           ),
         ),
         const SizedBox(height: 12),
@@ -456,7 +457,7 @@ class _DonationScreenState extends State<DonationScreen> {
                 icon: Icons.phone_outlined,
                 value: userData['phone'],
                 isPhone: true,
-                mainColor: mainColor,
+                mainColor: AppColors.primary,
               ),
             if (userData['email'] != null && userData['email'].isNotEmpty) ...[
               if (userData['phone'] != null && userData['phone'].isNotEmpty)
@@ -465,7 +466,7 @@ class _DonationScreenState extends State<DonationScreen> {
                 icon: Icons.email_outlined,
                 value: userData['email'],
                 isEmail: true,
-                mainColor: mainColor,
+                mainColor: AppColors.primary,
               ),
             ],
           ]),
@@ -486,7 +487,7 @@ class _DonationScreenState extends State<DonationScreen> {
         Icon(
           icon,
           size: 20,
-          color: isImportant ? mainColor : Colors.grey[600],
+          color: isImportant ? AppColors.primary : AppColors.textGrey,
         ),
         const SizedBox(width: 12),
         Expanded(
@@ -497,7 +498,7 @@ class _DonationScreenState extends State<DonationScreen> {
                 label,
                 style: TextStyle(
                   fontSize: 12,
-                  color: Colors.grey[600],
+                  color: AppColors.textGrey,
                 ),
               ),
               const SizedBox(height: 2),
@@ -505,7 +506,8 @@ class _DonationScreenState extends State<DonationScreen> {
                 value,
                 style: TextStyle(
                   fontSize: 15,
-                  color: isImportant ? mainColor : Colors.grey[800],
+                  color:
+                      isImportant ? AppColors.primary : AppColors.textPrimary,
                   fontWeight: isImportant ? FontWeight.w600 : FontWeight.normal,
                 ),
               ),
@@ -528,7 +530,7 @@ class _DonationScreenState extends State<DonationScreen> {
         Icon(
           icon,
           size: 20,
-          color: Colors.grey[600],
+          color: AppColors.textGrey,
         ),
         const SizedBox(width: 12),
         Expanded(
@@ -581,7 +583,7 @@ class _DonationScreenState extends State<DonationScreen> {
         ),
         title: const Row(
           children: [
-            Icon(Icons.warning_amber_rounded, color: Color(0xFFD32F2F)),
+            Icon(Icons.warning_amber_rounded, color: AppColors.primary),
             SizedBox(width: 8),
             Text(
               "Delete Post",
@@ -607,7 +609,7 @@ class _DonationScreenState extends State<DonationScreen> {
             child: const Text(
               "CANCEL",
               style: TextStyle(
-                color: Color(0xFFFF6F61),
+                color: AppColors.primary,
                 fontWeight: FontWeight.w600,
                 letterSpacing: 0.5,
               ),
@@ -616,7 +618,7 @@ class _DonationScreenState extends State<DonationScreen> {
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFD32F2F),
+              backgroundColor: AppColors.primary,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
@@ -660,7 +662,7 @@ class _DonationScreenState extends State<DonationScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text("Failed to delete post: ${e.toString()}"),
-              backgroundColor: Colors.red[600],
+              backgroundColor: AppColors.error,
               behavior: SnackBarBehavior.floating,
             ),
           );
@@ -702,7 +704,7 @@ class _DonationScreenState extends State<DonationScreen> {
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFFFF6F61),
+                        color: AppColors.primary,
                       ),
                     ),
                   ),
@@ -718,28 +720,28 @@ class _DonationScreenState extends State<DonationScreen> {
                     onChanged: (val) => setState(() => bloodGroup = val!),
                     decoration: InputDecoration(
                       labelText: 'Blood Group',
-                      labelStyle: TextStyle(color: Colors.grey[600]),
+                      labelStyle: TextStyle(color: AppColors.textSecondary),
                       floatingLabelStyle:
-                          const TextStyle(color: Color(0xFFFF6F61)),
+                          const TextStyle(color: AppColors.primary),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: Colors.grey[300]!),
+                        borderSide: BorderSide(color: AppColors.tertiary),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: Colors.grey[300]!),
+                        borderSide: BorderSide(color: AppColors.tertiary),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Color(0xFFFF6F61)),
+                        borderSide: const BorderSide(color: AppColors.primary),
                       ),
                       filled: true,
-                      fillColor: Colors.grey[50],
+                      fillColor: AppColors.background,
                     ),
-                    dropdownColor: Colors.white,
+                    dropdownColor: AppColors.surface,
                     icon: const Icon(Icons.arrow_drop_down,
-                        color: Color(0xFFFF6F61)),
-                    style: TextStyle(color: Colors.grey[800]),
+                        color: AppColors.primary),
+                    style: TextStyle(color: AppColors.textPrimary),
                   ),
                   const SizedBox(height: 20),
                   InkWell(
@@ -752,10 +754,10 @@ class _DonationScreenState extends State<DonationScreen> {
                         builder: (context, child) => Theme(
                           data: Theme.of(context).copyWith(
                             colorScheme: const ColorScheme.light(
-                              primary: Color(0xFFFF6F61),
-                              onPrimary: Colors.white,
-                              surface: Colors.white,
-                              onSurface: Colors.black,
+                              primary: AppColors.primary,
+                              onPrimary: AppColors.surface,
+                              surface: AppColors.surface,
+                              onSurface: AppColors.textPrimary,
                             ),
                           ),
                           child: child!,
@@ -769,10 +771,10 @@ class _DonationScreenState extends State<DonationScreen> {
                         builder: (context, child) => Theme(
                           data: Theme.of(context).copyWith(
                             colorScheme: const ColorScheme.light(
-                              primary: Color(0xFFFF6F61),
-                              onPrimary: Colors.white,
-                              surface: Colors.white,
-                              onSurface: Colors.black,
+                              primary: AppColors.primary,
+                              onPrimary: AppColors.surface,
+                              surface: AppColors.surface,
+                              onSurface: AppColors.textPrimary,
                             ),
                           ),
                           child: child!,
@@ -788,24 +790,24 @@ class _DonationScreenState extends State<DonationScreen> {
                     child: InputDecorator(
                       decoration: InputDecoration(
                         labelText: 'Donation Time',
-                        labelStyle: TextStyle(color: Colors.grey[600]),
+                        labelStyle: TextStyle(color: AppColors.textSecondary),
                         floatingLabelStyle:
-                            const TextStyle(color: Color(0xFFFF6F61)),
+                            const TextStyle(color: AppColors.primary),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: Colors.grey[300]!),
+                          borderSide: BorderSide(color: AppColors.tertiary),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: Colors.grey[300]!),
+                          borderSide: BorderSide(color: AppColors.tertiary),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                           borderSide:
-                              const BorderSide(color: Color(0xFFFF6F61)),
+                              const BorderSide(color: AppColors.primary),
                         ),
                         filled: true,
-                        fillColor: Colors.grey[50],
+                        fillColor: AppColors.background,
                       ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -815,7 +817,7 @@ class _DonationScreenState extends State<DonationScreen> {
                             style: TextStyle(color: Colors.grey[800]),
                           ),
                           const Icon(Icons.calendar_today,
-                              color: Color(0xFFFF6F61)),
+                              color: AppColors.primary),
                         ],
                       ),
                     ),
@@ -826,23 +828,23 @@ class _DonationScreenState extends State<DonationScreen> {
                     maxLines: 3,
                     decoration: InputDecoration(
                       labelText: 'Description (Optional)',
-                      labelStyle: TextStyle(color: Colors.grey[600]),
+                      labelStyle: TextStyle(color: AppColors.textSecondary),
                       floatingLabelStyle:
-                          const TextStyle(color: Color(0xFFFF6F61)),
+                          const TextStyle(color: AppColors.primary),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: Colors.grey[300]!),
+                        borderSide: BorderSide(color: AppColors.tertiary),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: Colors.grey[300]!),
+                        borderSide: BorderSide(color: AppColors.tertiary),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Color(0xFFFF6F61)),
+                        borderSide: const BorderSide(color: AppColors.primary),
                       ),
                       filled: true,
-                      fillColor: Colors.grey[50],
+                      fillColor: AppColors.background,
                     ),
                   ),
                   const SizedBox(height: 32),
@@ -867,7 +869,7 @@ class _DonationScreenState extends State<DonationScreen> {
                             SnackBar(
                               content: const Text("Post updated successfully"),
                               behavior: SnackBarBehavior.floating,
-                              backgroundColor: Colors.green[600],
+                              backgroundColor: AppColors.success,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(8),
                               ),
@@ -876,8 +878,8 @@ class _DonationScreenState extends State<DonationScreen> {
                         }
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFFF6F61),
-                        foregroundColor: Colors.white,
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: AppColors.surface,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
@@ -941,7 +943,7 @@ class _DonationScreenState extends State<DonationScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text("Donation post created successfully!"),
-          backgroundColor: mainColor,
+          backgroundColor: AppColors.primary,
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -949,7 +951,7 @@ class _DonationScreenState extends State<DonationScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text("Error: ${e.toString()}"),
-          backgroundColor: Colors.red[700],
+          backgroundColor: AppColors.error,
         ),
       );
     } finally {
@@ -967,10 +969,10 @@ class _DonationScreenState extends State<DonationScreen> {
         return Theme(
           data: Theme.of(context).copyWith(
             colorScheme: ColorScheme.light(
-              primary: mainColor,
-              onPrimary: Colors.white,
-              surface: Colors.white,
-              onSurface: Colors.black,
+              primary: AppColors.primary,
+              onPrimary: AppColors.surface,
+              surface: AppColors.surface,
+              onSurface: AppColors.textPrimary,
             ),
           ),
           child: child!,
@@ -986,10 +988,10 @@ class _DonationScreenState extends State<DonationScreen> {
         return Theme(
           data: Theme.of(context).copyWith(
             colorScheme: ColorScheme.light(
-              primary: mainColor,
-              onPrimary: Colors.white,
-              surface: Colors.white,
-              onSurface: Colors.black,
+              primary: AppColors.primary,
+              onPrimary: AppColors.surface,
+              surface: AppColors.surface,
+              onSurface: AppColors.textPrimary,
             ),
           ),
           child: child!,
@@ -1026,9 +1028,9 @@ class _DonationScreenState extends State<DonationScreen> {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
         ),
-        color: const Color.fromARGB(143, 255, 255, 255),
+        color: AppColors.surface.withOpacity(0.56),
         elevation: 2,
-        shadowColor: Colors.grey.withOpacity(0.2),
+        shadowColor: AppColors.primary.withOpacity(0.15),
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -1043,7 +1045,7 @@ class _DonationScreenState extends State<DonationScreen> {
                         ? NetworkImage(userData['profileImageUrl'])
                         : null,
                     child: userData['profileImageUrl'] == null
-                        ? Icon(Icons.person, color: mainColor, size: 24)
+                        ? Icon(Icons.person, color: AppColors.primary, size: 24)
                         : null,
                   ),
                   const SizedBox(width: 12),
@@ -1056,7 +1058,7 @@ class _DonationScreenState extends State<DonationScreen> {
                           style: const TextStyle(
                             fontWeight: FontWeight.w600,
                             fontSize: 16,
-                            color: Colors.black87,
+                            color: AppColors.textPrimary,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -1065,7 +1067,7 @@ class _DonationScreenState extends State<DonationScreen> {
                         Text(
                           DateFormat('MMM d, y • h:mm a').format(donationTime),
                           style: TextStyle(
-                            color: Colors.grey[600],
+                            color: AppColors.textSecondary,
                             fontSize: 12,
                           ),
                         ),
@@ -1079,17 +1081,17 @@ class _DonationScreenState extends State<DonationScreen> {
                         vertical: 5,
                       ),
                       decoration: BoxDecoration(
-                        color: mainColor.withOpacity(0.1),
+                        color: AppColors.primary.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
-                          color: mainColor.withOpacity(0.3),
+                          color: AppColors.primary.withOpacity(0.3),
                           width: 1,
                         ),
                       ),
                       child: Text(
                         'Upcoming',
                         style: TextStyle(
-                          color: mainColor,
+                          color: AppColors.primary,
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
                         ),
@@ -1098,17 +1100,17 @@ class _DonationScreenState extends State<DonationScreen> {
                   if (isOwner)
                     Theme(
                       data: Theme.of(context).copyWith(
-                        cardColor: Colors.white,
+                        cardColor: AppColors.surface,
                       ),
                       child: PopupMenuButton<String>(
                         icon: Icon(Icons.more_vert,
-                            color: Colors.grey[600], size: 24),
+                            color: AppColors.tertiary, size: 24),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
-                          side: BorderSide(color: Colors.grey[200]!),
+                          side: BorderSide(color: AppColors.textSecondary!),
                         ),
                         elevation: 4,
-                        color: Colors.white,
+                        color: AppColors.surface,
                         onSelected: (value) {
                           if (value == 'edit') {
                             _showEditPostDialog(data, ownerId, postId);
@@ -1120,15 +1122,16 @@ class _DonationScreenState extends State<DonationScreen> {
                           PopupMenuItem<String>(
                             value: 'edit',
                             child: Container(
-                              color: Colors.white,
+                              color: AppColors.surface,
                               child: Row(
                                 children: [
-                                  Icon(Icons.edit, color: mainColor, size: 20),
+                                  Icon(Icons.edit,
+                                      color: AppColors.primary, size: 20),
                                   const SizedBox(width: 12),
                                   Text(
                                     'Edit',
                                     style: TextStyle(
-                                      color: Colors.grey[800],
+                                      color: AppColors.textPrimary,
                                       fontSize: 14,
                                     ),
                                   ),
@@ -1139,16 +1142,16 @@ class _DonationScreenState extends State<DonationScreen> {
                           PopupMenuItem<String>(
                             value: 'delete',
                             child: Container(
-                              color: Colors.white,
+                              color: AppColors.surface,
                               child: const Row(
                                 children: [
                                   Icon(Icons.delete,
-                                      color: Color(0xFFFF6F61), size: 20),
+                                      color: AppColors.primary, size: 20),
                                   SizedBox(width: 12),
                                   Text(
                                     'Delete',
                                     style: TextStyle(
-                                      color: Color(0xFFFF6F61),
+                                      color: AppColors.primary,
                                       fontSize: 14,
                                     ),
                                   ),
@@ -1170,10 +1173,10 @@ class _DonationScreenState extends State<DonationScreen> {
                       vertical: 8,
                     ),
                     decoration: BoxDecoration(
-                      color: mainColor.withOpacity(0.1),
+                      color: AppColors.primary.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: mainColor.withOpacity(0.3),
+                        color: AppColors.primary.withOpacity(0.3),
                         width: 1,
                       ),
                     ),
@@ -1182,14 +1185,14 @@ class _DonationScreenState extends State<DonationScreen> {
                       children: [
                         Icon(
                           Icons.bloodtype,
-                          color: mainColor,
+                          color: AppColors.primary,
                           size: 18,
                         ),
                         const SizedBox(width: 8),
                         Text(
                           data['blood_group'],
                           style: TextStyle(
-                            color: mainColor,
+                            color: AppColors.primary,
                             fontWeight: FontWeight.w600,
                             fontSize: 14,
                           ),
@@ -1205,10 +1208,10 @@ class _DonationScreenState extends State<DonationScreen> {
                         vertical: 8,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.grey[50],
+                        color: AppColors.background, // was Colors.grey[50]
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: Colors.grey[200]!,
+                          color: AppColors.tertiary, // was Colors.grey[200]!
                           width: 1,
                         ),
                       ),
@@ -1217,15 +1220,16 @@ class _DonationScreenState extends State<DonationScreen> {
                           Icon(
                             Icons.location_on_outlined,
                             size: 18,
-                            color: Colors.grey[600],
+                            color:
+                                AppColors.textSecondary, // was Colors.grey[600]
                           ),
                           const SizedBox(width: 8),
                           Flexible(
                             child: Text(
                               data['location'],
-                              style: TextStyle(
+                              style: const TextStyle(
                                 fontSize: 14,
-                                color: Colors.grey[700],
+                                color: AppColors.textMedium,
                               ),
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -1244,7 +1248,7 @@ class _DonationScreenState extends State<DonationScreen> {
                       icon: const Icon(
                         Icons.message_outlined,
                         size: 20,
-                        color: Colors.white,
+                        color: AppColors.surface,
                       ),
                       label: const Text(
                         'Contact',
@@ -1253,14 +1257,14 @@ class _DonationScreenState extends State<DonationScreen> {
                         ),
                       ),
                       style: ElevatedButton.styleFrom(
-                        foregroundColor: Colors.white,
-                        backgroundColor: mainColor,
+                        foregroundColor: AppColors.surface,
+                        backgroundColor: AppColors.primary,
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
                         elevation: 0,
-                        shadowColor: Colors.transparent,
+                        shadowColor: AppColors.transparent,
                       ),
                       onPressed: () async {
                         final phoneRaw = userData['phone'] ?? '';
@@ -1307,23 +1311,23 @@ class _DonationScreenState extends State<DonationScreen> {
                       icon: Icon(
                         Icons.map_outlined,
                         size: 20,
-                        color: mainColor,
+                        color: AppColors.primary,
                       ),
                       label: Text(
                         'Directions',
                         style: TextStyle(
-                          color: mainColor,
+                          color: AppColors.primary,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: mainColor,
+                        foregroundColor: AppColors.primary,
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
                         side: BorderSide(
-                          color: mainColor,
+                          color: AppColors.primary,
                           width: 1.5,
                         ),
                       ),
@@ -1411,7 +1415,7 @@ class _DonationScreenState extends State<DonationScreen> {
     showDialog(
       context: context,
       builder: (context) => Dialog(
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.surface,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
         ),
@@ -1422,7 +1426,7 @@ class _DonationScreenState extends State<DonationScreen> {
           ),
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: AppColors.surface,
             borderRadius: BorderRadius.circular(20),
           ),
           child: SingleChildScrollView(
@@ -1438,7 +1442,7 @@ class _DonationScreenState extends State<DonationScreen> {
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFFFF6F61),
+                        color: AppColors.primary,
                       ),
                     ),
                   ),
@@ -1457,26 +1461,26 @@ class _DonationScreenState extends State<DonationScreen> {
                       labelText: 'Blood Group',
                       labelStyle: TextStyle(color: Colors.grey[600]),
                       floatingLabelStyle:
-                          const TextStyle(color: Color(0xFFFF6F61)),
+                          const TextStyle(color: AppColors.primary),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: Colors.grey[300]!),
+                        borderSide: BorderSide(color: AppColors.tertiary!),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: Colors.grey[300]!),
+                        borderSide: BorderSide(color: AppColors.tertiary!),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Color(0xFFFF6F61)),
+                        borderSide: const BorderSide(color: AppColors.primary),
                       ),
                       filled: true,
-                      fillColor: Colors.grey[50],
+                      fillColor: AppColors.background,
                     ),
-                    dropdownColor: Colors.white,
+                    dropdownColor: AppColors.surface,
                     icon: const Icon(Icons.arrow_drop_down,
-                        color: Color(0xFFFF6F61)),
-                    style: TextStyle(color: Colors.grey[800]),
+                        color: AppColors.primary),
+                    style: TextStyle(color: AppColors.textPrimary),
                   ),
                   const SizedBox(height: 20),
                   TextFormField(
@@ -1484,25 +1488,25 @@ class _DonationScreenState extends State<DonationScreen> {
                     maxLines: 3,
                     decoration: InputDecoration(
                       labelText: 'Description',
-                      labelStyle: TextStyle(color: Colors.grey[600]),
+                      labelStyle: TextStyle(color: AppColors.textSecondary),
                       floatingLabelStyle:
-                          const TextStyle(color: Color(0xFFFF6F61)),
+                          const TextStyle(color: AppColors.primary),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: Colors.grey[300]!),
+                        borderSide: BorderSide(color: AppColors.tertiary),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: Colors.grey[300]!),
+                        borderSide: BorderSide(color: AppColors.tertiary),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Color(0xFFFF6F61)),
+                        borderSide: const BorderSide(color: AppColors.primary),
                       ),
                       filled: true,
-                      fillColor: Colors.grey[50],
+                      fillColor: AppColors.background,
                       prefixIcon: const Icon(Icons.description,
-                          color: Color(0xFFFF6F61)),
+                          color: AppColors.primary),
                     ),
                     validator: (val) => val == null || val.trim().isEmpty
                         ? 'Enter a description'
@@ -1514,26 +1518,26 @@ class _DonationScreenState extends State<DonationScreen> {
                     child: InputDecorator(
                       decoration: InputDecoration(
                         labelText: 'Donation Time',
-                        labelStyle: TextStyle(color: Colors.grey[600]),
+                        labelStyle: TextStyle(color: AppColors.textSecondary),
                         floatingLabelStyle:
-                            const TextStyle(color: Color(0xFFFF6F61)),
+                            const TextStyle(color: AppColors.primary),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: Colors.grey[300]!),
+                          borderSide: BorderSide(color: AppColors.tertiary),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: Colors.grey[300]!),
+                          borderSide: BorderSide(color: AppColors.tertiary),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                           borderSide:
-                              const BorderSide(color: Color(0xFFFF6F61)),
+                              const BorderSide(color: AppColors.primary),
                         ),
                         filled: true,
-                        fillColor: Colors.grey[50],
+                        fillColor: AppColors.background,
                         prefixIcon: const Icon(Icons.calendar_today,
-                            color: Color(0xFFFF6F61)),
+                            color: AppColors.primary),
                       ),
                       child: Text(
                         _selectedDateTime == null
@@ -1541,7 +1545,7 @@ class _DonationScreenState extends State<DonationScreen> {
                             : DateFormat.yMd()
                                 .add_jm()
                                 .format(_selectedDateTime!),
-                        style: TextStyle(color: Colors.grey[800]),
+                        style: TextStyle(color: AppColors.textPrimary),
                       ),
                     ),
                   ),
@@ -1551,7 +1555,7 @@ class _DonationScreenState extends State<DonationScreen> {
                     child: ElevatedButton(
                       onPressed: _isLoading ? null : _submitPost,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFFF6F61),
+                        backgroundColor: AppColors.primary,
                         foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
@@ -1594,14 +1598,14 @@ class _DonationScreenState extends State<DonationScreen> {
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
-            color: Colors.white,
+            color: AppColors.surface,
           ),
         ),
-        backgroundColor: mainColor,
+        backgroundColor: AppColors.primary,
         elevation: 0,
         centerTitle: true,
-        iconTheme: const IconThemeData(
-          color: Colors.white,
+        iconTheme: IconThemeData(
+          color: AppColors.surface,
         ),
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(
@@ -1611,10 +1615,10 @@ class _DonationScreenState extends State<DonationScreen> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _showCreatePostDialog,
-        backgroundColor: mainColor,
-        child: const Icon(Icons.add, color: Colors.white),
+        backgroundColor: AppColors.primary,
+        child: const Icon(Icons.add, color: AppColors.surface),
       ),
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.surface,
       body: Column(children: [
         const SizedBox(height: 20),
         const Text("Active Donation Requests",
@@ -1623,7 +1627,7 @@ class _DonationScreenState extends State<DonationScreen> {
         Expanded(
           child: RefreshIndicator(
             onRefresh: () async => setState(() {}),
-            color: mainColor,
+            color: AppColors.primary,
             child: SingleChildScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
               padding: const EdgeInsets.only(bottom: 80),

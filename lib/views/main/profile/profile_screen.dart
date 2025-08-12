@@ -10,6 +10,7 @@ import 'package:lifeline/views/auth/login_screen.dart';
 import 'package:lifeline/views/main/profile/profile_setting_screen.dart';
 import 'package:lifeline/services/auth_service.dart';
 import 'package:lifeline/models/user_model.dart';
+import 'package:lifeline/constants/app_colors.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -21,10 +22,6 @@ class ProfilePage extends StatefulWidget {
 class _ProfilePageState extends State<ProfilePage> {
   final ImagePicker _picker = ImagePicker();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final Color _primaryColor = const Color(0xFFFF6F61);
-  final Color _backgroundColor = const Color(0xFFF9F9F9);
-  final Color _cardColor = Colors.white;
-  final Color _textColor = const Color(0xFF333333);
 
   @override
   void initState() {
@@ -125,7 +122,7 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _backgroundColor,
+      backgroundColor: AppColors.background,
       body: SingleChildScrollView(
         child: Column(
           children: [
@@ -133,14 +130,14 @@ class _ProfilePageState extends State<ProfilePage> {
               width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 30),
               decoration: BoxDecoration(
-                color: _primaryColor,
+                color: AppColors.primary,
                 borderRadius: const BorderRadius.only(
                   bottomLeft: Radius.circular(15),
                   bottomRight: Radius.circular(15),
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: _primaryColor.withOpacity(0.2),
+                    color: AppColors.primary.withOpacity(0.2),
                     blurRadius: 10,
                     spreadRadius: 2,
                     offset: const Offset(0, 5),
@@ -154,7 +151,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   const Text(
                     'Profile',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: AppColors.textTertiary,
                       fontSize: 22,
                       fontWeight: FontWeight.bold,
                     ),
@@ -166,16 +163,16 @@ class _ProfilePageState extends State<ProfilePage> {
                       children: [
                         CircleAvatar(
                           radius: 50,
-                          backgroundColor: Colors.white,
+                          backgroundColor: AppColors.surface,
                           child: CircleAvatar(
                             radius: 48,
-                            backgroundColor: Colors.grey[100],
+                            backgroundColor: AppColors.background,
                             backgroundImage: currentUser.profileImage.isNotEmpty
                                 ? NetworkImage(currentUser.profileImage)
                                 : null,
                             child: currentUser.profileImage.isEmpty
                                 ? Icon(Icons.person,
-                                    color: _primaryColor, size: 48)
+                                    color: AppColors.primary, size: 48)
                                 : null,
                           ),
                         ),
@@ -185,12 +182,13 @@ class _ProfilePageState extends State<ProfilePage> {
                           child: Container(
                             padding: const EdgeInsets.all(5),
                             decoration: BoxDecoration(
-                              color: _primaryColor,
+                              color: AppColors.primary,
                               shape: BoxShape.circle,
-                              border: Border.all(color: Colors.white, width: 2),
+                              border: Border.all(
+                                  color: AppColors.surface, width: 2),
                             ),
                             child: const Icon(Icons.edit,
-                                color: Colors.white, size: 18),
+                                color: AppColors.textTertiary, size: 18),
                           ),
                         ),
                       ],
@@ -202,7 +200,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     style: GoogleFonts.poppins(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                      color: AppColors.textTertiary,
                     ),
                   ),
                   const SizedBox(height: 5),
@@ -210,7 +208,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     currentUser.email ?? 'No email available',
                     style: GoogleFonts.poppins(
                       fontSize: 14,
-                      color: Colors.white.withOpacity(0.8),
+                      color: AppColors.textTertiary.withOpacity(0.8),
                     ),
                   ),
                   const SizedBox(height: 10),
@@ -266,11 +264,11 @@ class _ProfilePageState extends State<ProfilePage> {
                   ),
                   const SizedBox(height: 15),
                   _buildMenuCard(
-                    icon: Icons.help_outline,
-                    title: 'Help & FAQs',
-                    subtitle: 'Get answers to common questions',
+                    icon: Icons.info_outline,
+                    title: 'About Lifeline',
+                    subtitle: 'Learn about the app and the team',
                     onTap: () {
-                      _showFAQDialog(context);
+                      _showAboutDialog(context);
                     },
                   ),
                   const SizedBox(height: 15),
@@ -323,7 +321,7 @@ class _ProfilePageState extends State<ProfilePage> {
       {bool isBmi = false}) {
     final double bmi = isBmi ? double.tryParse(value) ?? 0.0 : 0.0;
     final Color bmiColor =
-        isBmi ? _getBmiColor(bmi).withOpacity(0.2) : _cardColor;
+        isBmi ? _getBmiColor(bmi).withOpacity(0.2) : AppColors.surface;
 
     return Expanded(
       child: Container(
@@ -334,7 +332,7 @@ class _ProfilePageState extends State<ProfilePage> {
           borderRadius: BorderRadius.circular(15),
           boxShadow: [
             BoxShadow(
-              color: Colors.grey.withOpacity(0.1),
+              color: AppColors.textGrey.withOpacity(0.1),
               blurRadius: 10,
               spreadRadius: 2,
               offset: const Offset(0, 5),
@@ -348,12 +346,12 @@ class _ProfilePageState extends State<ProfilePage> {
               decoration: BoxDecoration(
                 color: isBmi
                     ? _getBmiColor(bmi).withOpacity(0.3)
-                    : _primaryColor.withOpacity(0.1),
+                    : AppColors.primary.withOpacity(0.1),
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 icon,
-                color: isBmi ? _getBmiColor(bmi) : _primaryColor,
+                color: isBmi ? _getBmiColor(bmi) : AppColors.primary,
                 size: 24,
               ),
             ),
@@ -363,7 +361,7 @@ class _ProfilePageState extends State<ProfilePage> {
               style: GoogleFonts.poppins(
                 fontSize: 12,
                 fontWeight: FontWeight.w500,
-                color: Colors.grey,
+                color: AppColors.textGrey,
               ),
             ),
             const SizedBox(height: 5),
@@ -374,7 +372,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     style: GoogleFonts.poppins(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: _textColor,
+                      color: AppColors.textPrimary,
                     ),
                   ),
           ],
@@ -414,11 +412,11 @@ class _ProfilePageState extends State<ProfilePage> {
       child: Container(
         padding: const EdgeInsets.all(15),
         decoration: BoxDecoration(
-          color: _cardColor,
+          color: AppColors.surface,
           borderRadius: BorderRadius.circular(15),
           boxShadow: [
             BoxShadow(
-              color: Colors.grey.withOpacity(0.1),
+              color: AppColors.textGrey.withOpacity(0.1),
               blurRadius: 10,
               spreadRadius: 2,
               offset: const Offset(0, 3),
@@ -430,10 +428,10 @@ class _ProfilePageState extends State<ProfilePage> {
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: _primaryColor.withOpacity(0.1),
+                color: AppColors.primary.withOpacity(0.1),
                 shape: BoxShape.circle,
               ),
-              child: Icon(icon, color: _primaryColor, size: 24),
+              child: Icon(icon, color: AppColors.primary, size: 24),
             ),
             const SizedBox(width: 15),
             Expanded(
@@ -445,18 +443,18 @@ class _ProfilePageState extends State<ProfilePage> {
                     style: GoogleFonts.poppins(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
-                        color: _textColor),
+                        color: AppColors.textPrimary),
                   ),
                   const SizedBox(height: 3),
                   Text(
                     subtitle,
-                    style:
-                        GoogleFonts.poppins(fontSize: 12, color: Colors.grey),
+                    style: GoogleFonts.poppins(
+                        fontSize: 12, color: AppColors.textGrey),
                   ),
                 ],
               ),
             ),
-            Icon(Icons.chevron_right, color: Colors.grey.shade400),
+            Icon(Icons.chevron_right, color: AppColors.textLight),
           ],
         ),
       ),
@@ -473,7 +471,7 @@ class _ProfilePageState extends State<ProfilePage> {
         return Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: _cardColor,
+            color: AppColors.surface,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(25)),
           ),
           child: Column(
@@ -484,13 +482,13 @@ class _ProfilePageState extends State<ProfilePage> {
                 style: GoogleFonts.poppins(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
-                  color: _textColor,
+                  color: AppColors.textPrimary,
                 ),
               ),
               const SizedBox(height: 20),
               _buildImageOption(
                 icon: Icons.camera_alt,
-                color: _primaryColor,
+                color: AppColors.primary,
                 label: "Take Photo",
                 onTap: () {
                   Navigator.pop(context);
@@ -499,7 +497,7 @@ class _ProfilePageState extends State<ProfilePage> {
               ),
               _buildImageOption(
                 icon: Icons.photo_library,
-                color: _primaryColor,
+                color: AppColors.primary,
                 label: "Choose from Gallery",
                 onTap: () {
                   Navigator.pop(context);
@@ -512,7 +510,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 child: Text(
                   "Cancel",
                   style: GoogleFonts.poppins(
-                    color: Colors.grey,
+                    color: AppColors.textGrey,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -543,14 +541,14 @@ class _ProfilePageState extends State<ProfilePage> {
         style: GoogleFonts.poppins(
           fontSize: 16,
           fontWeight: FontWeight.w500,
-          color: _textColor,
+          color: AppColors.textPrimary,
         ),
       ),
       onTap: onTap,
     );
   }
 
-  void _showFAQDialog(BuildContext context) {
+  void _showAboutDialog(BuildContext context) {
     showDialog(
       context: context,
       builder: (context) => Dialog(
@@ -558,11 +556,11 @@ class _ProfilePageState extends State<ProfilePage> {
           borderRadius: BorderRadius.circular(25),
         ),
         elevation: 0,
-        backgroundColor: Colors.transparent,
+        backgroundColor: AppColors.transparent,
         child: Container(
           padding: const EdgeInsets.all(25),
           decoration: BoxDecoration(
-            color: _cardColor,
+            color: AppColors.surface,
             borderRadius: BorderRadius.circular(25),
           ),
           child: Column(
@@ -576,7 +574,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     style: GoogleFonts.poppins(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
-                      color: _primaryColor,
+                      color: AppColors.primary,
                     ),
                   ),
                   IconButton(
@@ -590,7 +588,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 'Lifeline is a medical emergency response app designed to provide quick access to emergency services and personal health information.',
                 style: GoogleFonts.poppins(
                   fontSize: 14,
-                  color: _textColor,
+                  color: AppColors.textPrimary,
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -604,13 +602,13 @@ class _ProfilePageState extends State<ProfilePage> {
                 padding:
                     const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
                 decoration: BoxDecoration(
-                  color: _primaryColor.withOpacity(0.1),
+                  color: AppColors.primary.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
                   'Version 1.0.0',
                   style: GoogleFonts.poppins(
-                    color: _primaryColor,
+                    color: AppColors.primary,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -618,7 +616,7 @@ class _ProfilePageState extends State<ProfilePage> {
               const SizedBox(height: 20),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: _primaryColor,
+                  backgroundColor: AppColors.primary,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(15),
                   ),
@@ -629,7 +627,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 child: Text(
                   'Close',
                   style: GoogleFonts.poppins(
-                    color: Colors.white,
+                    color: AppColors.textTertiary,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -651,7 +649,7 @@ class _ProfilePageState extends State<ProfilePage> {
           'Developed By',
           style: GoogleFonts.poppins(
             fontSize: 14,
-            color: Colors.grey,
+            color: AppColors.textGrey,
           ),
         ),
         const SizedBox(height: 8),
@@ -660,14 +658,14 @@ class _ProfilePageState extends State<ProfilePage> {
           style: GoogleFonts.poppins(
             fontSize: 16,
             fontWeight: FontWeight.bold,
-            color: _textColor,
+            color: AppColors.textPrimary,
           ),
         ),
         Text(
           role,
           style: GoogleFonts.poppins(
             fontSize: 14,
-            color: Colors.grey,
+            color: AppColors.textGrey,
           ),
         ),
       ],
