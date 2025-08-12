@@ -42,28 +42,54 @@ class _HistoryScreenState extends State<HistoryScreen> {
     });
   }
 
-  Future<void> _deleteSession(String sessionId) async {
-    final confirm = await showDialog<bool>(
+  Future<bool?> _showConfirmationDialog({
+    required String title,
+    required String content,
+    required String confirmText,
+    required Color confirmColor,
+  }) {
+    return showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
+        backgroundColor: AppColors.surface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text("Delete Chat",
-            style: TextStyle(fontWeight: FontWeight.bold)),
-        content:
-            const Text("Are you sure you want to delete this chat session?"),
+        title: Text(
+          title,
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        content: Text(
+          content,
+          style: const TextStyle(color: AppColors.textGrey),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text("Cancel",
-                style: TextStyle(color: AppColors.textGrey)),
+            child: const Text(
+              "Cancel",
+              style: TextStyle(color: AppColors.textGrey),
+            ),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child:
-                const Text("Delete", style: TextStyle(color: AppColors.error)),
+            child: Text(
+              confirmText,
+              style: TextStyle(color: confirmColor),
+            ),
           ),
         ],
       ),
+    );
+  }
+
+  Future<void> _deleteSession(String sessionId) async {
+    final confirm = await _showConfirmationDialog(
+      title: "Delete Chat",
+      content: "Are you sure you want to delete this chat session?",
+      confirmText: "Delete",
+      confirmColor: AppColors.error,
     );
 
     if (confirm == true) {
@@ -82,27 +108,11 @@ class _HistoryScreenState extends State<HistoryScreen> {
   }
 
   Future<void> _clearAllSessions() async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text("Clear All History",
-            style: TextStyle(fontWeight: FontWeight.bold)),
-        content: const Text(
-            "This will permanently remove all chat history. Continue?"),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text("Cancel",
-                style: TextStyle(color: AppColors.textGrey)),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text("Clear All",
-                style: TextStyle(color: AppColors.error)),
-          ),
-        ],
-      ),
+    final confirm = await _showConfirmationDialog(
+      title: "Clear All History",
+      content: "This will permanently remove all chat history. Continue?",
+      confirmText: "Clear All",
+      confirmColor: AppColors.error,
     );
 
     if (confirm == true) {
@@ -292,7 +302,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
         actions: [
           if (sessionIds.isNotEmpty)
             IconButton(
-              icon: Icon(Icons.delete_sweep, color: AppColors.textGrey),
+              icon: Icon(Icons.delete_sweep, color: AppColors.surface),
               tooltip: "Clear All",
               onPressed: _clearAllSessions,
             ),

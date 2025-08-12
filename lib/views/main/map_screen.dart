@@ -607,7 +607,8 @@ class _MapScreenState extends State<MapScreen> {
                     child: AnimatedContainer(
                       duration: _animationDuration,
                       curve: _animationCurve,
-                      padding: const EdgeInsets.all(20),
+                      height: 220,
+                      padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
                         color: colorScheme.surface,
                         borderRadius: BorderRadius.circular(20),
@@ -627,138 +628,141 @@ class _MapScreenState extends State<MapScreen> {
                           ],
                         ),
                       ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.local_hospital,
-                                color: mainColor,
-                                size: 24,
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Text(
-                                  _selectedHospital!['name'],
-                                  style: textTheme.titleMedium?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                    color: colorScheme.onSurface,
-                                  ),
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-                          Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: mainColor.withOpacity(0.1),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: Icon(
-                                  Icons.directions_car,
+                      child: SingleChildScrollView(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.local_hospital,
                                   color: mainColor,
-                                  size: 20,
+                                  size: 24,
                                 ),
-                              ),
-                              const SizedBox(width: 12),
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    "Distance",
-                                    style: textTheme.bodySmall?.copyWith(
-                                      color: colorScheme.onSurface
-                                          .withOpacity(0.6),
-                                    ),
-                                  ),
-                                  Text(
-                                    "${_distance.as(LengthUnit.Kilometer, _currentPosition!, LatLng(_selectedHospital!['lat'], _selectedHospital!['lon'])).toStringAsFixed(1)} km",
-                                    style: textTheme.bodyLarge?.copyWith(
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    _selectedHospital!['name'],
+                                    style: textTheme.titleMedium?.copyWith(
                                       fontWeight: FontWeight.bold,
                                       color: colorScheme.onSurface,
                                     ),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
                                   ),
-                                ],
-                              ),
-                              const Spacer(),
-                              Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: mainColor.withOpacity(0.1),
-                                  shape: BoxShape.circle,
                                 ),
-                                child: Icon(
-                                  Icons.access_time,
-                                  color: mainColor,
-                                  size: 20,
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: mainColor.withOpacity(0.1),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Icon(
+                                    Icons.directions_car,
+                                    color: mainColor,
+                                    size: 20,
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(width: 12),
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    "Est. Time",
-                                    style: textTheme.bodySmall?.copyWith(
-                                      color: colorScheme.onSurface
-                                          .withOpacity(0.6),
+                                const SizedBox(width: 12),
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      "Distance",
+                                      style: textTheme.bodySmall?.copyWith(
+                                        color: colorScheme.onSurface
+                                            .withOpacity(0.6),
+                                      ),
                                     ),
-                                  ),
-                                  Text(
-                                    "${(_distance.as(LengthUnit.Kilometer, _currentPosition!, LatLng(_selectedHospital!['lat'], _selectedHospital!['lon'])) ~/ 0.5)} min",
-                                    style: textTheme.bodyLarge?.copyWith(
-                                      fontWeight: FontWeight.bold,
-                                      color: colorScheme.onSurface,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 20),
-                          SizedBox(
-                            width: double.infinity,
-                            child: ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: mainColor,
-                                foregroundColor: colorScheme.onPrimary,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 16),
-                                elevation: 2,
-                              ),
-                              onPressed: () => _launchMapsApp(
-                                LatLng(_selectedHospital!['lat'],
-                                    _selectedHospital!['lon']),
-                              ),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  const Icon(
-                                    Icons.directions,
-                                    size: 24,
-                                    color: Colors.white,
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Text(
-                                    'Start Navigation',
-                                    style: textTheme.bodyLarge?.copyWith(
+                                    Text(
+                                      "${_distance.as(LengthUnit.Kilometer, _currentPosition!, LatLng(_selectedHospital!['lat'], _selectedHospital!['lon'])).toStringAsFixed(1)} km",
+                                      style: textTheme.bodyLarge?.copyWith(
                                         fontWeight: FontWeight.bold,
-                                        color: Colors.white),
+                                        color: colorScheme.onSurface,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const Spacer(),
+                                Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: mainColor.withOpacity(0.1),
+                                    shape: BoxShape.circle,
                                   ),
-                                ],
+                                  child: Icon(
+                                    Icons.access_time,
+                                    color: mainColor,
+                                    size: 20,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      "Est. Time",
+                                      style: textTheme.bodySmall?.copyWith(
+                                        color: colorScheme.onSurface
+                                            .withOpacity(0.6),
+                                      ),
+                                    ),
+                                    Text(
+                                      "${(_distance.as(LengthUnit.Kilometer, _currentPosition!, LatLng(_selectedHospital!['lat'], _selectedHospital!['lon'])) ~/ 0.5)} min",
+                                      style: textTheme.bodyLarge?.copyWith(
+                                        fontWeight: FontWeight.bold,
+                                        color: colorScheme.onSurface,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+                            SizedBox(
+                              width: double.infinity,
+                              child: ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: mainColor,
+                                  foregroundColor: colorScheme.onPrimary,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 16),
+                                  elevation: 2,
+                                ),
+                                onPressed: () => _launchMapsApp(
+                                  LatLng(_selectedHospital!['lat'],
+                                      _selectedHospital!['lon']),
+                                ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    const Icon(
+                                      Icons.directions,
+                                      size: 24,
+                                      color: Colors.white,
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Text(
+                                      'Start Navigation',
+                                      style: textTheme.bodyLarge?.copyWith(
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.white),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                   ),
