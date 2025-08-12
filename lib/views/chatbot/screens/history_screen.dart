@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:lifeline/views/chatbot/history/chat_history.dart';
+import 'package:lifeline/constants/app_colors.dart';
 import 'chat_screen.dart';
 
 class HistoryScreen extends StatefulWidget {
@@ -53,11 +54,13 @@ class _HistoryScreenState extends State<HistoryScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text("Cancel", style: TextStyle(color: Colors.grey)),
+            child: const Text("Cancel",
+                style: TextStyle(color: AppColors.textGrey)),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text("Delete", style: TextStyle(color: Colors.red)),
+            child:
+                const Text("Delete", style: TextStyle(color: AppColors.error)),
           ),
         ],
       ),
@@ -90,11 +93,13 @@ class _HistoryScreenState extends State<HistoryScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text("Cancel", style: TextStyle(color: Colors.grey)),
+            child: const Text("Cancel",
+                style: TextStyle(color: AppColors.textGrey)),
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text("Clear All", style: TextStyle(color: Colors.red)),
+            child: const Text("Clear All",
+                style: TextStyle(color: AppColors.error)),
           ),
         ],
       ),
@@ -123,14 +128,14 @@ class _HistoryScreenState extends State<HistoryScreen> {
           Icon(
             Icons.history,
             size: 64,
-            color: Colors.grey[300],
+            color: AppColors.tertiary,
           ),
           const SizedBox(height: 16),
-          Text(
+          const Text(
             "No Chat History",
             style: TextStyle(
               fontSize: 18,
-              color: Colors.grey[600],
+              color: AppColors.textGrey,
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -139,7 +144,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
             "Your chat sessions will appear here",
             style: TextStyle(
               fontSize: 14,
-              color: Colors.grey[400],
+              color: AppColors.textGrey.withOpacity(0.6),
             ),
           ),
         ],
@@ -160,11 +165,11 @@ class _HistoryScreenState extends State<HistoryScreen> {
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       elevation: 0,
-      color: Colors.white,
+      color: AppColors.surface,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
         side: BorderSide(
-          color: Colors.grey.withOpacity(0.2),
+          color: AppColors.textGrey.withOpacity(0.2),
           width: 1,
         ),
       ),
@@ -193,7 +198,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                       style: const TextStyle(
                         fontSize: 17,
                         fontWeight: FontWeight.w700,
-                        color: Colors.black87,
+                        color: AppColors.textPrimary,
                       ),
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -203,7 +208,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     DateFormat('MMM d • h:mm a').format(timestamp),
                     style: TextStyle(
                       fontSize: 12,
-                      color: Colors.grey[500],
+                      color: AppColors.textGrey.withOpacity(0.7),
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -213,7 +218,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.grey.withOpacity(0.05),
+                  color: AppColors.textGrey.withOpacity(0.05),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
@@ -223,7 +228,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   style: TextStyle(
                     fontSize: 14,
                     height: 1.4,
-                    color: Colors.grey[700],
+                    color: AppColors.textGrey.withOpacity(0.9),
                   ),
                 ),
               ),
@@ -235,11 +240,11 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     icon: Container(
                       padding: const EdgeInsets.all(6),
                       decoration: BoxDecoration(
-                        color: Colors.grey.withOpacity(0.1),
+                        color: AppColors.textGrey.withOpacity(0.1),
                         shape: BoxShape.circle,
                       ),
-                      child: Icon(Icons.delete_outline,
-                          size: 18, color: Colors.red[600]),
+                      child: const Icon(Icons.delete_outline,
+                          size: 18, color: AppColors.error),
                     ),
                     onPressed: () => _deleteSession(sessionId),
                     padding: EdgeInsets.zero,
@@ -258,16 +263,16 @@ class _HistoryScreenState extends State<HistoryScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: AppColors.background,
       appBar: AppBar(
-        backgroundColor: Color(0xFFFF6F61),
+        backgroundColor: AppColors.primary,
         elevation: _showAppBarShadow ? 4 : 0,
         title: const Text(
           'Chat History',
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
-            color: Colors.white,
+            color: AppColors.textTertiary,
           ),
         ),
         centerTitle: true,
@@ -280,14 +285,14 @@ class _HistoryScreenState extends State<HistoryScreen> {
           icon: const Icon(
             Icons.arrow_back_ios_new_rounded,
             size: 20,
-            color: Colors.white,
+            color: AppColors.textTertiary,
           ),
           onPressed: () => Navigator.pop(context),
         ),
         actions: [
           if (sessionIds.isNotEmpty)
             IconButton(
-              icon: Icon(Icons.delete_sweep, color: Colors.blueGrey[600]),
+              icon: Icon(Icons.delete_sweep, color: AppColors.textGrey),
               tooltip: "Clear All",
               onPressed: _clearAllSessions,
             ),

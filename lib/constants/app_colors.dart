@@ -17,4 +17,9 @@ class AppColors {
 
   static const Color error = Colors.redAccent;
   static const Color success = Colors.green;
+
+  // ChatBot Bottom NavBar
+  static const Color navBarBackground = Colors.white;
+  static const Color navBarUnselected = Color(0xFF757575);
+  static const Color navBarShadow = Colors.black26;
 }

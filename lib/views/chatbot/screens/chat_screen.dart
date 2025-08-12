@@ -4,6 +4,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:lifeline/views/chatbot/api_service/api.dart';
 import 'package:lifeline/views/chatbot/history/chat_history.dart';
+import 'package:lifeline/constants/app_colors.dart';
 
 class ChatScreen extends StatefulWidget {
   final List<Map<String, dynamic>>? restoredSession;
@@ -131,10 +132,10 @@ class _ChatScreenState extends State<ChatScreen> {
               height: 32,
               margin: const EdgeInsets.only(right: 8),
               decoration: const BoxDecoration(
-                color: Color(0xFFFF6F61),
+                color: AppColors.primary,
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.face, color: Color(0xFFFF6F61)),
+              child: const Icon(Icons.face, color: AppColors.textTertiary),
             ),
           Flexible(
             child: Column(
@@ -144,7 +145,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: isUser ? const Color(0xFFFF6F61) : Colors.grey[200],
+                    color: isUser ? AppColors.primary : AppColors.tertiary,
                     borderRadius: BorderRadius.only(
                       topLeft: const Radius.circular(12),
                       topRight: const Radius.circular(12),
@@ -159,7 +160,9 @@ class _ChatScreenState extends State<ChatScreen> {
                   child: Text(
                     msg['content'],
                     style: TextStyle(
-                      color: isUser ? Colors.white : Colors.black87,
+                      color: isUser
+                          ? AppColors.textTertiary
+                          : AppColors.textPrimary,
                       fontSize: 15,
                     ),
                   ),
@@ -169,7 +172,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   child: Text(
                     DateFormat('h:mm a').format(timestamp),
                     style: TextStyle(
-                      color: Colors.grey[600],
+                      color: AppColors.textSecondary,
                       fontSize: 11,
                     ),
                   ),
@@ -183,10 +186,10 @@ class _ChatScreenState extends State<ChatScreen> {
               height: 32,
               margin: const EdgeInsets.only(left: 8),
               decoration: const BoxDecoration(
-                color: Color(0xFFFF6F61),
+                color: AppColors.primary,
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.person, color: Color(0xFFFF6F61)),
+              child: const Icon(Icons.person, color: AppColors.textTertiary),
             ),
         ],
       ),
@@ -197,7 +200,7 @@ class _ChatScreenState extends State<ChatScreen> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface,
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.1),
@@ -209,14 +212,14 @@ class _ChatScreenState extends State<ChatScreen> {
       child: Row(
         children: [
           IconButton(
-            icon: const Icon(Icons.image, color: Color(0xFFFF6F61)),
+            icon: const Icon(Icons.image, color: AppColors.primary),
             onPressed: _isLoading ? null : _pickImage,
           ),
           Expanded(
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12),
               decoration: BoxDecoration(
-                color: Colors.grey[100],
+                color: AppColors.background,
                 borderRadius: BorderRadius.circular(24),
               ),
               child: Row(
@@ -253,10 +256,10 @@ class _ChatScreenState extends State<ChatScreen> {
                               icon: Container(
                                 decoration: const BoxDecoration(
                                   shape: BoxShape.circle,
-                                  color: Colors.white,
+                                  color: AppColors.surface,
                                 ),
                                 child: const Icon(Icons.close,
-                                    size: 16, color: Colors.red),
+                                    size: 16, color: AppColors.error),
                               ),
                               onPressed: () =>
                                   setState(() => _selectedImage = null),
@@ -272,11 +275,11 @@ class _ChatScreenState extends State<ChatScreen> {
           const SizedBox(width: 8),
           FloatingActionButton(
             mini: true,
-            backgroundColor: const Color(0xFFFF6F61),
+            backgroundColor: AppColors.primary,
             onPressed: _isLoading ? null : _handleSend,
             child: Icon(
               _isLoading ? Icons.more_horiz : Icons.send,
-              color: Colors.white,
+              color: AppColors.textTertiary,
             ),
           ),
         ],
@@ -287,16 +290,16 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: AppColors.background,
       appBar: AppBar(
-        backgroundColor: const Color(0xFFFF6F61),
+        backgroundColor: AppColors.primary,
         elevation: _showAppBarShadow ? 4 : 0,
         title: const Text(
           'Gemini Chat',
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
-            color: Colors.white,
+            color: AppColors.textTertiary,
           ),
         ),
         centerTitle: true,
@@ -309,14 +312,15 @@ class _ChatScreenState extends State<ChatScreen> {
           icon: const Icon(
             Icons.arrow_back_ios_new_rounded,
             size: 20,
-            color: Colors.white,
+            color: AppColors.textTertiary,
           ),
           onPressed: () => Navigator.pop(context),
         ),
         actions: [
           if (_messages.isNotEmpty)
             IconButton(
-              icon: const Icon(Icons.delete_outline),
+              icon: const Icon(Icons.delete_outline,
+                  color: AppColors.textTertiary),
               onPressed: () {},
             ),
         ],
@@ -329,25 +333,25 @@ class _ChatScreenState extends State<ChatScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(
+                        const Icon(
                           Icons.chat_bubble_outline,
                           size: 64,
-                          color: Colors.grey[300],
+                          color: AppColors.tertiary,
                         ),
                         const SizedBox(height: 16),
-                        Text(
+                        const Text(
                           'Start a conversation',
                           style: TextStyle(
                             fontSize: 18,
-                            color: Colors.grey[600],
+                            color: AppColors.textSecondary,
                           ),
                         ),
                         const SizedBox(height: 8),
-                        Text(
+                        const Text(
                           'Send a message or upload an image',
                           style: TextStyle(
                             fontSize: 14,
-                            color: Colors.grey[400],
+                            color: AppColors.textGrey,
                           ),
                         ),
                       ],
@@ -374,14 +378,14 @@ class _ChatScreenState extends State<ChatScreen> {
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
                       valueColor:
-                          AlwaysStoppedAnimation<Color>(Color(0xFFFF6F61)),
+                          AlwaysStoppedAnimation<Color>(AppColors.primary),
                     ),
                   ),
                   const SizedBox(width: 8),
-                  Text(
+                  const Text(
                     'Assistant is typing...',
                     style: TextStyle(
-                      color: Colors.grey[600],
+                      color: AppColors.textSecondary,
                       fontSize: 14,
                     ),
                   ),

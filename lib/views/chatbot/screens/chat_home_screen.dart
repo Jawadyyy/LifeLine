@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lifeline/views/chatbot/screens/history_screen.dart';
+import 'package:lifeline/constants/app_colors.dart';
 import 'chat_screen.dart';
 
 class ChatHomeScreen extends StatefulWidget {
@@ -31,7 +32,7 @@ class _ChatHomeScreenState extends State<ChatHomeScreen> {
         borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: AppColors.navBarShadow.withOpacity(0.1),
             blurRadius: 10,
             spreadRadius: 2,
             offset: const Offset(0, -5),
@@ -44,9 +45,9 @@ class _ChatHomeScreenState extends State<ChatHomeScreen> {
           currentIndex: _currentIndex,
           onTap: (index) => setState(() => _currentIndex = index),
           type: BottomNavigationBarType.fixed,
-          backgroundColor: Colors.white,
-          selectedItemColor: const Color(0xFFFF6F61),
-          unselectedItemColor: Colors.grey[600],
+          backgroundColor: AppColors.navBarBackground,
+          selectedItemColor: AppColors.primary,
+          unselectedItemColor: AppColors.navBarUnselected,
           selectedLabelStyle: const TextStyle(
             fontWeight: FontWeight.w600,
             fontSize: 12,
@@ -67,8 +68,8 @@ class _ChatHomeScreenState extends State<ChatHomeScreen> {
                       Icons.chat_bubble_outlined,
                       size: 24,
                       color: _currentIndex == 0
-                          ? const Color(0xFFFF6F61)
-                          : Colors.grey[600],
+                          ? AppColors.primary
+                          : AppColors.navBarUnselected,
                     ),
                     const SizedBox(height: 4),
                     if (_currentIndex == 0)
@@ -76,7 +77,7 @@ class _ChatHomeScreenState extends State<ChatHomeScreen> {
                         width: 6,
                         height: 6,
                         decoration: const BoxDecoration(
-                          color: Color(0xFFFF6F61),
+                          color: AppColors.primary,
                           shape: BoxShape.circle,
                         ),
                       ),
@@ -95,8 +96,8 @@ class _ChatHomeScreenState extends State<ChatHomeScreen> {
                       Icons.history,
                       size: 24,
                       color: _currentIndex == 1
-                          ? const Color(0xFFFF6F61)
-                          : Colors.grey[600],
+                          ? AppColors.primary
+                          : AppColors.navBarUnselected,
                     ),
                     const SizedBox(height: 4),
                     if (_currentIndex == 1)
@@ -104,7 +105,7 @@ class _ChatHomeScreenState extends State<ChatHomeScreen> {
                         width: 6,
                         height: 6,
                         decoration: const BoxDecoration(
-                          color: Color(0xFFFF6F61),
+                          color: AppColors.primary,
                           shape: BoxShape.circle,
                         ),
                       ),
