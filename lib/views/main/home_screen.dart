@@ -5,6 +5,7 @@ import 'package:geocoding/geocoding.dart';
 import 'package:lifeline/views/chatbot/screens/chat_home_screen.dart';
 import 'package:lifeline/services/location_handler.dart';
 import 'package:lifeline/services/firestore_service.dart';
+import 'package:lifeline/constants/app_colors.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'dart:math';
 import 'donation_screen.dart';
@@ -21,8 +22,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   bool _showEmergencyOptions = false;
   bool _isLocationFetched = false;
   bool _isLoadingLocation = false;
-  final Color _primaryColor = const Color(0xFFFF6F61);
-  final Color _primaryLightColor = const Color(0xFFFFE8E5);
+  // Remove hardcoded color variables since we'll use AppColors constants
 
   late AnimationController _animationController;
   late Animation<double> _scaleAnimation;
@@ -180,7 +180,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Emergency alerts sent for $emergencyType'),
-          backgroundColor: Colors.green,
+          backgroundColor: AppColors.success,
           behavior: SnackBarBehavior.floating,
           duration: const Duration(seconds: 2),
           shape: RoundedRectangleBorder(
@@ -193,7 +193,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text('Failed to send emergency alerts'),
-          backgroundColor: Colors.red,
+          backgroundColor: AppColors.error,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(8),
@@ -220,9 +220,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     final size = MediaQuery.of(context).size;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.surface,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.surface,
         elevation: 0,
         leading: Padding(
           padding: const EdgeInsets.only(left: 16),
@@ -247,8 +247,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               child: _isLoadingLocation
                   ? LinearProgressIndicator(
                       minHeight: 4,
-                      color: _primaryColor,
-                      backgroundColor: _primaryLightColor,
+                      color: AppColors.primary,
+                      backgroundColor: AppColors.primary.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(4),
                     )
                   : Text(
@@ -265,7 +265,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         actions: [
           IconButton(
             onPressed: _getUserLocation,
-            icon: const Icon(Icons.refresh, color: Colors.black),
+            icon: Icon(Icons.refresh, color: AppColors.textPrimary),
             tooltip: "Refresh location",
           ),
         ],
@@ -318,7 +318,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             MaterialPageRoute(builder: (context) => const ChatHomeScreen()),
           );
         },
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.surface,
         elevation: 4,
         child: Image.asset(
           'assets/images/icons/brain.png',
@@ -333,32 +333,32 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       {
         "image": 'assets/images/icons/ambulance.png',
         "type": "Medical Emergency",
-        "color": Colors.white,
+        "color": AppColors.surface,
       },
       {
         "image": 'assets/images/icons/policeman.png',
         "type": "Police Assistance",
-        "color": Colors.white,
+        "color": AppColors.surface,
       },
       {
         "image": 'assets/images/icons/fire.png',
         "type": "Fire Alert",
-        "color": Colors.white,
+        "color": AppColors.surface,
       },
       {
         "image": 'assets/images/icons/healthcare.png',
         "type": "Health Issue",
-        "color": Colors.white,
+        "color": AppColors.surface,
       },
       {
         "image": 'assets/images/icons/warning.png',
         "type": "SOS",
-        "color": Colors.white,
+        "color": AppColors.surface,
       },
       {
         "image": 'assets/images/icons/bandage.png',
         "type": "General Emergency",
-        "color": Colors.white,
+        "color": AppColors.surface,
       },
     ];
 
@@ -387,7 +387,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.2),
+                  color: AppColors.textPrimary.withOpacity(0.2),
                   blurRadius: 10,
                   spreadRadius: 2,
                 ),
@@ -404,8 +404,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   const SizedBox(height: 4),
                   Text(
                     emergencyTypes[index]["type"].toString().split(' ')[0],
-                    style: const TextStyle(
-                      color: Colors.black,
+                    style: TextStyle(
+                      color: AppColors.textPrimary,
                       fontSize: 10,
                       fontWeight: FontWeight.bold,
                     ),
@@ -428,9 +428,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         decoration: BoxDecoration(
           gradient: RadialGradient(
             colors: [
-              _primaryColor.withOpacity(0.9),
-              _primaryColor.withOpacity(0.7),
-              _primaryColor.withOpacity(0.5),
+              AppColors.primary.withOpacity(0.9),
+              AppColors.primary.withOpacity(0.7),
+              AppColors.primary.withOpacity(0.5),
             ],
             stops: const [0.3, 0.7, 1.0],
             radius: 0.85,
@@ -438,14 +438,14 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           shape: BoxShape.circle,
           boxShadow: [
             BoxShadow(
-              color: _primaryColor.withOpacity(0.5),
+              color: AppColors.primary.withOpacity(0.5),
               blurRadius: 35,
               spreadRadius: 8,
               offset: const Offset(0, 5),
             ),
           ],
           border: Border.all(
-            color: Colors.white.withOpacity(0.3),
+            color: AppColors.textTertiary.withOpacity(0.3),
             width: 2,
           ),
         ),
@@ -456,21 +456,21 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               Image.asset(
                 'assets/images/icons/tap.png',
                 height: 65,
-                color: Colors.white.withOpacity(0.95),
+                color: AppColors.textTertiary.withOpacity(0.95),
               ),
               const SizedBox(height: 10),
               Text(
                 _showEmergencyOptions ? "CANCEL" : "EMERGENCY",
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: AppColors.textTertiary,
                   fontWeight: FontWeight.w800,
                   fontSize: 16,
                   letterSpacing: 1.1,
                   shadows: [
                     Shadow(
-                      color: Colors.black26,
+                      color: AppColors.navBarShadow,
                       blurRadius: 2,
-                      offset: Offset(1, 1),
+                      offset: const Offset(1, 1),
                     )
                   ],
                 ),
@@ -496,17 +496,17 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         margin: const EdgeInsets.symmetric(horizontal: 30),
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppColors.surface,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.red.withOpacity(0.1),
+              color: AppColors.error.withOpacity(0.1),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
           ],
           border: Border.all(
-            color: const Color(0xFFFF6F61).withOpacity(0.2),
+            color: AppColors.primary.withOpacity(0.2),
           ),
         ),
         child: Row(
@@ -516,7 +516,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               width: 50,
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: const Color(0xFFFF6F61).withOpacity(0.1),
+                color: AppColors.primary.withOpacity(0.1),
                 shape: BoxShape.circle,
               ),
               child: Image.asset(
@@ -524,7 +524,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               ),
             ),
             const SizedBox(width: 16),
-            const Expanded(
+            Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -533,21 +533,22 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 14,
+                      color: AppColors.textPrimary,
                     ),
                   ),
-                  SizedBox(height: 4),
+                  const SizedBox(height: 4),
                   Text(
                     "Tap to view donation opportunities near you",
                     style: TextStyle(
                       fontSize: 12,
-                      color: Colors.grey,
+                      color: AppColors.textGrey,
                     ),
                   ),
                 ],
               ),
             ),
-            const Icon(Icons.arrow_forward_ios_rounded,
-                size: 16, color: Colors.grey),
+            Icon(Icons.arrow_forward_ios_rounded,
+                size: 16, color: AppColors.textGrey),
           ],
         ),
       ),

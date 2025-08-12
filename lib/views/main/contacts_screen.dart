@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:lifeline/constants/app_colors.dart';
 
 class ContactsPage extends StatefulWidget {
   const ContactsPage({super.key});
@@ -19,10 +20,7 @@ class _ContactsPageState extends State<ContactsPage> {
   bool _hasLoadedOnce = false;
   final TextEditingController _searchController = TextEditingController();
 
-  final Color _primaryColor = const Color(0xFFFF6F61);
-  final Color _primaryLightColor = const Color(0xFFFFE8E5);
-  final Color _errorColor = const Color(0xFFD32F2F);
-  final Color _successColor = const Color(0xFF388E3C);
+  // Remove hardcoded color variables since we'll use AppColors constants
 
   @override
   void initState() {
@@ -101,7 +99,7 @@ class _ContactsPageState extends State<ContactsPage> {
         builder: (context) => Container(
           height: MediaQuery.of(context).size.height * 0.85,
           decoration: const BoxDecoration(
-            color: Colors.white,
+            color: AppColors.surface,
             borderRadius: BorderRadius.vertical(
               top: Radius.circular(24),
             ),
@@ -113,7 +111,7 @@ class _ContactsPageState extends State<ContactsPage> {
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: Colors.grey[400],
+                  color: AppColors.textGrey,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -127,13 +125,13 @@ class _ContactsPageState extends State<ContactsPage> {
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
-                        color: _primaryColor,
+                        color: AppColors.primary,
                       ),
                     ),
                     IconButton(
                       icon: const Icon(Icons.close),
                       onPressed: () => Navigator.pop(context),
-                      color: Colors.grey,
+                      color: AppColors.textGrey,
                     ),
                   ],
                 ),
@@ -145,7 +143,7 @@ class _ContactsPageState extends State<ContactsPage> {
                         itemCount: phoneContacts.length,
                         separatorBuilder: (context, index) => Divider(
                           height: 1,
-                          color: Colors.grey.withOpacity(0.1),
+                          color: AppColors.textGrey.withOpacity(0.1),
                         ),
                         itemBuilder: (context, index) {
                           final contact = phoneContacts[index];
@@ -166,7 +164,7 @@ class _ContactsPageState extends State<ContactsPage> {
                           "No contacts found",
                           style: TextStyle(
                             fontSize: 16,
-                            color: Colors.grey,
+                            color: AppColors.textGrey,
                           ),
                         ),
                       ),
@@ -222,18 +220,18 @@ class _ContactsPageState extends State<ContactsPage> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.surface,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
         ),
         title: Row(
           children: [
-            Icon(Icons.warning_amber_rounded, color: _errorColor),
+            Icon(Icons.warning_amber_rounded, color: AppColors.error),
             const SizedBox(width: 8),
             const Text(
               "Remove Contact",
               style: TextStyle(
-                color: Colors.black87,
+                color: AppColors.textPrimary,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -241,14 +239,14 @@ class _ContactsPageState extends State<ContactsPage> {
         ),
         content: RichText(
           text: TextSpan(
-            style: const TextStyle(color: Colors.black87, fontSize: 16),
+            style: const TextStyle(color: AppColors.textPrimary, fontSize: 16),
             children: [
               const TextSpan(text: "Are you sure you want to remove "),
               TextSpan(
                 text: contactName,
                 style: const TextStyle(
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFFFF6F61),
+                  color: AppColors.primary,
                 ),
               ),
               const TextSpan(text: " from your emergency contacts?"),
@@ -263,7 +261,7 @@ class _ContactsPageState extends State<ContactsPage> {
             child: const Text(
               "CANCEL",
               style: TextStyle(
-                color: Color(0xFFFF6F61),
+                color: AppColors.primary,
                 fontWeight: FontWeight.w600,
                 letterSpacing: 0.5,
               ),
@@ -272,7 +270,7 @@ class _ContactsPageState extends State<ContactsPage> {
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
             style: ElevatedButton.styleFrom(
-              backgroundColor: _errorColor,
+              backgroundColor: AppColors.error,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
@@ -280,7 +278,7 @@ class _ContactsPageState extends State<ContactsPage> {
             child: const Text(
               "DELETE",
               style: TextStyle(
-                color: Colors.white,
+                color: AppColors.textTertiary,
                 fontWeight: FontWeight.bold,
                 letterSpacing: 0.5,
               ),
@@ -306,7 +304,7 @@ class _ContactsPageState extends State<ContactsPage> {
         width: 48,
         height: 48,
         decoration: BoxDecoration(
-          color: _primaryLightColor,
+          color: AppColors.primary.withOpacity(0.1),
           shape: BoxShape.circle,
         ),
         child: Center(
@@ -315,7 +313,7 @@ class _ContactsPageState extends State<ContactsPage> {
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: _primaryColor,
+              color: AppColors.primary,
             ),
           ),
         ),
@@ -325,14 +323,14 @@ class _ContactsPageState extends State<ContactsPage> {
         style: const TextStyle(
           fontSize: 16,
           fontWeight: FontWeight.w600,
-          color: Colors.black87,
+          color: AppColors.textPrimary,
         ),
       ),
       subtitle: Text(
         phone,
         style: const TextStyle(
           fontSize: 14,
-          color: Colors.grey,
+          color: AppColors.textGrey,
         ),
       ),
       trailing: IconButton(
@@ -340,12 +338,12 @@ class _ContactsPageState extends State<ContactsPage> {
           width: 36,
           height: 36,
           decoration: BoxDecoration(
-            color: _primaryColor,
+            color: AppColors.primary,
             shape: BoxShape.circle,
           ),
           child: const Icon(
             Icons.add,
-            color: Colors.white,
+            color: AppColors.textTertiary,
             size: 20,
           ),
         ),
@@ -358,7 +356,7 @@ class _ContactsPageState extends State<ContactsPage> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: _successColor,
+        backgroundColor: AppColors.success,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8),
@@ -371,7 +369,7 @@ class _ContactsPageState extends State<ContactsPage> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: _errorColor,
+        backgroundColor: AppColors.error,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8),
@@ -383,7 +381,7 @@ class _ContactsPageState extends State<ContactsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.surface,
       appBar: AppBar(
         automaticallyImplyLeading: false,
         title: const Text(
@@ -391,10 +389,10 @@ class _ContactsPageState extends State<ContactsPage> {
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
-            color: Colors.white,
+            color: AppColors.textTertiary,
           ),
         ),
-        backgroundColor: _primaryColor,
+        backgroundColor: AppColors.primary,
         elevation: 0,
         centerTitle: true,
         shape: const RoundedRectangleBorder(
@@ -405,8 +403,8 @@ class _ContactsPageState extends State<ContactsPage> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _showContactsDialog,
-        backgroundColor: _primaryColor,
-        child: const Icon(Icons.add, color: Colors.white),
+        backgroundColor: AppColors.primary,
+        child: const Icon(Icons.add, color: AppColors.textTertiary),
       ),
       body: Column(
         children: [
@@ -415,7 +413,7 @@ class _ContactsPageState extends State<ContactsPage> {
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
             child: Container(
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: AppColors.surface,
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: [
                   BoxShadow(
@@ -430,14 +428,14 @@ class _ContactsPageState extends State<ContactsPage> {
                 onChanged: _filterContacts,
                 decoration: InputDecoration(
                   hintText: 'Search contacts...',
-                  prefixIcon: Icon(Icons.search, color: _primaryColor),
+                  prefixIcon: Icon(Icons.search, color: AppColors.primary),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide.none,
                   ),
                   contentPadding: const EdgeInsets.symmetric(vertical: 0),
                   filled: true,
-                  fillColor: Colors.white,
+                  fillColor: AppColors.surface,
                 ),
               ),
             ),
@@ -446,8 +444,8 @@ class _ContactsPageState extends State<ContactsPage> {
           if (_isLoading)
             LinearProgressIndicator(
               minHeight: 2,
-              color: _primaryColor,
-              backgroundColor: _primaryLightColor,
+              color: AppColors.primary,
+              backgroundColor: AppColors.primary.withOpacity(0.1),
             )
           else
             const SizedBox(height: 2),
@@ -460,7 +458,7 @@ class _ContactsPageState extends State<ContactsPage> {
                         Icon(
                           Icons.contacts,
                           size: 64,
-                          color: Colors.grey[400],
+                          color: AppColors.textGrey,
                         ),
                         const SizedBox(height: 16),
                         Text(
@@ -469,7 +467,7 @@ class _ContactsPageState extends State<ContactsPage> {
                               : 'No matching contacts',
                           style: TextStyle(
                             fontSize: 16,
-                            color: Colors.grey[600],
+                            color: AppColors.textGrey,
                           ),
                         ),
                         if (_searchController.text.isEmpty) ...[
@@ -477,7 +475,7 @@ class _ContactsPageState extends State<ContactsPage> {
                           TextButton(
                             onPressed: _showContactsDialog,
                             style: TextButton.styleFrom(
-                              foregroundColor: _primaryColor,
+                              foregroundColor: AppColors.primary,
                             ),
                             child: const Text('Add your first contact'),
                           ),
@@ -497,14 +495,14 @@ class _ContactsPageState extends State<ContactsPage> {
                         background: Container(
                           margin: const EdgeInsets.symmetric(vertical: 4),
                           decoration: BoxDecoration(
-                            color: _errorColor.withOpacity(0.1),
+                            color: AppColors.error.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           alignment: Alignment.centerRight,
                           padding: const EdgeInsets.only(right: 20),
                           child: Icon(
                             Icons.delete,
-                            color: _errorColor,
+                            color: AppColors.error,
                           ),
                         ),
                         confirmDismiss: (direction) async {
@@ -524,11 +522,11 @@ class _ContactsPageState extends State<ContactsPage> {
   Widget _buildContactCard(Map<String, dynamic> contact) {
     return Container(
       decoration: BoxDecoration(
-        color: const Color.fromARGB(255, 247, 244, 244),
+        color: AppColors.background,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: AppColors.textGrey.withOpacity(0.1),
             blurRadius: 10,
             spreadRadius: 2,
             offset: const Offset(0, 4),
@@ -536,7 +534,7 @@ class _ContactsPageState extends State<ContactsPage> {
         ],
       ),
       child: Material(
-        color: Colors.transparent,
+        color: AppColors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
           onTap: () {},
@@ -551,8 +549,8 @@ class _ContactsPageState extends State<ContactsPage> {
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: [
-                        _primaryColor.withOpacity(0.2),
-                        _primaryColor.withOpacity(0.4),
+                        AppColors.primary.withOpacity(0.2),
+                        AppColors.primary.withOpacity(0.4),
                       ],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
@@ -565,7 +563,7 @@ class _ContactsPageState extends State<ContactsPage> {
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
-                        color: _primaryColor,
+                        color: AppColors.primary,
                       ),
                     ),
                   ),
@@ -580,7 +578,7 @@ class _ContactsPageState extends State<ContactsPage> {
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
-                          color: Colors.black87,
+                          color: AppColors.textPrimary,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -590,7 +588,7 @@ class _ContactsPageState extends State<ContactsPage> {
                         contact['phone'],
                         style: TextStyle(
                           fontSize: 14,
-                          color: Colors.grey.shade600,
+                          color: AppColors.textGrey,
                         ),
                       ),
                     ],
@@ -599,7 +597,7 @@ class _ContactsPageState extends State<ContactsPage> {
                 IconButton(
                   icon: Icon(
                     Icons.phone_outlined,
-                    color: _primaryColor,
+                    color: AppColors.primary,
                     size: 24,
                   ),
                   onPressed: () async {
