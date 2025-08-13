@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:lifeline/components/clip_wave.dart';
 import 'package:lifeline/components/custom_button.dart';
 import 'package:lifeline/components/phone_field.dart';
-import 'package:lifeline/components/custom_text_field.dart';
 import 'package:lifeline/constants/app_colors.dart';
 import 'package:lifeline/views/auth/login_screen.dart';
 import 'package:lifeline/services/auth_service.dart';
+import 'package:lifeline/views/auth/widgets/signup_form_fields.dart';
+import 'package:lifeline/views/auth/auth_validators.dart';
+import 'package:lifeline/views/auth/widgets/auth_header.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -22,6 +23,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
   String _phone = '';
   bool _isPasswordVisible = false;
 
+  // Kept for backwards compatibility; not used after AuthValidators adoption.
+  // ignore: unused_field
   final RegExp _emailRegex =
       RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$');
 
@@ -41,30 +44,35 @@ class _SignUpScreenState extends State<SignUpScreen> {
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
 
-    if (fullName.isEmpty) {
+    if (!AuthValidators.isNonEmpty(fullName)) {
       _showSnackbar("Full name is required!");
       return;
     }
 
-    if (!_emailRegex.hasMatch(email)) {
+    if (!AuthValidators.isValidEmail(email)) {
       _showSnackbar("Invalid email format!");
       return;
     }
 
-    if (password.length < 6) {
+    if (!AuthValidators.isValidPassword(password)) {
       _showSnackbar("Password must be at least 6 characters!");
       return;
     }
 
     try {
-      await AuthService().signup(
+      final result = await AuthService().signup(
         email: email,
         password: password,
         username: fullName,
         phone: _phone,
       );
 
-      _showSnackbar("Account registered successfully!", isSuccess: true);
+      if (!result.isSuccess) {
+        _showSnackbar(result.message ?? 'Signup failed');
+        return;
+      }
+
+      _showSnackbar("Account registered! Successfully!", isSuccess: true);
 
       Navigator.pushReplacement(
         context,
@@ -87,32 +95,13 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size;
-
     return Scaffold(
       backgroundColor: AppColors.surface,
       body: Column(
         children: [
-          SizedBox(
-            height: size.height * 0.30,
-            child: Stack(
-              children: [
-                ClipPath(
-                  clipper: TopWaveClipper(),
-                  child: Container(
-                    width: double.infinity,
-                    decoration: const BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [AppColors.primary, AppColors.accent],
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
+          const AuthHeader(
+              heightFactor: 0.30,
+              gradientColors: [AppColors.primary, AppColors.accent]),
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
@@ -128,26 +117,17 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  CustomTextField(
-                    controller: _fullNameController,
-                    hintText: "Full Name",
-                    prefixIcon: userIcon,
-                  ),
-                  const SizedBox(height: 20),
-                  CustomTextField(
-                    controller: _emailController,
-                    hintText: "Email Address",
-                    prefixIcon: emailIcon,
-                    keyboardType: TextInputType.emailAddress,
-                  ),
-                  const SizedBox(height: 20),
-                  CustomTextField(
-                    controller: _passwordController,
-                    hintText: "Password",
-                    prefixIcon: passwordIcon,
-                    obscureText: !_isPasswordVisible,
-                    suffixIcon: _isPasswordVisible ? eyeSlashIcon : eyeIcon,
-                    onSuffixTap: () {
+                  SignupFormFields(
+                    nameController: _fullNameController,
+                    emailController: _emailController,
+                    passwordController: _passwordController,
+                    nameIcon: userIcon,
+                    emailIcon: emailIcon,
+                    passwordIcon: passwordIcon,
+                    eyeIcon: eyeIcon,
+                    eyeSlashIcon: eyeSlashIcon,
+                    isPasswordVisible: _isPasswordVisible,
+                    onTogglePassword: () {
                       setState(() {
                         _isPasswordVisible = !_isPasswordVisible;
                       });

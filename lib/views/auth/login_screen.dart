@@ -8,9 +8,11 @@ import 'package:lifeline/views/auth/forgotpass_screen.dart';
 import 'package:lifeline/views/auth/signup_screen.dart';
 import 'package:lifeline/views/main/profile/profile_setup_screen.dart';
 import 'package:lifeline/services/auth_service.dart';
-import 'package:lifeline/components/clip_wave.dart';
 import 'package:lifeline/components/custom_text_field.dart';
 import 'package:lifeline/constants/app_colors.dart';
+import 'package:lifeline/views/auth/widgets/auth_header.dart';
+import 'package:lifeline/views/auth/widgets/google_login_button.dart';
+import 'package:lifeline/views/auth/auth_validators.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -33,6 +35,8 @@ class _LoginScreenState extends State<LoginScreen> {
   final eyeIcon =
       Image.asset('assets/images/icons/hide.png', width: 24, height: 24);
 
+  // Kept for backwards compatibility; not used after AuthValidators adoption.
+  // ignore: unused_field
   final RegExp _emailRegex =
       RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$');
 
@@ -40,7 +44,7 @@ class _LoginScreenState extends State<LoginScreen> {
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
 
-    if (!_emailRegex.hasMatch(email)) {
+    if (!AuthValidators.isValidEmail(email)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text("Wrong email format"),
@@ -50,10 +54,10 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
-    if (password.isEmpty) {
+    if (!AuthValidators.isValidPassword(password)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text("Password cannot be empty"),
+          content: Text("Password must be at least 6 characters"),
           backgroundColor: AppColors.error,
         ),
       );
@@ -61,42 +65,49 @@ class _LoginScreenState extends State<LoginScreen> {
     }
 
     try {
-      bool isSuccess =
-          await AuthService().login(email: email, password: password);
+      final result =
+          await AuthService().loginWithEmail(email: email, password: password);
 
-      if (isSuccess) {
-        final user = FirebaseAuth.instance.currentUser;
-        if (user != null) {
-          final doc = await FirebaseFirestore.instance
-              .collection('users')
-              .doc(user.uid)
-              .get();
-
-          final data = doc.data();
-          final isProfileComplete = data?['isProfileComplete'] == true;
-
-          Navigator.pushReplacement(
-            context,
-            PageRouteBuilder(
-              pageBuilder: (context, animation, secondaryAnimation) =>
-                  isProfileComplete
-                      ? const MainNavigationScreen()
-                      : const ProfileSetupScreen(),
-              transitionsBuilder:
-                  (context, animation, secondaryAnimation, child) =>
-                      FadeTransition(opacity: animation, child: child),
-              transitionDuration: const Duration(milliseconds: 500),
-            ),
-          );
-
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text("Login successful"),
-              backgroundColor: AppColors.secondary,
-            ),
-          );
-        }
+      if (!result.isSuccess) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result.message ?? 'Login failed'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+        return;
       }
+
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) return;
+
+      final doc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get();
+
+      final data = doc.data();
+      final isProfileComplete = data?['isProfileComplete'] == true;
+
+      Navigator.pushReplacement(
+        context,
+        PageRouteBuilder(
+          pageBuilder: (context, animation, secondaryAnimation) =>
+              isProfileComplete
+                  ? const MainNavigationScreen()
+                  : const ProfileSetupScreen(),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) =>
+              FadeTransition(opacity: animation, child: child),
+          transitionDuration: const Duration(milliseconds: 500),
+        ),
+      );
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result.message ?? 'Login successful'),
+          backgroundColor: AppColors.secondary,
+        ),
+      );
     } catch (e) {
       String message = "Error: ${e.toString()}";
       if (e is FirebaseAuthException) {
@@ -114,32 +125,41 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> onValidateGoogle(BuildContext context) async {
     try {
-      final user = await AuthService().signInWithGoogle();
-      if (user != null) {
-        final doc = await FirebaseFirestore.instance
-            .collection('users')
-            .doc(user.uid)
-            .get();
-
-        final data = doc.data();
-        final isProfileComplete = data?['isProfileComplete'] == true;
-
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => isProfileComplete
-                ? const MainNavigationScreen()
-                : const ProfileSetupScreen(),
-          ),
-        );
-
+      final result = await AuthService().signInWithGoogle();
+      if (!result.isSuccess || result.data == null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Login successful"),
-            backgroundColor: AppColors.secondary,
+          SnackBar(
+            content: Text(result.message ?? 'Google Sign-In failed'),
+            backgroundColor: AppColors.error,
           ),
         );
+        return;
       }
+
+      final user = result.data!;
+      final doc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get();
+
+      final data = doc.data();
+      final isProfileComplete = data?['isProfileComplete'] == true;
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => isProfileComplete
+              ? const MainNavigationScreen()
+              : const ProfileSetupScreen(),
+        ),
+      );
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result.message ?? 'Login successful'),
+          backgroundColor: AppColors.secondary,
+        ),
+      );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -152,35 +172,11 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size;
-
     return Scaffold(
       backgroundColor: AppColors.surface,
       body: Column(
         children: [
-          SizedBox(
-            height: size.height * 0.35,
-            child: Stack(
-              children: [
-                ClipPath(
-                  clipper: TopWaveClipper(),
-                  child: Container(
-                    width: double.infinity,
-                    decoration: const BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          AppColors.primary,
-                          AppColors.primary,
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
+          const AuthHeader(heightFactor: 0.35),
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
@@ -266,28 +262,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ],
                   ),
                   const SizedBox(height: 20),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 50,
-                    child: ElevatedButton.icon(
-                      onPressed: () => onValidateGoogle(context),
-                      icon: Image.asset('assets/images/icons/google.png',
-                          width: 24, height: 24),
-                      label: Text(
-                        "Login with Google",
-                        style: GoogleFonts.nunito(
-                          color: AppColors.textPrimary,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.tertiary,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(30),
-                        ),
-                      ),
-                    ),
-                  ),
+                  GoogleLoginButton(onPressed: () => onValidateGoogle(context)),
                   const SizedBox(height: 20),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,

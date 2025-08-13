@@ -22,8 +22,6 @@ class ProfilePage extends StatefulWidget {
 class _ProfilePageState extends State<ProfilePage> {
   final ImagePicker _picker = ImagePicker();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  bool isDarkMode = false; // Add dark mode state
-  // Remove hardcoded color variables since we'll use AppColors constantszz
 
   @override
   void initState() {
@@ -121,92 +119,12 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
-  void _showThemeDialog(BuildContext context, DynamicColors colors) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          backgroundColor: colors.surface,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          title: Row(
-            children: [
-              Icon(Icons.palette, color: colors.primary, size: 24),
-              const SizedBox(width: 12),
-              Text(
-                'Choose Theme',
-                style: GoogleFonts.poppins(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                  color: colors.textPrimary,
-                ),
-              ),
-            ],
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                leading: Icon(Icons.light_mode, color: colors.primary),
-                title: Text(
-                  'Light Mode',
-                  style: GoogleFonts.poppins(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    color: colors.textPrimary,
-                  ),
-                ),
-                onTap: () {
-                  Navigator.pop(context);
-                  // Set light mode (isDarkMode = false)
-                  setState(() {
-                    isDarkMode = false;
-                  });
-                },
-              ),
-              ListTile(
-                leading: Icon(Icons.dark_mode, color: colors.primary),
-                title: Text(
-                  'Dark Mode',
-                  style: GoogleFonts.poppins(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    color: colors.textPrimary,
-                  ),
-                ),
-                onTap: () {
-                  Navigator.pop(context);
-                  // Set dark mode (isDarkMode = true)
-                  setState(() {
-                    isDarkMode = true;
-                  });
-                },
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text(
-                'Cancel',
-                style: GoogleFonts.poppins(
-                  color: colors.primary,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
-    final colors = DynamicColors(isDarkMode);
+    final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final DynamicColors colors = DynamicColors(isDarkMode);
     return Scaffold(
-      backgroundColor: colors.background,
+      backgroundColor: AppColors.background,
       body: SingleChildScrollView(
         child: Column(
           children: [
@@ -214,14 +132,14 @@ class _ProfilePageState extends State<ProfilePage> {
               width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 30),
               decoration: BoxDecoration(
-                color: colors.primary,
+                color: AppColors.primary,
                 borderRadius: const BorderRadius.only(
                   bottomLeft: Radius.circular(15),
                   bottomRight: Radius.circular(15),
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: colors.primary.withOpacity(0.2),
+                    color: AppColors.primary.withOpacity(0.2),
                     blurRadius: 10,
                     spreadRadius: 2,
                     offset: const Offset(0, 5),
@@ -235,7 +153,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   Text(
                     'Profile',
                     style: TextStyle(
-                      color: colors.textTertiary,
+                      color: AppColors.textTertiary,
                       fontSize: 22,
                       fontWeight: FontWeight.bold,
                     ),
@@ -247,16 +165,16 @@ class _ProfilePageState extends State<ProfilePage> {
                       children: [
                         CircleAvatar(
                           radius: 50,
-                          backgroundColor: colors.surface,
+                          backgroundColor: AppColors.surface,
                           child: CircleAvatar(
                             radius: 48,
-                            backgroundColor: colors.background,
+                            backgroundColor: AppColors.background,
                             backgroundImage: currentUser.profileImage.isNotEmpty
                                 ? NetworkImage(currentUser.profileImage)
                                 : null,
                             child: currentUser.profileImage.isEmpty
                                 ? Icon(Icons.person,
-                                    color: colors.primary, size: 48)
+                                    color: AppColors.primary, size: 48)
                                 : null,
                           ),
                         ),
@@ -266,13 +184,13 @@ class _ProfilePageState extends State<ProfilePage> {
                           child: Container(
                             padding: const EdgeInsets.all(5),
                             decoration: BoxDecoration(
-                              color: colors.primary,
+                              color: AppColors.primary,
                               shape: BoxShape.circle,
-                              border:
-                                  Border.all(color: colors.surface, width: 2),
+                              border: Border.all(
+                                  color: AppColors.surface, width: 2),
                             ),
                             child: Icon(Icons.edit,
-                                color: colors.textTertiary, size: 18),
+                                color: AppColors.textTertiary, size: 18),
                           ),
                         ),
                       ],
@@ -284,7 +202,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     style: GoogleFonts.poppins(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
-                      color: colors.textTertiary,
+                      color: AppColors.textTertiary,
                     ),
                   ),
                   const SizedBox(height: 5),
@@ -292,7 +210,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     currentUser.email ?? 'No email available',
                     style: GoogleFonts.poppins(
                       fontSize: 14,
-                      color: colors.textTertiary.withOpacity(0.8),
+                      color: AppColors.textTertiary.withOpacity(0.8),
                     ),
                   ),
                   const SizedBox(height: 10),
@@ -307,13 +225,9 @@ class _ProfilePageState extends State<ProfilePage> {
                   _buildStatCard(
                       Icons.cake_outlined, 'Age', currentUser.age ?? 'N/A',
                       colors: colors),
-                  _buildStatCard(
-                    Icons.monitor_heart_outlined,
-                    'BMI',
-                    currentUser.bmi ?? '0.0',
-                    isBmi: true,
-                    colors: colors,
-                  ),
+                  _buildStatCard(Icons.monitor_heart_outlined, 'BMI',
+                      currentUser.bmi ?? '0.0',
+                      isBmi: true, colors: colors),
                   _buildStatCard(Icons.bloodtype_outlined, 'Blood Type',
                       currentUser.bloodType,
                       colors: colors),
@@ -385,14 +299,11 @@ class _ProfilePageState extends State<ProfilePage> {
                   ),
                   const SizedBox(height: 15),
                   _buildMenuCard(
-                    icon: Icons.dark_mode,
-                    title: 'Theme',
-                    subtitle: 'Change the theme of the app',
-                    onTap: () {
-                      _showThemeDialog(context, colors);
-                    },
-                    colors: colors,
-                  ),
+                      icon: Icons.dark_mode,
+                      title: 'Theme',
+                      subtitle: 'Change the theme of the app',
+                      onTap: () {},
+                      colors: colors),
                   const SizedBox(height: 15),
                   _buildMenuCard(
                     icon: Icons.logout,
