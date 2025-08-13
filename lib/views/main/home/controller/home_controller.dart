@@ -7,7 +7,7 @@ import 'package:lifeline/constants/app_colors.dart';
 import 'package:lifeline/services/firestore_service.dart';
 import 'package:lifeline/services/location_handler.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../../donation_screen.dart';
+import '../../donation/donation_screen.dart';
 
 class HomeController {
   final State state;
@@ -22,9 +22,9 @@ class HomeController {
   // These require the State to expose the following private fields via callbacks or direct access if placed in same file.
   // We will access them using dynamic calls on the provided State.
 
-  T _getField<T>(String name) => (state as dynamic).__getField(name) as T;
+  T _getField<T>(String name) => (state as dynamic).getField(name) as T;
   void _setField(String name, dynamic value) =>
-      (state as dynamic).__setField(name, value);
+      (state as dynamic).setField(name, value);
 
   void getUserLocationIfNeeded() {
     final bool isLocationFetched = _getField<bool>('_isLocationFetched');

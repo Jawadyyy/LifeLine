@@ -1,99 +1,89 @@
-import 'package:flutter_contacts/flutter_contacts.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter_contacts/flutter_contacts.dart';
 import 'package:lifeline/constants/app_colors.dart';
+import 'package:url_launcher/url_launcher.dart';
 
-class ContactsPage extends StatefulWidget {
-  const ContactsPage({super.key});
+class ContactsScreenController {
+  final State state;
+  final void Function(void Function()) setStateFn;
 
-  @override
-  // ignore: library_private_types_in_public_api
-  _ContactsPageState createState() => _ContactsPageState();
-}
+  ContactsScreenController(this.state, this.setStateFn);
 
-class _ContactsPageState extends State<ContactsPage> {
-  List<Map<String, dynamic>> contacts = [];
-  List<Map<String, dynamic>> filteredContacts = [];
-  bool _isLoading = false;
-  bool _hasLoadedOnce = false;
-  final TextEditingController _searchController = TextEditingController();
+  BuildContext get _context => state.context;
 
-  // Remove hardcoded color variables since we'll use AppColors constants
-
-  @override
-  void initState() {
-    super.initState();
-    _loadStoredContacts();
+  T _getField<T>(String name) {
+    return (state as dynamic).getField(name) as T;
   }
 
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
+  void _setField(String name, dynamic value) {
+    (state as dynamic).setField(name, value);
   }
 
-  User? get currentUser => FirebaseAuth.instance.currentUser;
+  User? get _currentUser => FirebaseAuth.instance.currentUser;
 
-  CollectionReference<Map<String, dynamic>> get contactsRef {
-    if (currentUser == null) {
+  CollectionReference<Map<String, dynamic>> get _contactsRef {
+    if (_currentUser == null) {
       throw Exception("User not authenticated");
     }
     return FirebaseFirestore.instance
         .collection('users')
-        .doc(currentUser!.uid)
+        .doc(_currentUser!.uid)
         .collection('contacts');
   }
 
-  Future<void> _loadStoredContacts({bool forceReload = false}) async {
-    if (_hasLoadedOnce && !forceReload) return;
+  Future<void> loadStoredContacts({bool forceReload = false}) async {
+    final hasLoadedOnce = _getField<bool>('_hasLoadedOnce');
+    if (hasLoadedOnce && !forceReload) return;
 
-    if (currentUser != null) {
-      setState(() => _isLoading = true);
+    if (_currentUser != null) {
+      setStateFn(() => _setField('_isLoading', true));
       try {
-        final querySnapshot = await contactsRef.get();
-        setState(() {
-          contacts = querySnapshot.docs.map((doc) {
-            final data = doc.data();
-            data['id'] = doc.id;
-            return data;
-          }).toList();
-          filteredContacts = contacts;
-          _hasLoadedOnce = true;
+        final querySnapshot = await _contactsRef.get();
+        final contacts = querySnapshot.docs.map((doc) {
+          final data = doc.data();
+          data['id'] = doc.id;
+          return data;
+        }).toList();
+        setStateFn(() {
+          _setField('contacts', contacts);
+          _setField('filteredContacts', contacts);
+          _setField('_hasLoadedOnce', true);
         });
       } catch (e) {
         _showErrorSnackbar('Failed to load contacts');
       } finally {
-        setState(() => _isLoading = false);
+        setStateFn(() => _setField('_isLoading', false));
       }
     }
   }
 
-  void _filterContacts(String query) {
-    setState(() {
-      filteredContacts = contacts
-          .where((contact) => (contact['name'] as String)
-              .toLowerCase()
-              .contains(query.toLowerCase()))
-          .toList();
-    });
+  void filterContacts(String query) {
+    final contacts = _getField<List<Map<String, dynamic>>>('contacts');
+    final filtered = contacts
+        .where((contact) => (contact['name'] as String)
+            .toLowerCase()
+            .contains(query.toLowerCase()))
+        .toList();
+    setStateFn(() => _setField('filteredContacts', filtered));
   }
 
-  Future<void> _showContactsDialog() async {
+  Future<void> showContactsDialog() async {
     try {
-      bool permissionGranted = await FlutterContacts.requestPermission();
+      final permissionGranted = await FlutterContacts.requestPermission();
       if (!permissionGranted) {
         _showErrorSnackbar('Contacts permission denied');
         return;
       }
 
-      List<Contact> phoneContacts = await FlutterContacts.getContacts(
+      final phoneContacts = await FlutterContacts.getContacts(
         withProperties: true,
       );
 
+      // ignore: use_build_context_synchronously
       await showModalBottomSheet(
-        context: context,
+        context: _context,
         isScrollControlled: true,
         backgroundColor: Colors.transparent,
         builder: (context) => Container(
@@ -120,8 +110,8 @@ class _ContactsPageState extends State<ContactsPage> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      "Select a Contact",
+                    const Text(
+                      'Select a Contact',
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
@@ -147,13 +137,13 @@ class _ContactsPageState extends State<ContactsPage> {
                         ),
                         itemBuilder: (context, index) {
                           final contact = phoneContacts[index];
-                          return _buildContactListItem(
+                          return buildContactListItem(
                             contact.displayName,
                             contact.phones.isNotEmpty
                                 ? contact.phones[0].number
                                 : 'No phone number',
                             onTap: () {
-                              _addContactToFirestore(contact);
+                              addContactToFirestore(contact);
                               Navigator.pop(context);
                             },
                           );
@@ -161,7 +151,7 @@ class _ContactsPageState extends State<ContactsPage> {
                       )
                     : const Center(
                         child: Text(
-                          "No contacts found",
+                          'No contacts found',
                           style: TextStyle(
                             fontSize: 16,
                             color: AppColors.textGrey,
@@ -178,9 +168,9 @@ class _ContactsPageState extends State<ContactsPage> {
     }
   }
 
-  Future<void> _addContactToFirestore(Contact selectedContact) async {
-    if (currentUser != null) {
-      setState(() => _isLoading = true);
+  Future<void> addContactToFirestore(Contact selectedContact) async {
+    if (_currentUser != null) {
+      setStateFn(() => _setField('_isLoading', true));
       try {
         final newContact = {
           'name': selectedContact.displayName,
@@ -190,35 +180,35 @@ class _ContactsPageState extends State<ContactsPage> {
           'createdAt': FieldValue.serverTimestamp(),
         };
 
-        await contactsRef.add(newContact);
-        await _loadStoredContacts(forceReload: true);
+        await _contactsRef.add(newContact);
+        await loadStoredContacts(forceReload: true);
         _showSuccessSnackbar('Contact added successfully');
       } catch (e) {
         _showErrorSnackbar('Failed to add contact');
       } finally {
-        setState(() => _isLoading = false);
+        setStateFn(() => _setField('_isLoading', false));
       }
     }
   }
 
-  Future<void> _deleteContact(String contactId) async {
-    if (currentUser != null) {
-      setState(() => _isLoading = true);
+  Future<void> deleteContact(String contactId) async {
+    if (_currentUser != null) {
+      setStateFn(() => _setField('_isLoading', true));
       try {
-        await contactsRef.doc(contactId).delete();
-        await _loadStoredContacts(forceReload: true);
+        await _contactsRef.doc(contactId).delete();
+        await loadStoredContacts(forceReload: true);
         _showSuccessSnackbar('Contact deleted');
       } catch (e) {
         _showErrorSnackbar('Failed to delete contact');
       } finally {
-        setState(() => _isLoading = false);
+        setStateFn(() => _setField('_isLoading', false));
       }
     }
   }
 
-  Future<bool> _showDeleteDialog(String contactId, String contactName) async {
+  Future<bool> showDeleteDialog(String contactId, String contactName) async {
     final confirmed = await showDialog<bool>(
-      context: context,
+      context: _context,
       builder: (context) => AlertDialog(
         backgroundColor: AppColors.surface,
         shape: RoundedRectangleBorder(
@@ -229,7 +219,7 @@ class _ContactsPageState extends State<ContactsPage> {
             Icon(Icons.warning_amber_rounded, color: AppColors.error),
             const SizedBox(width: 8),
             const Text(
-              "Remove Contact",
+              'Remove Contact',
               style: TextStyle(
                 color: AppColors.textPrimary,
                 fontWeight: FontWeight.bold,
@@ -241,7 +231,7 @@ class _ContactsPageState extends State<ContactsPage> {
           text: TextSpan(
             style: const TextStyle(color: AppColors.textPrimary, fontSize: 16),
             children: [
-              const TextSpan(text: "Are you sure you want to remove "),
+              const TextSpan(text: 'Are you sure you want to remove '),
               TextSpan(
                 text: contactName,
                 style: const TextStyle(
@@ -249,7 +239,7 @@ class _ContactsPageState extends State<ContactsPage> {
                   color: AppColors.primary,
                 ),
               ),
-              const TextSpan(text: " from your emergency contacts?"),
+              const TextSpan(text: ' from your emergency contacts?'),
             ],
           ),
         ),
@@ -259,7 +249,7 @@ class _ContactsPageState extends State<ContactsPage> {
           TextButton(
             onPressed: () => Navigator.pop(context, false),
             child: const Text(
-              "CANCEL",
+              'CANCEL',
               style: TextStyle(
                 color: AppColors.primary,
                 fontWeight: FontWeight.w600,
@@ -276,7 +266,7 @@ class _ContactsPageState extends State<ContactsPage> {
               ),
             ),
             child: const Text(
-              "DELETE",
+              'DELETE',
               style: TextStyle(
                 color: AppColors.textTertiary,
                 fontWeight: FontWeight.bold,
@@ -289,14 +279,14 @@ class _ContactsPageState extends State<ContactsPage> {
     );
 
     if (confirmed == true) {
-      await _deleteContact(contactId);
+      await deleteContact(contactId);
       return true;
     }
 
     return false;
   }
 
-  Widget _buildContactListItem(String name, String phone,
+  Widget buildContactListItem(String name, String phone,
       {VoidCallback? onTap}) {
     return ListTile(
       contentPadding: EdgeInsets.zero,
@@ -310,7 +300,7 @@ class _ContactsPageState extends State<ContactsPage> {
         child: Center(
           child: Text(
             name.isNotEmpty ? name[0].toUpperCase() : '?',
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
               color: AppColors.primary,
@@ -337,7 +327,7 @@ class _ContactsPageState extends State<ContactsPage> {
         icon: Container(
           width: 36,
           height: 36,
-          decoration: BoxDecoration(
+          decoration: const BoxDecoration(
             color: AppColors.primary,
             shape: BoxShape.circle,
           ),
@@ -352,174 +342,7 @@ class _ContactsPageState extends State<ContactsPage> {
     );
   }
 
-  void _showSuccessSnackbar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: AppColors.success,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
-      ),
-    );
-  }
-
-  void _showErrorSnackbar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: AppColors.error,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.surface,
-      appBar: AppBar(
-        automaticallyImplyLeading: false,
-        title: const Text(
-          'Emergency Circle',
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: AppColors.textTertiary,
-          ),
-        ),
-        backgroundColor: AppColors.primary,
-        elevation: 0,
-        centerTitle: true,
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(
-            bottom: Radius.circular(20),
-          ),
-        ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _showContactsDialog,
-        backgroundColor: AppColors.primary,
-        child: const Icon(Icons.add, color: AppColors.textTertiary),
-      ),
-      body: Column(
-        children: [
-          const SizedBox(height: 20),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-            child: Container(
-              decoration: BoxDecoration(
-                color: AppColors.surface,
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 8,
-                    offset: const Offset(0, 3),
-                  ),
-                ],
-              ),
-              child: TextField(
-                controller: _searchController,
-                onChanged: _filterContacts,
-                decoration: InputDecoration(
-                  hintText: 'Search contacts...',
-                  prefixIcon: Icon(Icons.search, color: AppColors.primary),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none,
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(vertical: 0),
-                  filled: true,
-                  fillColor: AppColors.surface,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 20),
-          if (_isLoading)
-            LinearProgressIndicator(
-              minHeight: 2,
-              color: AppColors.primary,
-              backgroundColor: AppColors.primary.withOpacity(0.1),
-            )
-          else
-            const SizedBox(height: 2),
-          Expanded(
-            child: filteredContacts.isEmpty
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.contacts,
-                          size: 64,
-                          color: AppColors.textGrey,
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          _searchController.text.isEmpty
-                              ? 'No emergency contacts'
-                              : 'No matching contacts',
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: AppColors.textGrey,
-                          ),
-                        ),
-                        if (_searchController.text.isEmpty) ...[
-                          const SizedBox(height: 8),
-                          TextButton(
-                            onPressed: _showContactsDialog,
-                            style: TextButton.styleFrom(
-                              foregroundColor: AppColors.primary,
-                            ),
-                            child: const Text('Add your first contact'),
-                          ),
-                        ],
-                      ],
-                    ),
-                  )
-                : ListView.separated(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    itemCount: filteredContacts.length,
-                    separatorBuilder: (context, index) =>
-                        const SizedBox(height: 8),
-                    itemBuilder: (context, index) {
-                      final contact = filteredContacts[index];
-                      return Dismissible(
-                        key: Key(contact['id']),
-                        background: Container(
-                          margin: const EdgeInsets.symmetric(vertical: 4),
-                          decoration: BoxDecoration(
-                            color: AppColors.error.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          alignment: Alignment.centerRight,
-                          padding: const EdgeInsets.only(right: 20),
-                          child: Icon(
-                            Icons.delete,
-                            color: AppColors.error,
-                          ),
-                        ),
-                        confirmDismiss: (direction) async {
-                          return await _showDeleteDialog(
-                              contact['id'], contact['name']);
-                        },
-                        child: _buildContactCard(contact),
-                      );
-                    },
-                  ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildContactCard(Map<String, dynamic> contact) {
+  Widget buildContactCard(Map<String, dynamic> contact) {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.background,
@@ -538,7 +361,7 @@ class _ContactsPageState extends State<ContactsPage> {
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
           onTap: () {},
-          onLongPress: () => _showDeleteDialog(contact['id'], contact['name']),
+          onLongPress: () => showDeleteDialog(contact['id'], contact['name']),
           child: Padding(
             padding: const EdgeInsets.all(12),
             child: Row(
@@ -559,7 +382,9 @@ class _ContactsPageState extends State<ContactsPage> {
                   ),
                   child: Center(
                     child: Text(
-                      contact['name'][0].toUpperCase(),
+                      (contact['name'] as String).isNotEmpty
+                          ? (contact['name'] as String)[0].toUpperCase()
+                          : '?',
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
@@ -586,7 +411,7 @@ class _ContactsPageState extends State<ContactsPage> {
                       const SizedBox(height: 4),
                       Text(
                         contact['phone'],
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 14,
                           color: AppColors.textGrey,
                         ),
@@ -605,13 +430,40 @@ class _ContactsPageState extends State<ContactsPage> {
                         Uri(scheme: 'tel', path: contact['phone']);
                     if (!await launchUrl(phoneUri,
                         mode: LaunchMode.externalApplication)) {
-                      debugPrint('Could not launch $phoneUri');
+                      // ignore: avoid_print
+                      print('Could not launch $phoneUri');
                     }
                   },
                 ),
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  void _showSuccessSnackbar(String message) {
+    ScaffoldMessenger.of(_context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: AppColors.success,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
+      ),
+    );
+  }
+
+  void _showErrorSnackbar(String message) {
+    ScaffoldMessenger.of(_context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: AppColors.error,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
         ),
       ),
     );

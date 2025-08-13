@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:lifeline/components/custom_bottom_navbar.dart';
-import 'package:lifeline/views/main/contacts_screen.dart';
+import 'package:lifeline/views/main/contact/contacts_screen.dart';
 import 'package:lifeline/views/main/home/home_screen.dart';
-import 'package:lifeline/views/main/map_screen.dart';
+import 'package:lifeline/views/main/map/map_screen.dart';
 import 'package:lifeline/views/main/profile/profile_screen.dart';
 
 class MainNavigationScreen extends StatefulWidget {

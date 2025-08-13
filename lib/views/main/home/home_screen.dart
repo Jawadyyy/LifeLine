@@ -21,8 +21,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   late HomeController controller;
 
   // Expose fields for controller via dynamic calls (used internally by controller)
-  // ignore: unused_element
-  dynamic __getField(String name) => {
+  dynamic getField(String name) => {
         '_currentAddress': _currentAddress,
         '_showEmergencyOptions': _showEmergencyOptions,
         '_isLocationFetched': _isLocationFetched,
@@ -30,8 +29,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         '_animationController': _animationController,
       }[name];
 
-  // ignore: unused_element
-  void __setField(String name, dynamic value) {
+  void setField(String name, dynamic value) {
     switch (name) {
       case '_currentAddress':
         _currentAddress = value as String;

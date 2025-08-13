@@ -1,10 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:lifeline/services/location_handler.dart';
-import 'package:lifeline/services/hospital_service.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:lifeline/views/main/map/controller/map_screen_controller.dart';
 
 class MapScreen extends StatefulWidget {
   const MapScreen({super.key});
@@ -27,165 +24,55 @@ class _MapScreenState extends State<MapScreen> {
 
   List<Map<String, dynamic>> _hospitals = [];
   final Distance _distance = const Distance();
+  late MapScreenController screenController;
 
   @override
   void initState() {
     super.initState();
     _mapController = MapController();
-    _checkLocationServiceAndLoadLocation();
+    screenController = MapScreenController(this, setState);
+    screenController.checkLocationServiceAndLoadLocation();
   }
 
-  Future<void> _checkLocationServiceAndLoadLocation() async {
-    if (!mounted) return;
-    setState(() {
-      _isLoading = true;
-      _showRoute = false;
-      _selectedHospital = null;
-      _routePoints = [];
-    });
+  // Expose fields for controller
+  dynamic getField(String name) => {
+        '_isLoading': _isLoading,
+        '_showRoute': _showRoute,
+        '_selectedHospital': _selectedHospital,
+        '_routePoints': _routePoints,
+        '_currentPosition': _currentPosition,
+        '_currentAddress': _currentAddress,
+        '_isMapReady': _isMapReady,
+        '_mapController': _mapController,
+        '_hospitals': _hospitals,
+      }[name];
 
-    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) {
-      if (!mounted) return;
-      setState(() => _isLoading = false);
-      _showLocationServiceDialog();
-      return;
-    }
-
-    await _loadCurrentLocation();
-
-    if (!mounted) return;
-    setState(() => _isLoading = false);
-  }
-
-  Future<void> _showLocationServiceDialog() async {
-    final theme = Theme.of(context);
-    final mainColor = theme.colorScheme.primary;
-
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          titlePadding: const EdgeInsets.only(top: 20, left: 20, right: 20),
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-          actionsPadding: const EdgeInsets.only(bottom: 10, right: 10),
-          title: Row(
-            children: [
-              Icon(Icons.location_on, color: mainColor),
-              const SizedBox(width: 10),
-              Text(
-                'Location Required',
-                style: theme.textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: mainColor,
-                ),
-              ),
-            ],
-          ),
-          content: Text(
-            'To provide accurate directions, we need access to your location. Please enable location services in your device settings.',
-            style: theme.textTheme.bodyMedium,
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text(
-                'Not Now',
-                style: TextStyle(color: theme.colorScheme.onSurface),
-              ),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: mainColor,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              onPressed: () async {
-                Navigator.of(context).pop();
-                await Geolocator.openLocationSettings();
-                _checkLocationServiceAndLoadLocation();
-              },
-              child: const Text('Enable'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  Future<void> _loadCurrentLocation() async {
-    try {
-      Position? position = await LocationHandler.getCurrentPosition();
-      if (!mounted) return;
-
-      if (position != null) {
-        setState(() {
-          _currentPosition = LatLng(position.latitude, position.longitude);
-        });
-
-        String? address = await LocationHandler.getAddressFromLatLng(position);
-        if (!mounted) return;
-
-        if (address != null) {
-          setState(() {
-            _currentAddress = address;
-          });
-        }
-
-        if (_isMapReady && _currentPosition != null) {
-          _mapController.move(_currentPosition!, 15.0);
-        }
-
-        _hospitals =
-            await HospitalService.getNearbyHospitals(_currentPosition!);
-        if (!mounted) return;
-
-        setState(() {});
-      }
-    } catch (e) {
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error loading location: ${e.toString()}'),
-          backgroundColor: Colors.red,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-        ),
-      );
-    }
-  }
-
-  Future<void> _launchMapsApp(LatLng destination) async {
-    final url =
-        'https://www.google.com/maps/dir/?api=1&destination=${destination.latitude},${destination.longitude}';
-
-    final uri = Uri.parse(url);
-    try {
-      final launched =
-          await launchUrl(uri, mode: LaunchMode.externalApplication);
-      if (!launched) {
-        throw Exception("Could not launch Google Maps.");
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Failed to open Maps: $e'),
-          backgroundColor: Colors.red,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-        ),
-      );
+  void setField(String name, dynamic value) {
+    switch (name) {
+      case '_isLoading':
+        _isLoading = value as bool;
+        break;
+      case '_showRoute':
+        _showRoute = value as bool;
+        break;
+      case '_selectedHospital':
+        _selectedHospital = value as Map<String, dynamic>?;
+        break;
+      case '_routePoints':
+        _routePoints = value as List<LatLng>;
+        break;
+      case '_currentPosition':
+        _currentPosition = value as LatLng?;
+        break;
+      case '_currentAddress':
+        _currentAddress = value as String?;
+        break;
+      case '_isMapReady':
+        _isMapReady = value as bool;
+        break;
+      case '_hospitals':
+        _hospitals = value as List<Map<String, dynamic>>;
+        break;
     }
   }
 
@@ -272,7 +159,8 @@ class _MapScreenState extends State<MapScreen> {
               ),
               child: IconButton(
                 icon: Icon(Icons.refresh, color: colorScheme.onSurface),
-                onPressed: _checkLocationServiceAndLoadLocation,
+                onPressed: () =>
+                    screenController.checkLocationServiceAndLoadLocation(),
               ),
             ),
         ],
@@ -738,7 +626,7 @@ class _MapScreenState extends State<MapScreen> {
                                       const EdgeInsets.symmetric(vertical: 16),
                                   elevation: 2,
                                 ),
-                                onPressed: () => _launchMapsApp(
+                                onPressed: () => screenController.launchMapsApp(
                                   LatLng(_selectedHospital!['lat'],
                                       _selectedHospital!['lon']),
                                 ),
@@ -774,7 +662,8 @@ class _MapScreenState extends State<MapScreen> {
               opacity: _isMapReady ? 1.0 : 0.0,
               duration: _animationDuration,
               child: FloatingActionButton(
-                onPressed: _checkLocationServiceAndLoadLocation,
+                onPressed: () =>
+                    screenController.checkLocationServiceAndLoadLocation(),
                 backgroundColor: mainColor,
                 foregroundColor: colorScheme.onPrimary,
                 elevation: 4,
