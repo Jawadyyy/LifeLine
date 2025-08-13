@@ -25,6 +25,8 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   bool _isPasswordVisible = false;
+  bool _isLoggingIn = false;
+  bool _isGoogleLoading = false;
 
   final emailIcon =
       Image.asset('assets/images/icons/email.png', width: 24, height: 24);
@@ -41,6 +43,7 @@ class _LoginScreenState extends State<LoginScreen> {
       RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$');
 
   void _validateAndLogin() async {
+    if (_isLoggingIn || _isGoogleLoading) return;
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
 
@@ -65,6 +68,7 @@ class _LoginScreenState extends State<LoginScreen> {
     }
 
     try {
+      setState(() => _isLoggingIn = true);
       final result =
           await AuthService().loginWithEmail(email: email, password: password);
 
@@ -120,11 +124,15 @@ class _LoginScreenState extends State<LoginScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(message), backgroundColor: AppColors.error),
       );
+    } finally {
+      if (mounted) setState(() => _isLoggingIn = false);
     }
   }
 
   Future<void> onValidateGoogle(BuildContext context) async {
+    if (_isGoogleLoading || _isLoggingIn) return;
     try {
+      setState(() => _isGoogleLoading = true);
       final result = await AuthService().signInWithGoogle();
       if (!result.isSuccess || result.data == null) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -167,6 +175,8 @@ class _LoginScreenState extends State<LoginScreen> {
           backgroundColor: AppColors.error,
         ),
       );
+    } finally {
+      if (mounted) setState(() => _isGoogleLoading = false);
     }
   }
 
@@ -248,6 +258,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: CustomButton(
                       text: "Login",
                       onPressed: _validateAndLogin,
+                      isLoading: _isLoggingIn,
                     ),
                   ),
                   const SizedBox(height: 20),
@@ -262,7 +273,10 @@ class _LoginScreenState extends State<LoginScreen> {
                     ],
                   ),
                   const SizedBox(height: 20),
-                  GoogleLoginButton(onPressed: () => onValidateGoogle(context)),
+                  GoogleLoginButton(
+                    onPressed: () => onValidateGoogle(context),
+                    isLoading: _isGoogleLoading,
+                  ),
                   const SizedBox(height: 20),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,

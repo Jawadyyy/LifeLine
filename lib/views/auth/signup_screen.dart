@@ -22,6 +22,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final TextEditingController _passwordController = TextEditingController();
   String _phone = '';
   bool _isPasswordVisible = false;
+  bool _isSubmitting = false;
 
   // Kept for backwards compatibility; not used after AuthValidators adoption.
   // ignore: unused_field
@@ -40,6 +41,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
       Image.asset('assets/images/icons/hide.png', width: 24, height: 24);
 
   void _registerAccount() async {
+    if (_isSubmitting) return;
     final fullName = _fullNameController.text.trim();
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
@@ -60,6 +62,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
     }
 
     try {
+      setState(() => _isSubmitting = true);
       final result = await AuthService().signup(
         email: email,
         password: password,
@@ -80,6 +83,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
       );
     } catch (e) {
       _showSnackbar("Error: ${e.toString()}");
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
     }
   }
 
@@ -148,6 +153,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     child: CustomButton(
                       text: "Sign Ups",
                       onPressed: _registerAccount,
+                      isLoading: _isSubmitting,
                     ),
                   ),
                   const SizedBox(height: 20),

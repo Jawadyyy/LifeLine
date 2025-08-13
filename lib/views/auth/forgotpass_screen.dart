@@ -19,9 +19,11 @@ class ForgotpassScreen extends StatefulWidget {
 class _ForgotpassScreenState extends State<ForgotpassScreen> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   String _phoneNumber = "";
+  bool _isSending = false;
 
   Future<void> _sendOTP(String phone) async {
     try {
+      setState(() => _isSending = true);
       final otp = Random().nextInt(900000) + 100000;
       String formattedPhone = phone.replaceAll(RegExp(r'\D'), '');
 
@@ -55,10 +57,13 @@ class _ForgotpassScreenState extends State<ForgotpassScreen> {
       );
     } catch (e) {
       _showSnackBar("Error: $e", AppColors.error);
+    } finally {
+      if (mounted) setState(() => _isSending = false);
     }
   }
 
   void _validateAndSend() {
+    if (_isSending) return;
     if (_phoneNumber.isEmpty) {
       _showSnackBar("Please enter a valid phone number", AppColors.error);
       return;
@@ -120,6 +125,7 @@ class _ForgotpassScreenState extends State<ForgotpassScreen> {
                     child: CustomButton(
                       text: "Send OTP via WhatsApp",
                       onPressed: _validateAndSend,
+                      isLoading: _isSending,
                     ),
                   ),
                   const SizedBox(height: 20),

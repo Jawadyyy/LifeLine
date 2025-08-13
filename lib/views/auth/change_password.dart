@@ -23,6 +23,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
   bool _isNewPasswordVisible = false;
   bool _isConfirmPasswordVisible = false;
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  bool _isChanging = false;
 
   final passwordIcon =
       Image.asset('assets/images/icons/password.png', width: 24, height: 24);
@@ -32,6 +33,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
       Image.asset('assets/images/icons/hide.png', width: 24, height: 24);
 
   void _changePassword() async {
+    if (_isChanging) return;
     final newPassword = _newPasswordController.text.trim();
     final confirmPassword = _confirmPasswordController.text.trim();
 
@@ -52,6 +54,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
     }
 
     try {
+      setState(() => _isChanging = true);
       await _auth.currentUser!.updatePassword(newPassword);
 
       Fluttertoast.showToast(
@@ -84,6 +87,8 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
         msg: errorMessage,
         backgroundColor: AppColors.error,
       );
+    } finally {
+      if (mounted) setState(() => _isChanging = false);
     }
   }
 
@@ -150,6 +155,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                     child: CustomButton(
                       text: "Change",
                       onPressed: _changePassword,
+                      isLoading: _isChanging,
                     ),
                   ),
                   const SizedBox(height: 40),

@@ -10,6 +10,7 @@ class CustomButton extends StatelessWidget {
   final double borderRadius;
   final double height;
   final double fontSize;
+  final bool isLoading;
 
   const CustomButton({
     super.key,
@@ -20,6 +21,7 @@ class CustomButton extends StatelessWidget {
     this.borderRadius = 30,
     this.height = 50,
     this.fontSize = 16,
+    this.isLoading = false,
   });
 
   @override
@@ -28,21 +30,30 @@ class CustomButton extends StatelessWidget {
       width: double.infinity,
       height: height,
       child: ElevatedButton(
-        onPressed: onPressed,
+        onPressed: isLoading ? null : onPressed,
         style: ElevatedButton.styleFrom(
           backgroundColor: backgroundColor,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(borderRadius),
           ),
         ),
-        child: Text(
-          text,
-          style: GoogleFonts.nunito(
-            color: textColor,
-            fontWeight: FontWeight.bold,
-            fontSize: fontSize,
-          ),
-        ),
+        child: isLoading
+            ? SizedBox(
+                width: 22,
+                height: 22,
+                child: CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(textColor),
+                  strokeWidth: 2.5,
+                ),
+              )
+            : Text(
+                text,
+                style: GoogleFonts.nunito(
+                  color: textColor,
+                  fontWeight: FontWeight.bold,
+                  fontSize: fontSize,
+                ),
+              ),
       ),
     );
   }

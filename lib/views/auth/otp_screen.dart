@@ -19,6 +19,7 @@ class _OTPScreenState extends State<OTPScreen> {
   final List<TextEditingController> _otpControllers =
       List.generate(6, (_) => TextEditingController());
   final List<FocusNode> _focusNodes = List.generate(6, (_) => FocusNode());
+  bool _isVerifying = false;
 
   @override
   void dispose() {
@@ -39,29 +40,36 @@ class _OTPScreenState extends State<OTPScreen> {
     return _otpControllers.map((controller) => controller.text).join();
   }
 
-  void _verifyOTP() {
+  void _verifyOTP() async {
+    if (_isVerifying) return;
     if (!_isOTPFilled()) {
       _showSnackBar("Please enter the full OTP.", AppColors.error);
       return;
     }
 
     final enteredOTP = int.tryParse(_getEnteredOTP());
-    if (enteredOTP == widget.otp) {
-      Navigator.of(context).push(
-        PageRouteBuilder(
-          pageBuilder: (context, animation, secondaryAnimation) =>
-              const ChangePasswordScreen(),
-          transitionsBuilder: (context, animation, secondaryAnimation, child) {
-            return FadeTransition(
-              opacity: animation,
-              child: child,
-            );
-          },
-          transitionDuration: const Duration(milliseconds: 400),
-        ),
-      );
-    } else {
-      _showSnackBar("Invalid OTP. Please try again.", AppColors.error);
+    try {
+      setState(() => _isVerifying = true);
+      if (enteredOTP == widget.otp) {
+        Navigator.of(context).push(
+          PageRouteBuilder(
+            pageBuilder: (context, animation, secondaryAnimation) =>
+                const ChangePasswordScreen(),
+            transitionsBuilder:
+                (context, animation, secondaryAnimation, child) {
+              return FadeTransition(
+                opacity: animation,
+                child: child,
+              );
+            },
+            transitionDuration: const Duration(milliseconds: 400),
+          ),
+        );
+      } else {
+        _showSnackBar("Invalid OTP. Please try again.", AppColors.error);
+      }
+    } finally {
+      if (mounted) setState(() => _isVerifying = false);
     }
   }
 
@@ -150,6 +158,7 @@ class _OTPScreenState extends State<OTPScreen> {
                     child: CustomButton(
                       text: "Verify",
                       onPressed: _verifyOTP,
+                      isLoading: _isVerifying,
                     ),
                   ),
                   const SizedBox(height: 20),
