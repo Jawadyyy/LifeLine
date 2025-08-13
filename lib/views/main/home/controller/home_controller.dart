@@ -1,64 +1,42 @@
+import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:geocoding/geocoding.dart';
-import 'package:lifeline/views/chatbot/screens/chat_home_screen.dart';
-import 'package:lifeline/services/location_handler.dart';
-import 'package:lifeline/services/firestore_service.dart';
 import 'package:lifeline/constants/app_colors.dart';
+import 'package:lifeline/services/firestore_service.dart';
+import 'package:lifeline/services/location_handler.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'dart:math';
-import 'donation_screen.dart';
+import '../../donation_screen.dart';
 
-class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+class HomeController {
+  final State state;
+  final void Function(void Function()) setStateFn;
 
-  @override
-  State<HomeScreen> createState() => _HomeScreenState();
-}
+  HomeController(this.state, this.setStateFn);
 
-class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
-  String _currentAddress = "Fetching location...";
-  bool _showEmergencyOptions = false;
-  bool _isLocationFetched = false;
-  bool _isLoadingLocation = false;
-  // Remove hardcoded color variables since we'll use AppColors constants
+  // Convenience getters
+  BuildContext get context => state.context;
+  bool get mounted => state.mounted;
 
-  late AnimationController _animationController;
-  late Animation<double> _scaleAnimation;
+  // These require the State to expose the following private fields via callbacks or direct access if placed in same file.
+  // We will access them using dynamic calls on the provided State.
 
-  @override
-  void initState() {
-    super.initState();
-    _animationController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 300),
-    );
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 1.1).animate(
-      CurvedAnimation(
-        parent: _animationController,
-        curve: Curves.easeInOut,
-      ),
-    );
-    _getUserLocationIfNeeded();
-  }
+  T _getField<T>(String name) => (state as dynamic).__getField(name) as T;
+  void _setField(String name, dynamic value) =>
+      (state as dynamic).__setField(name, value);
 
-  void _getUserLocationIfNeeded() {
-    if (!_isLocationFetched) {
-      _getUserLocation();
+  void getUserLocationIfNeeded() {
+    final bool isLocationFetched = _getField<bool>('_isLocationFetched');
+    if (!isLocationFetched) {
+      getUserLocation();
     }
   }
 
-  @override
-  void dispose() {
-    _animationController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _getUserLocation() async {
+  Future<void> getUserLocation() async {
     if (!mounted) return;
-    setState(() {
-      _isLoadingLocation = true;
+    setStateFn(() {
+      _setField('_isLoadingLocation', true);
     });
 
     try {
@@ -69,35 +47,35 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         final address = await LocationHandler.getAddressFromLatLng(position);
         if (!mounted) return;
 
-        setState(() {
-          _currentAddress = address ?? "Location unavailable";
-          _isLocationFetched = true;
+        setStateFn(() {
+          _setField('_currentAddress', address ?? 'Location unavailable');
+          _setField('_isLocationFetched', true);
         });
       } else {
         if (!mounted) return;
-        setState(() {
-          _currentAddress = "Location permission denied";
+        setStateFn(() {
+          _setField('_currentAddress', 'Location permission denied');
         });
       }
     } catch (e) {
       if (!mounted) return;
-      setState(() {
-        _currentAddress = "Error getting location";
+      setStateFn(() {
+        _setField('_currentAddress', 'Error getting location');
       });
     } finally {
       if (!mounted) return;
-      setState(() {
-        _isLoadingLocation = false;
+      setStateFn(() {
+        _setField('_isLoadingLocation', false);
       });
     }
   }
 
-  Future<void> _sendEmergencyMessage(String emergencyType) async {
+  Future<void> sendEmergencyMessage(String emergencyType) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
-    setState(() {
-      _showEmergencyOptions = false;
+    setStateFn(() {
+      _setField('_showEmergencyOptions', false);
     });
 
     showDialog(
@@ -109,7 +87,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           children: [
             CircularProgressIndicator(),
             SizedBox(height: 16),
-            Text("Sending emergency alerts..."),
+            Text('Sending emergency alerts...'),
           ],
         ),
       ),
@@ -138,7 +116,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       }
 
       final address = await LocationHandler.getAddressFromLatLng(position) ??
-          "Address unavailable";
+          'Address unavailable';
 
       List<Placemark> placemarks = await placemarkFromCoordinates(
         position.latitude,
@@ -147,22 +125,22 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       String city = placemarks.isNotEmpty
           ? (placemarks.first.locality?.isNotEmpty == true
               ? placemarks.first.locality!
-              : placemarks.first.administrativeArea ?? "Unknown City")
-          : "Unknown City";
+              : placemarks.first.administrativeArea ?? 'Unknown City')
+          : 'Unknown City';
 
       final mapUrl =
-          "https://www.google.com/maps/search/?api=1&query=${position.latitude},${position.longitude}";
+          'https://www.google.com/maps/search/?api=1&query=${position.latitude},${position.longitude}';
 
-      final fallbackMessage = "🚨 EMERGENCY: $emergencyType\n"
-          "👤 Name: $username\n"
-          "📍 Address: $address\n"
-          "🌆 City: $city\n"
-          "🗺️ Location: $mapUrl\n"
-          "🕒 ${DateTime.now().toString().substring(0, 16)}";
+      final fallbackMessage = '🚨 EMERGENCY: $emergencyType\n'
+          '👤 Name: $username\n'
+          '📍 Address: $address\n'
+          '🌆 City: $city\n'
+          '🗺️ Location: $mapUrl\n'
+          '🕒 ${DateTime.now().toString().substring(0, 16)}';
 
       final message = (customMessage == null || customMessage.isEmpty)
           ? fallbackMessage
-          : "$customMessage\n📍 Address: $address\n🌆 City: $city\n🗺️ Location: $mapUrl\n🕒 ${DateTime.now().toString().substring(0, 16)}";
+          : '$customMessage\n📍 Address: $address\n🌆 City: $city\n🗺️ Location: $mapUrl\n🕒 ${DateTime.now().toString().substring(0, 16)}';
 
       for (String contact in contacts) {
         final whatsappUrl =
@@ -171,7 +149,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           await launch(whatsappUrl);
           await Future.delayed(const Duration(seconds: 2));
         } catch (e) {
-          debugPrint("Error sending to $contact: $e");
+          debugPrint('Error sending to $contact: $e');
         }
       }
 
@@ -191,180 +169,65 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     } catch (e) {
       Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Failed to send emergency alerts'),
+        const SnackBar(
+          content: Text('Failed to send emergency alerts'),
           backgroundColor: AppColors.error,
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
         ),
       );
     }
   }
 
-  void _toggleEmergencyOptions() {
-    setState(() {
-      _showEmergencyOptions = !_showEmergencyOptions;
-      if (_showEmergencyOptions) {
-        _animationController.forward();
+  void toggleEmergencyOptions() {
+    final bool show = _getField<bool>('_showEmergencyOptions');
+    final animationController =
+        _getField<AnimationController>('_animationController');
+    setStateFn(() {
+      _setField('_showEmergencyOptions', !show);
+      if (!show) {
+        animationController.forward();
       } else {
-        _animationController.reverse();
+        animationController.reverse();
       }
     });
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final size = MediaQuery.of(context).size;
-
-    return Scaffold(
-      backgroundColor: AppColors.surface,
-      appBar: AppBar(
-        backgroundColor: AppColors.surface,
-        elevation: 0,
-        leading: Padding(
-          padding: const EdgeInsets.only(left: 16),
-          child: Image.asset(
-            'assets/images/logos/logo1.png',
-            height: 40,
-            width: 40,
-          ),
-        ),
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              "Current location",
-              style: theme.textTheme.labelSmall?.copyWith(
-                color: theme.colorScheme.onSurface.withOpacity(0.6),
-              ),
-            ),
-            const SizedBox(height: 4),
-            SizedBox(
-              width: size.width * 0.6,
-              child: _isLoadingLocation
-                  ? LinearProgressIndicator(
-                      minHeight: 4,
-                      color: AppColors.primary,
-                      backgroundColor: AppColors.primary.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(4),
-                    )
-                  : Text(
-                      _currentAddress,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-            ),
-          ],
-        ),
-        actions: [
-          IconButton(
-            onPressed: _getUserLocation,
-            icon: Icon(Icons.refresh, color: AppColors.textPrimary),
-            tooltip: "Refresh location",
-          ),
-        ],
-      ),
-      body: Stack(
-        children: [
-          Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                "Emergency Assistance",
-                style: theme.textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 40),
-                child: Text(
-                  "Press the emergency button below to get immediate help",
-                  textAlign: TextAlign.center,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.onSurface.withOpacity(0.7),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 40),
-              Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  ScaleTransition(
-                    scale: _scaleAnimation,
-                    child: buildMainEmergencyButton(
-                      onTap: _toggleEmergencyOptions,
-                    ),
-                  ),
-                  const SizedBox(height: 30),
-                  buildBloodDonationCard(context),
-                ],
-              ),
-            ],
-          ),
-          if (_showEmergencyOptions) ..._buildEmergencyOptions(),
-        ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const ChatHomeScreen()),
-          );
-        },
-        backgroundColor: AppColors.surface,
-        elevation: 4,
-        child: Image.asset(
-          'assets/images/icons/brain.png',
-          height: 28,
-        ),
-      ),
-    );
-  }
-
-  List<Widget> _buildEmergencyOptions() {
+  List<Widget> buildEmergencyOptions() {
     final List<Map<String, dynamic>> emergencyTypes = [
       {
         "image": 'assets/images/icons/ambulance.png',
-        "type": "Medical Emergency",
-        "color": AppColors.surface,
+        "type": 'Medical Emergency',
+        "color": AppColors.surface
       },
       {
         "image": 'assets/images/icons/policeman.png',
-        "type": "Police Assistance",
-        "color": AppColors.surface,
+        "type": 'Police Assistance',
+        "color": AppColors.surface
       },
       {
         "image": 'assets/images/icons/fire.png',
-        "type": "Fire Alert",
-        "color": AppColors.surface,
+        "type": 'Fire Alert',
+        "color": AppColors.surface
       },
       {
         "image": 'assets/images/icons/healthcare.png',
-        "type": "Health Issue",
-        "color": AppColors.surface,
+        "type": 'Health Issue',
+        "color": AppColors.surface
       },
       {
         "image": 'assets/images/icons/warning.png',
-        "type": "SOS",
-        "color": AppColors.surface,
+        "type": 'SOS',
+        "color": AppColors.surface
       },
       {
         "image": 'assets/images/icons/bandage.png',
-        "type": "General Emergency",
-        "color": AppColors.surface,
+        "type": 'General Emergency',
+        "color": AppColors.surface
       },
     ];
 
     final size = MediaQuery.of(context).size;
     const double radius = 155.0;
-
     final double centerX = size.width / 2;
     final double centerY = size.height * 0.4;
 
@@ -378,7 +241,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         left: centerX + offsetX - 35,
         top: centerY + offsetY - 35,
         child: GestureDetector(
-          onTap: () => _sendEmergencyMessage(emergencyTypes[index]["type"]),
+          onTap: () => sendEmergencyMessage(emergencyTypes[index]["type"]),
           child: Container(
             height: 70,
             width: 70,
@@ -404,7 +267,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   const SizedBox(height: 4),
                   Text(
                     emergencyTypes[index]["type"].toString().split(' ')[0],
-                    style: TextStyle(
+                    style: const TextStyle(
                       color: AppColors.textPrimary,
                       fontSize: 10,
                       fontWeight: FontWeight.bold,
@@ -419,7 +282,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     });
   }
 
-  Widget buildMainEmergencyButton({required Function() onTap}) {
+  Widget buildMainEmergencyButton(BuildContext context,
+      {required VoidCallback onTap}) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -459,20 +323,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 color: AppColors.textTertiary.withOpacity(0.95),
               ),
               const SizedBox(height: 10),
-              Text(
-                _showEmergencyOptions ? "CANCEL" : "EMERGENCY",
+              const Text(
+                'EMERGENCY',
                 style: TextStyle(
                   color: AppColors.textTertiary,
                   fontWeight: FontWeight.w800,
                   fontSize: 16,
                   letterSpacing: 1.1,
-                  shadows: [
-                    Shadow(
-                      color: AppColors.navBarShadow,
-                      blurRadius: 2,
-                      offset: const Offset(1, 1),
-                    )
-                  ],
                 ),
               ),
             ],
@@ -519,26 +376,24 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 color: AppColors.primary.withOpacity(0.1),
                 shape: BoxShape.circle,
               ),
-              child: Image.asset(
-                'assets/images/icons/blood.png',
-              ),
+              child: Image.asset('assets/images/icons/blood.png'),
             ),
             const SizedBox(width: 16),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+                children: const [
                   Text(
-                    "Donate Blood, Save Lives",
+                    'Donate Blood, Save Lives',
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 14,
                       color: AppColors.textPrimary,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  SizedBox(height: 4),
                   Text(
-                    "Tap to view donation opportunities near you",
+                    'Tap to view donation opportunities near you',
                     style: TextStyle(
                       fontSize: 12,
                       color: AppColors.textGrey,
@@ -547,7 +402,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 ],
               ),
             ),
-            Icon(Icons.arrow_forward_ios_rounded,
+            const Icon(Icons.arrow_forward_ios_rounded,
                 size: 16, color: AppColors.textGrey),
           ],
         ),
