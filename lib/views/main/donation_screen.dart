@@ -1107,7 +1107,7 @@ class _DonationScreenState extends State<DonationScreen> {
                             color: AppColors.tertiary, size: 24),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
-                          side: BorderSide(color: AppColors.textSecondary!),
+                          side: BorderSide(color: AppColors.textSecondary),
                         ),
                         elevation: 4,
                         color: AppColors.surface,
@@ -1464,11 +1464,11 @@ class _DonationScreenState extends State<DonationScreen> {
                           const TextStyle(color: AppColors.primary),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: AppColors.tertiary!),
+                        borderSide: BorderSide(color: AppColors.tertiary),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: AppColors.tertiary!),
+                        borderSide: BorderSide(color: AppColors.tertiary),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),

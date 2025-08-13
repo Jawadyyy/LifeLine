@@ -1,13 +1,12 @@
-import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:lifeline/components/custom_button.dart';
-import 'package:url_launcher/url_launcher.dart';
-import 'package:lifeline/components/phone_field.dart';
-import 'package:lifeline/views/auth/otp_screen.dart';
 import 'package:lifeline/constants/app_colors.dart';
 import 'package:lifeline/views/auth/widgets/auth_header.dart';
+import 'package:lifeline/components/custom_text_field.dart';
+import 'package:lifeline/views/auth/auth_validators.dart';
 
 class ForgotpassScreen extends StatefulWidget {
   const ForgotpassScreen({super.key});
@@ -17,42 +16,20 @@ class ForgotpassScreen extends StatefulWidget {
 }
 
 class _ForgotpassScreenState extends State<ForgotpassScreen> {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  String _phoneNumber = "";
+  final TextEditingController _emailController = TextEditingController();
   bool _isSending = false;
+  final Widget emailIcon =
+      Image.asset('assets/images/icons/email.png', width: 24, height: 24);
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  Future<void> _sendOTP(String phone) async {
+  Future<void> _sendResetLink(String email) async {
     try {
       setState(() => _isSending = true);
-      final otp = Random().nextInt(900000) + 100000;
-      String formattedPhone = phone.replaceAll(RegExp(r'\D'), '');
-
-      final whatsappUrl =
-          'https://wa.me/$formattedPhone?text=${Uri.encodeFull("Your OTP is $otp")}';
-
-      await _firestore.collection('otps').doc(phone).set({
-        'otp': otp,
-        'timestamp': FieldValue.serverTimestamp(),
-      });
-
-      if (!await launchUrl(
-        Uri.parse(whatsappUrl),
-        mode: LaunchMode.externalApplication,
-      )) {
-        throw 'Could not launch $whatsappUrl';
-      }
-
-      Navigator.of(context).push(
-        PageRouteBuilder(
-          pageBuilder: (context, animation, secondaryAnimation) =>
-              OTPScreen(phone: phone, otp: otp),
-          transitionsBuilder: (context, animation, secondaryAnimation, child) {
-            return FadeTransition(
-              opacity: animation,
-              child: child,
-            );
-          },
-          transitionDuration: const Duration(milliseconds: 400),
+      await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Password reset email sent.'),
+          backgroundColor: AppColors.secondary,
         ),
       );
     } catch (e) {
@@ -62,13 +39,31 @@ class _ForgotpassScreenState extends State<ForgotpassScreen> {
     }
   }
 
-  void _validateAndSend() {
+  Future<void> _validateAndSend() async {
     if (_isSending) return;
-    if (_phoneNumber.isEmpty) {
-      _showSnackBar("Please enter a valid phone number", AppColors.error);
+    final email = _emailController.text.trim();
+    if (!AuthValidators.isValidEmail(email)) {
+      _showSnackBar("Please enter a valid email", AppColors.error);
       return;
     }
-    _sendOTP(_phoneNumber);
+    try {
+      setState(() => _isSending = true);
+      // Check existence using your own users collection to avoid enumeration protection issues
+      final query = await _firestore
+          .collection('users')
+          .where('email', isEqualTo: email)
+          .limit(1)
+          .get();
+      if (query.docs.isEmpty) {
+        _showSnackBar("No account found for this email", AppColors.error);
+        return;
+      }
+      await _sendResetLink(email);
+    } catch (e) {
+      _showSnackBar("Error: $e", AppColors.error);
+    } finally {
+      if (mounted) setState(() => _isSending = false);
+    }
   }
 
   void _showSnackBar(String message, Color color) {
@@ -104,26 +99,25 @@ class _ForgotpassScreenState extends State<ForgotpassScreen> {
                   ),
                   const SizedBox(height: 10),
                   Text(
-                    "Don’t worry! Enter your phone number and we’ll send you an OTP via WhatsApp.",
+                    "Enter your email, and we’ll send you a password reset link.",
                     style: GoogleFonts.nunito(
                       fontSize: 16,
                       color: AppColors.textSecondary,
                     ),
                   ),
                   const SizedBox(height: 30),
-                  PhoneForm(
-                    onPhoneChanged: (phone) {
-                      setState(() {
-                        _phoneNumber = phone;
-                      });
-                    },
+                  CustomTextField(
+                    controller: _emailController,
+                    hintText: 'Email Address',
+                    keyboardType: TextInputType.emailAddress,
+                    prefixIcon: emailIcon,
                   ),
                   const SizedBox(height: 30),
                   SizedBox(
                     width: double.infinity,
                     height: 50,
                     child: CustomButton(
-                      text: "Send OTP via WhatsApp",
+                      text: "Send Reset Link",
                       onPressed: _validateAndSend,
                       isLoading: _isSending,
                     ),
