@@ -6,7 +6,6 @@ class ContactsPage extends StatefulWidget {
   const ContactsPage({super.key});
 
   @override
-  // ignore: library_private_types_in_public_api
   _ContactsPageState createState() => _ContactsPageState();
 }
 
@@ -17,8 +16,6 @@ class _ContactsPageState extends State<ContactsPage> {
   bool _hasLoadedOnce = false;
   final TextEditingController _searchController = TextEditingController();
   ContactsScreenController? controller;
-
-  // Remove hardcoded color variables since we'll use AppColors constants
 
   @override
   void initState() {
