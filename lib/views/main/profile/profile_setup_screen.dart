@@ -1,14 +1,14 @@
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'dart:convert';
-import 'package:http/http.dart' as http;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lifeline/components/navigation.dart';
 import 'package:lifeline/models/user_model.dart';
 import 'package:lifeline/services/user_service.dart';
+import 'package:lifeline/views/main/profile/controller/profile_controller.dart';
+import 'package:lifeline/views/main/profile/controller/profile_widgets.dart';
 
 class ProfileSetupScreen extends StatefulWidget {
   const ProfileSetupScreen({super.key});
@@ -38,6 +38,14 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
   bool _isLoading = false;
 
   final _userService = UserService();
+  late final ProfileController _profileController;
+
+  Future<void> _pickImage() async {
+    final picked = await ImagePicker().pickImage(source: ImageSource.gallery);
+    if (picked != null) {
+      setState(() => _profileImage = File(picked.path));
+    }
+  }
 
   @override
   void dispose() {
@@ -47,55 +55,17 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
     _weightController.dispose();
     _emergencyTextController.dispose();
     _addressController.dispose();
+    _profileController.dispose();
     super.dispose();
   }
 
-  Future<void> _pickImage() async {
-    final picked = await ImagePicker().pickImage(source: ImageSource.gallery);
-    if (picked != null) {
-      setState(() => _profileImage = File(picked.path));
-    }
-  }
-
-  double _calculateBMI(double heightCm, double weightLbs) {
-    final heightM = heightCm / 100;
-    final weightKg = weightLbs * 0.453592;
-    return weightKg / (heightM * heightM);
-  }
-
   Future<String?> uploadImageToImgBB(String filePath) async {
-    const apiKey = 'b876317f0442b8eec2f8c6ffd701b13d';
-    final url = Uri.parse('https://api.imgbb.com/1/upload?key=$apiKey');
-
-    final request = http.MultipartRequest('POST', url)
-      ..files.add(await http.MultipartFile.fromPath('image', filePath));
-
-    try {
-      final response = await request.send();
-      final res = await http.Response.fromStream(response);
-
-      if (res.statusCode == 200) {
-        final data = jsonDecode(res.body);
-        return data['data']['url'];
-      } else {
-        debugPrint('Image upload failed: ${res.body}');
-        return null;
-      }
-    } catch (e) {
-      debugPrint('Upload error: $e');
-      return null;
-    }
+    return await _profileController.uploadImageToImgBB(filePath);
   }
 
   Future<void> _loadUserData() async {
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid == null) return;
-
-    final doc =
-        await FirebaseFirestore.instance.collection('users').doc(uid).get();
-    if (!doc.exists) return;
-
-    final data = doc.data()!;
+    final data = await _profileController.loadUserData();
+    if (data == null) return;
 
     setState(() {
       _phoneController.text = data['phone'] ?? '';
@@ -122,12 +92,8 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
 
       final phone = _phoneController.text.trim();
 
-      final existing = await FirebaseFirestore.instance
-          .collection('users')
-          .where('phone', isEqualTo: phone)
-          .get();
-
-      final alreadyExists = existing.docs.any((doc) => doc.id != uid);
+      final alreadyExists = await _profileController.isPhoneNumberUnique(phone,
+          excludeUserId: uid);
 
       if (alreadyExists) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -148,8 +114,11 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
 
       final double height = double.tryParse(_heightController.text.trim()) ?? 0;
       final double weight = double.tryParse(_weightController.text.trim()) ?? 0;
-      final double bmi =
-          height > 0 && weight > 0 ? _calculateBMI(height, weight) : 0.0;
+      final double bmi = height > 0 && weight > 0
+          ? _profileController.calculateBMI(
+                  height.toString(), weight.toString()) ??
+              0.0
+          : 0.0;
 
       String profileImageUrl = 'https://via.placeholder.com/150';
       if (_profileImage != null) {
@@ -181,10 +150,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
 
       await _userService.updateCurrentUser(newUser);
 
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(uid)
-          .update({'isProfileComplete': true});
+      await _profileController.markProfileComplete();
 
       if (!mounted) return;
 
@@ -232,6 +198,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
   @override
   void initState() {
     super.initState();
+    _profileController = ProfileController();
     _loadUserData();
   }
 
@@ -285,31 +252,33 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                 child: Form(
                   key: _formKey,
                   child: Column(children: [
-                    _buildSectionTitle('Personal Information'),
-                    _buildInputField(
+                    ProfileWidgets.buildSectionTitle('Personal Information',
+                        primaryColor: _primaryColor),
+                    ProfileWidgets.buildInputField(
                       controller: _phoneController,
                       label: 'Phone Number',
                       icon: Icons.phone,
                       keyboardType: TextInputType.phone,
                     ),
                     const SizedBox(height: 12),
-                    _buildInputField(
+                    ProfileWidgets.buildInputField(
                       controller: _ageController,
                       label: 'Age',
                       icon: Icons.cake,
                       keyboardType: TextInputType.number,
                     ),
                     const SizedBox(height: 12),
-                    _buildInputField(
+                    ProfileWidgets.buildInputField(
                       controller: _addressController,
                       label: 'Home Address',
                       icon: Icons.home,
                     ),
-                    _buildSectionTitle('Health Information'),
+                    ProfileWidgets.buildSectionTitle('Health Information',
+                        primaryColor: _primaryColor),
                     Row(
                       children: [
                         Expanded(
-                          child: _buildInputField(
+                          child: ProfileWidgets.buildInputField(
                             controller: _heightController,
                             label: 'Height (cm)',
                             icon: Icons.height,
@@ -318,7 +287,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                         ),
                         const SizedBox(width: 12),
                         Expanded(
-                          child: _buildInputField(
+                          child: ProfileWidgets.buildInputField(
                             controller: _weightController,
                             label: 'Weight (lbs)',
                             icon: Icons.monitor_weight,
@@ -328,77 +297,35 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                       ],
                     ),
                     const SizedBox(height: 12),
-                    _buildDropdown(
+                    ProfileWidgets.buildDropdown(
                       value: _selectedBloodGroup,
                       label: 'Blood Group',
                       icon: Icons.bloodtype,
-                      items: const [
-                        'None',
-                        'A+',
-                        'A-',
-                        'B+',
-                        'B-',
-                        'AB+',
-                        'AB-',
-                        'O+',
-                        'O-'
-                      ],
+                      items: ProfileController.bloodGroupOptions,
                       onChanged: (val) =>
                           setState(() => _selectedBloodGroup = val),
                     ),
                     const SizedBox(height: 12),
-                    _buildDropdown(
+                    ProfileWidgets.buildDropdown(
                       value: _selectedDisease,
                       label: 'Diseases (if any)',
                       icon: Icons.health_and_safety,
-                      items: const [
-                        'None',
-                        'Diabetes',
-                        'Hypertension',
-                        'Asthma',
-                        'Heart Disease',
-                        'Thyroid Disorder',
-                        'Kidney Disease',
-                        'Cancer',
-                        'Liver Disease',
-                        'Anemia',
-                        'Epilepsy',
-                        'HIV/AIDS',
-                        'Tuberculosis',
-                        'Arthritis',
-                        'Mental Health Conditions',
-                        'Other',
-                      ],
+                      items: ProfileController.diseaseOptions,
                       onChanged: (val) =>
                           setState(() => _selectedDisease = val),
                     ),
                     const SizedBox(height: 12),
-                    _buildDropdown(
+                    ProfileWidgets.buildDropdown(
                       value: _selectedAllergy,
                       label: 'Allergies (if any)',
                       icon: Icons.warning_amber_rounded,
-                      items: const [
-                        'None',
-                        'Pollen',
-                        'Dust Mites',
-                        'Mold',
-                        'Pet Dander',
-                        'Food - Peanuts',
-                        'Food - Shellfish',
-                        'Food - Eggs',
-                        'Food - Milk',
-                        'Food - Wheat',
-                        'Food - Soy',
-                        'Insect Stings',
-                        'Latex',
-                        'Medications',
-                        'Other',
-                      ],
+                      items: ProfileController.allergyOptions,
                       onChanged: (val) =>
                           setState(() => _selectedAllergy = val),
                     ),
-                    _buildSectionTitle('Emergency Information'),
-                    _buildInputField(
+                    ProfileWidgets.buildSectionTitle('Emergency Information',
+                        primaryColor: _primaryColor),
+                    ProfileWidgets.buildInputField(
                       controller: _emergencyTextController,
                       label: 'Custom Emergency Message',
                       icon: Icons.sms,
@@ -406,7 +333,15 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                       maxLines: 3,
                     ),
                     const SizedBox(height: 30),
-                    _buildActionButtons(),
+                    ProfileWidgets.buildActionButtons(
+                      onCancel: () => Navigator.pop(context),
+                      onSave: _updateUserData,
+                      isLoading: _isLoading,
+                      cancelText: 'CANCEL',
+                      saveText: 'SAVE PROFILE',
+                      primaryColor: _primaryColor,
+                      surfaceColor: _cardColor,
+                    ),
                     const SizedBox(height: 20),
                   ]),
                 ),
@@ -415,176 +350,6 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildSectionTitle(String title) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 16),
-      child: Row(
-        children: [
-          Text(
-            title,
-            style: GoogleFonts.poppins(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: _primaryColor,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Divider(
-              color: _primaryColor.withOpacity(0.3),
-              thickness: 1,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildInputField({
-    required TextEditingController controller,
-    required String label,
-    required IconData icon,
-    TextInputType keyboardType = TextInputType.text,
-    bool isOptional = false,
-    int maxLines = 1,
-  }) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: TextFormField(
-        controller: controller,
-        keyboardType: keyboardType,
-        maxLines: maxLines,
-        style: GoogleFonts.poppins(color: _textColor),
-        validator: (value) {
-          if (!isOptional && (value == null || value.trim().isEmpty)) {
-            return 'Please enter $label';
-          }
-          return null;
-        },
-        decoration: InputDecoration(
-          labelText: label,
-          labelStyle:
-              GoogleFonts.poppins(color: Colors.grey.shade600, fontSize: 14),
-          prefixIcon: Icon(icon, color: _primaryColor.withOpacity(0.7)),
-          filled: true,
-          fillColor: _cardColor,
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide.none,
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: Colors.grey.shade200, width: 1),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: _primaryColor, width: 1.5),
-          ),
-          contentPadding:
-              const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-          floatingLabelBehavior: FloatingLabelBehavior.auto,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDropdown({
-    required String? value,
-    required List<String> items,
-    required String label,
-    required IconData icon,
-    required Function(String?) onChanged,
-  }) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: DropdownButtonFormField<String>(
-        value: value,
-        decoration: InputDecoration(
-          labelText: label,
-          labelStyle:
-              GoogleFonts.poppins(color: Colors.grey.shade600, fontSize: 14),
-          prefixIcon: Icon(icon, color: _primaryColor.withOpacity(0.7)),
-          filled: true,
-          fillColor: _cardColor,
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide.none,
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: Colors.grey.shade200, width: 1),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: _primaryColor, width: 1.5),
-          ),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-        ),
-        dropdownColor: _cardColor,
-        icon: Icon(Icons.arrow_drop_down, color: _primaryColor),
-        style: GoogleFonts.poppins(color: _textColor, fontSize: 14),
-        items: items
-            .map((item) => DropdownMenuItem(
-                  value: item,
-                  child: Text(item, style: GoogleFonts.poppins()),
-                ))
-            .toList(),
-        onChanged: onChanged,
-        borderRadius: BorderRadius.circular(12),
-      ),
-    );
-  }
-
-  Widget _buildActionButtons() {
-    return Row(
-      children: [
-        Expanded(
-          child: OutlinedButton(
-            onPressed: _isLoading ? null : () => Navigator.pop(context),
-            style: OutlinedButton.styleFrom(
-              side: BorderSide(color: _primaryColor, width: 1.5),
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              backgroundColor: _cardColor,
-            ),
-            child: Text('CANCEL',
-                style: GoogleFonts.poppins(
-                    color: _primaryColor, fontWeight: FontWeight.w600)),
-          ),
-        ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: ElevatedButton(
-            onPressed: _isLoading ? null : _updateUserData,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: _primaryColor,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              elevation: 2,
-              shadowColor: _primaryColor.withOpacity(0.3),
-            ),
-            child: _isLoading
-                ? const SizedBox(
-                    height: 20,
-                    width: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation(Colors.white),
-                    ),
-                  )
-                : Text('SAVE PROFILE',
-                    style: GoogleFonts.poppins(
-                        color: Colors.white, fontWeight: FontWeight.w600)),
-          ),
-        ),
-      ],
     );
   }
 }

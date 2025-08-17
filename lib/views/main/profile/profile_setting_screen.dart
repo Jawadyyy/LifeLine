@@ -3,6 +3,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lifeline/constants/app_colors.dart';
+import 'package:lifeline/views/main/profile/controller/profile_controller.dart';
+import 'package:lifeline/views/main/profile/controller/profile_widgets.dart';
 
 class ProfileSettingScreen extends StatefulWidget {
   const ProfileSettingScreen({super.key});
@@ -25,13 +27,19 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen> {
   String? _selectedAllergy;
   String? _phone;
 
-  final _auth = FirebaseAuth.instance;
-  final _firestore = FirebaseFirestore.instance;
+  late final ProfileController _profileController;
 
   @override
   void initState() {
     super.initState();
+    _profileController = ProfileController();
     _loadUserData();
+  }
+
+  @override
+  void dispose() {
+    _profileController.dispose();
+    super.dispose();
   }
 
   double? _calculateBMI() {
@@ -51,13 +59,9 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen> {
 
   Future<void> _loadUserData() async {
     try {
-      final userId = _auth.currentUser?.uid;
-      if (userId == null) return;
+      final data = await _profileController.loadUserData();
+      if (data == null) return;
 
-      final userDoc = await _firestore.collection('users').doc(userId).get();
-      if (!userDoc.exists) return;
-
-      final data = userDoc.data()!;
       setState(() {
         _addressController.text = data['home_address'] ?? '';
         _heightController.text = data['height']?.toString() ?? '';
@@ -78,9 +82,6 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen> {
 
   Future<void> _updateUserData() async {
     try {
-      final userId = _auth.currentUser?.uid;
-      if (userId == null) return;
-
       final bmi = _calculateBMI();
 
       final Map<String, dynamic> userData = {
@@ -100,10 +101,9 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen> {
         userData['bmi'] = bmi.toStringAsFixed(1);
       }
 
-      await _firestore.collection('users').doc(userId).update(userData);
-      await _loadUserData();
+      final success = await _profileController.updateUserData(userData);
 
-      if (mounted) {
+      if (success && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
@@ -118,6 +118,20 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen> {
           ),
         );
         Navigator.pop(context);
+      } else if (!success && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Failed to update profile.',
+              style: GoogleFonts.poppins(color: AppColors.textTertiary),
+            ),
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+        );
       }
     } catch (e) {
       if (mounted) {
@@ -168,114 +182,71 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen> {
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
-            _buildInputField(
+            ProfileWidgets.buildInputField(
               controller: _usernameController,
               label: 'Username',
               icon: Icons.person_outline,
             ),
             const SizedBox(height: 16),
-            _buildInputField(
+            ProfileWidgets.buildInputField(
               controller: _phoneController,
               label: 'Phone Number',
               icon: Icons.phone,
               keyboardType: TextInputType.phone,
             ),
             const SizedBox(height: 16),
-            _buildInputField(
+            ProfileWidgets.buildInputField(
               controller: _ageController,
               label: 'Age',
               icon: Icons.cake,
               keyboardType: TextInputType.number,
             ),
             const SizedBox(height: 16),
-            _buildDropdown(
+            ProfileWidgets.buildDropdown(
               value: _selectedDisease,
-              items: const [
-                'None',
-                'Diabetes',
-                'Hypertension',
-                'Asthma',
-                'Heart Disease',
-                'Thyroid Disorder',
-                'Kidney Disease',
-                'Cancer',
-                'Liver Disease',
-                'Anemia',
-                'Epilepsy',
-                'HIV/AIDS',
-                'Tuberculosis',
-                'Arthritis',
-                'Mental Health Conditions',
-                'Other',
-              ],
+              items: ProfileController.diseaseOptions,
               label: 'Diseases (if any)',
               icon: Icons.health_and_safety,
               onChanged: (value) => setState(() => _selectedDisease = value),
             ),
             const SizedBox(height: 16),
-            _buildDropdown(
+            ProfileWidgets.buildDropdown(
               value: _selectedAllergy,
-              items: const [
-                'None',
-                'Pollen',
-                'Dust Mites',
-                'Mold',
-                'Pet Dander',
-                'Food - Peanuts',
-                'Food - Shellfish',
-                'Food - Eggs',
-                'Food - Milk',
-                'Food - Wheat',
-                'Food - Soy',
-                'Insect Stings',
-                'Latex',
-                'Medications',
-                'Other',
-              ],
+              items: ProfileController.allergyOptions,
               label: 'Allergies (if any)',
               icon: Icons.warning_amber_rounded,
               onChanged: (value) => setState(() => _selectedAllergy = value),
             ),
             const SizedBox(height: 16),
-            _buildDropdown(
+            ProfileWidgets.buildDropdown(
               value: _selectedBloodGroup,
-              items: const [
-                'None',
-                'A+',
-                'A-',
-                'B+',
-                'B-',
-                'AB+',
-                'AB-',
-                'O+',
-                'O-'
-              ],
+              items: ProfileController.bloodGroupOptions,
               label: 'Blood Group',
               icon: Icons.bloodtype,
               onChanged: (value) => setState(() => _selectedBloodGroup = value),
             ),
             const SizedBox(height: 16),
-            _buildInputField(
+            ProfileWidgets.buildInputField(
               controller: _heightController,
               label: 'Height (cm)',
               icon: Icons.height,
               keyboardType: TextInputType.number,
             ),
             const SizedBox(height: 16),
-            _buildInputField(
+            ProfileWidgets.buildInputField(
               controller: _weightController,
               label: 'Weight (lbs)',
               icon: Icons.monitor_weight,
               keyboardType: TextInputType.number,
             ),
             const SizedBox(height: 16),
-            _buildInputField(
+            ProfileWidgets.buildInputField(
               controller: _emergencyTextController,
               label: 'Custom Emergency Message',
               icon: Icons.sms,
             ),
             const SizedBox(height: 16),
-            _buildInputField(
+            ProfileWidgets.buildInputField(
               controller: _addressController,
               label: 'Home Address',
               icon: Icons.home,
@@ -327,74 +298,6 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen> {
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildInputField({
-    required TextEditingController controller,
-    required String label,
-    required IconData icon,
-    TextInputType keyboardType = TextInputType.text,
-  }) {
-    return TextField(
-      controller: controller,
-      keyboardType: keyboardType,
-      style: GoogleFonts.poppins(color: AppColors.textPrimary),
-      decoration: InputDecoration(
-        labelText: label,
-        labelStyle: GoogleFonts.poppins(color: AppColors.textGrey),
-        prefixIcon: Icon(icon, color: AppColors.primary),
-        filled: true,
-        fillColor: AppColors.surface,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide.none,
-        ),
-        contentPadding: const EdgeInsets.symmetric(vertical: 16),
-      ),
-    );
-  }
-
-  Widget _buildDropdown({
-    required String? value,
-    required List<String> items,
-    required String label,
-    required IconData icon,
-    required Function(String?) onChanged,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.textGrey.withOpacity(0.1),
-            blurRadius: 6,
-            spreadRadius: 2,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: DropdownButtonFormField<String>(
-        value: value,
-        decoration: InputDecoration(
-          labelText: label,
-          labelStyle: GoogleFonts.poppins(color: AppColors.textGrey),
-          border: InputBorder.none,
-          prefixIcon: Icon(icon, color: AppColors.primary),
-        ),
-        dropdownColor: AppColors.surface,
-        icon: Icon(Icons.arrow_drop_down, color: AppColors.primary),
-        style: GoogleFonts.poppins(color: AppColors.textPrimary),
-        items: items.map((String value) {
-          return DropdownMenuItem<String>(
-            value: value,
-            child: Text(value),
-          );
-        }).toList(),
-        onChanged: onChanged,
       ),
     );
   }

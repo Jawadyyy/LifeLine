@@ -1,0 +1,329 @@
+import 'dart:convert';
+import 'dart:io';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:image_picker/image_picker.dart';
+import 'package:lifeline/models/user_model.dart';
+import 'package:lifeline/services/auth_service.dart';
+
+class ProfileController extends ChangeNotifier {
+  final ImagePicker _picker = ImagePicker();
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final AuthService _authService = AuthService();
+
+  // Common dropdown options
+  static const List<String> diseaseOptions = [
+    'None',
+    'Diabetes',
+    'Hypertension',
+    'Asthma',
+    'Heart Disease',
+    'Thyroid Disorder',
+    'Kidney Disease',
+    'Cancer',
+    'Liver Disease',
+    'Anemia',
+    'Epilepsy',
+    'HIV/AIDS',
+    'Tuberculosis',
+    'Arthritis',
+    'Mental Health Conditions',
+    'Other',
+  ];
+
+  static const List<String> allergyOptions = [
+    'None',
+    'Pollen',
+    'Dust Mites',
+    'Mold',
+    'Pet Dander',
+    'Food - Peanuts',
+    'Food - Shellfish',
+    'Food - Eggs',
+    'Food - Milk',
+    'Food - Wheat',
+    'Food - Soy',
+    'Insect Stings',
+    'Latex',
+    'Medications',
+    'Other',
+  ];
+
+  static const List<String> bloodGroupOptions = [
+    'None',
+    'A+',
+    'A-',
+    'B+',
+    'B-',
+    'AB+',
+    'AB-',
+    'O+',
+    'O-'
+  ];
+
+  // User data
+  UserModel? _currentUser;
+  bool _isLoading = false;
+  String? _errorMessage;
+
+  // Getters
+  UserModel? get currentUser => _currentUser;
+  bool get isLoading => _isLoading;
+  String? get errorMessage => _errorMessage;
+
+  // Set loading state
+  void _setLoading(bool loading) {
+    _isLoading = loading;
+    notifyListeners();
+  }
+
+  // Set error message
+  void _setError(String? error) {
+    _errorMessage = error;
+    notifyListeners();
+  }
+
+  // Clear error
+  void clearError() {
+    _errorMessage = null;
+    notifyListeners();
+  }
+
+  // Fetch user data from Firestore
+  Future<void> fetchUserData() async {
+    try {
+      _setLoading(true);
+      _setError(null);
+
+      final String userId = _authService.getCurrentUserId();
+      final DocumentSnapshot userDoc =
+          await _firestore.collection('users').doc(userId).get();
+
+      if (userDoc.exists) {
+        final data = userDoc.data() as Map<String, dynamic>;
+
+        _currentUser = UserModel(
+          name: data['username'] ?? 'Unknown',
+          bloodType: data['blood_group'] ?? 'N/A',
+          height: data['height']?.toString() ?? 'N/A',
+          weight: data['weight']?.toString() ?? 'N/A',
+          profileImage: data['profile_image'] ?? '',
+          email: data['email'] ?? '',
+          phone: data['phone'] ?? '',
+          age: data['age'] ?? '',
+          bmi: data['bmi'] ?? '',
+          disease: data['disease'] ?? 'None',
+          allergy: data['allergy'] ?? 'None',
+          address: data['home_address'] ?? '',
+          emergencyText: data['emergency_text'] ?? '',
+        );
+      }
+    } catch (e) {
+      _setError("Error fetching user data: $e");
+      debugPrint("Error fetching user data: $e");
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  // Load user data for profile setup/settings
+  Future<Map<String, dynamic>?> loadUserData() async {
+    try {
+      final userId = FirebaseAuth.instance.currentUser?.uid;
+      if (userId == null) return null;
+
+      final userDoc = await _firestore.collection('users').doc(userId).get();
+      if (!userDoc.exists) return null;
+
+      return userDoc.data() as Map<String, dynamic>;
+    } catch (e) {
+      _setError("Error loading user data: $e");
+      return null;
+    }
+  }
+
+  // Update user data in Firestore
+  Future<bool> updateUserData(Map<String, dynamic> userData) async {
+    try {
+      _setLoading(true);
+      _setError(null);
+
+      final userId = FirebaseAuth.instance.currentUser?.uid;
+      if (userId == null) {
+        _setError("User not authenticated");
+        return false;
+      }
+
+      await _firestore.collection('users').doc(userId).update(userData);
+
+      // Refresh user data
+      await fetchUserData();
+
+      return true;
+    } catch (e) {
+      _setError("Error updating user data: $e");
+      return false;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  // Upload image to ImgBB
+  Future<String?> uploadImageToImgBB(String filePath) async {
+    const apiKey = 'b876317f0442b8eec2f8c6ffd701b13d';
+    final url = Uri.parse('https://api.imgbb.com/1/upload?key=$apiKey');
+
+    try {
+      final request = http.MultipartRequest('POST', url)
+        ..files.add(await http.MultipartFile.fromPath('image', filePath));
+
+      final response = await request.send();
+      final res = await http.Response.fromStream(response);
+
+      if (res.statusCode == 200) {
+        final data = jsonDecode(res.body);
+        return data['data']['url'];
+      } else {
+        _setError("Image upload failed");
+        return null;
+      }
+    } catch (e) {
+      _setError("Error uploading image: $e");
+      return null;
+    }
+  }
+
+  // Update profile image
+  Future<bool> updateProfileImage(ImageSource source) async {
+    try {
+      final XFile? pickedFile = await _picker.pickImage(source: source);
+      if (pickedFile == null) return false;
+
+      final imageUrl = await uploadImageToImgBB(pickedFile.path);
+      if (imageUrl == null) return false;
+
+      final String userId = _authService.getCurrentUserId();
+      await _firestore.collection('users').doc(userId).update({
+        'profileImageUrl': imageUrl,
+      });
+
+      // Update local user model
+      if (_currentUser != null) {
+        _currentUser = UserModel(
+          name: _currentUser!.name,
+          bloodType: _currentUser!.bloodType,
+          height: _currentUser!.height,
+          weight: _currentUser!.weight,
+          profileImage: imageUrl,
+          email: _currentUser!.email,
+          phone: _currentUser!.phone,
+          age: _currentUser!.age,
+          bmi: _currentUser!.bmi,
+          disease: _currentUser!.disease,
+          allergy: _currentUser!.allergy,
+          address: _currentUser!.address,
+          emergencyText: _currentUser!.emergencyText,
+        );
+        notifyListeners();
+      }
+
+      return true;
+    } catch (e) {
+      _setError("Error updating profile image: $e");
+      return false;
+    }
+  }
+
+  // Calculate BMI
+  double? calculateBMI(String heightCm, String weightLbs) {
+    try {
+      final double height = double.parse(heightCm.trim());
+      final double weight = double.parse(weightLbs.trim());
+
+      if (height <= 0 || weight <= 0) return null;
+
+      final double heightM = height / 100;
+      final double weightKg = weight * 0.453592;
+
+      return weightKg / (heightM * heightM);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  // Get BMI color based on value
+  Color getBmiColor(double bmi) {
+    if (bmi < 18.5) return Colors.orange;
+    if (bmi < 25.0) return Colors.green;
+    if (bmi < 30.0) return Colors.amber;
+    return Colors.red;
+  }
+
+  // Validate phone number uniqueness
+  Future<bool> isPhoneNumberUnique(String phone,
+      {String? excludeUserId}) async {
+    try {
+      final query =
+          _firestore.collection('users').where('phone', isEqualTo: phone);
+
+      final snapshot = await query.get();
+
+      if (excludeUserId != null) {
+        return snapshot.docs.every((doc) => doc.id != excludeUserId);
+      }
+
+      return snapshot.docs.isEmpty;
+    } catch (e) {
+      _setError("Error checking phone number: $e");
+      return false;
+    }
+  }
+
+  // Sign out user
+  Future<void> signOut() async {
+    try {
+      await _authService.signOut();
+    } catch (e) {
+      _setError("Error signing out: $e");
+    }
+  }
+
+  // Check if profile is complete
+  Future<bool> isProfileComplete() async {
+    try {
+      final userId = FirebaseAuth.instance.currentUser?.uid;
+      if (userId == null) return false;
+
+      final doc = await _firestore.collection('users').doc(userId).get();
+      if (!doc.exists) return false;
+
+      final data = doc.data() as Map<String, dynamic>;
+      return data['isProfileComplete'] == true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // Mark profile as complete
+  Future<void> markProfileComplete() async {
+    try {
+      final userId = FirebaseAuth.instance.currentUser?.uid;
+      if (userId != null) {
+        await _firestore
+            .collection('users')
+            .doc(userId)
+            .update({'isProfileComplete': true});
+      }
+    } catch (e) {
+      _setError("Error marking profile complete: $e");
+    }
+  }
+
+  // Dispose resources
+  @override
+  void dispose() {
+    super.dispose();
+  }
+}

@@ -1,16 +1,13 @@
-import 'dart:convert';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:http/http.dart' as http;
-import 'package:image_picker/image_picker.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:lifeline/views/auth/change_password.dart';
 import 'package:lifeline/views/auth/login_screen.dart';
 import 'package:lifeline/views/main/profile/profile_setting_screen.dart';
-import 'package:lifeline/services/auth_service.dart';
-import 'package:lifeline/models/user_model.dart';
+import 'package:lifeline/views/main/profile/controller/profile_controller.dart';
+import 'package:lifeline/views/main/profile/controller/profile_widgets.dart';
 import 'package:lifeline/constants/app_colors.dart';
+import 'package:image_picker/image_picker.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -20,102 +17,28 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
-  final ImagePicker _picker = ImagePicker();
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  late final ProfileController _profileController;
 
   @override
   void initState() {
     super.initState();
-    _fetchUserData();
+    _profileController = ProfileController();
+    _profileController.addListener(() {
+      if (mounted) setState(() {});
+    });
+    _profileController.fetchUserData();
   }
 
-  Future<void> _fetchUserData() async {
-    try {
-      final String userId = AuthService().getCurrentUserId();
-      final DocumentSnapshot userDoc =
-          await _firestore.collection('users').doc(userId).get();
-
-      if (userDoc.exists) {
-        final data = userDoc.data() as Map<String, dynamic>;
-
-        setState(() {
-          currentUser = UserModel(
-            name: data['username'] ?? 'Unknown',
-            bloodType: data['blood_group'] ?? 'N/A',
-            height: data['height']?.toString() ?? 'N/A',
-            weight: data['weight']?.toString() ?? 'N/A',
-            profileImage: data['profile_image'] ?? '',
-            email: data['email'] ?? '',
-            phone: data['phone'] ?? '',
-            age: data['age'] ?? '',
-            bmi: data['bmi'] ?? '',
-            disease: data['disease'] ?? 'None',
-            allergy: data['allergy'] ?? 'None',
-            address: data['home_address'] ?? '',
-            emergencyText: data['emergency_text'] ?? '',
-          );
-        });
-      }
-    } catch (e) {
-      debugPrint("Error fetching user data: $e");
-    }
-  }
-
-  Future<String?> uploadImageToImgBB(String filePath) async {
-    const apiKey = 'b876317f0442b8eec2f8c6ffd701b13d';
-    final url = Uri.parse('https://api.imgbb.com/1/upload?key=$apiKey');
-
-    final request = http.MultipartRequest('POST', url)
-      ..files.add(await http.MultipartFile.fromPath('image', filePath));
-
-    try {
-      final response = await request.send();
-      final res = await http.Response.fromStream(response);
-
-      if (res.statusCode == 200) {
-        final data = jsonDecode(res.body);
-        final imageUrl = data['data']['url'];
-        return imageUrl;
-      } else {
-        return null;
-      }
-    } catch (e) {
-      return null;
-    }
+  @override
+  void dispose() {
+    _profileController.dispose();
+    super.dispose();
   }
 
   Future<void> _updateProfileImage(ImageSource source) async {
-    try {
-      final XFile? pickedFile = await _picker.pickImage(source: source);
-      if (pickedFile != null) {
-        final imageUrl = await uploadImageToImgBB(pickedFile.path);
-        if (imageUrl != null) {
-          final String userId = AuthService().getCurrentUserId();
-          await _firestore.collection('users').doc(userId).update({
-            'profileImageUrl': imageUrl,
-          });
-
-          setState(() {
-            currentUser = UserModel(
-              name: currentUser.name,
-              bloodType: currentUser.bloodType,
-              height: currentUser.height,
-              weight: currentUser.weight,
-              profileImage: imageUrl,
-              email: currentUser.email,
-              phone: currentUser.phone,
-              age: currentUser.age,
-              bmi: currentUser.bmi,
-              disease: currentUser.disease,
-              allergy: currentUser.allergy,
-              address: currentUser.address,
-              emergencyText: currentUser.emergencyText,
-            );
-          });
-        }
-      }
-    } catch (e) {
-      debugPrint("Error uploading image: $e");
+    final success = await _profileController.updateProfileImage(source);
+    if (success) {
+      setState(() {}); // Trigger rebuild to show updated image
     }
   }
 
@@ -169,10 +92,15 @@ class _ProfilePageState extends State<ProfilePage> {
                           child: CircleAvatar(
                             radius: 48,
                             backgroundColor: AppColors.background,
-                            backgroundImage: currentUser.profileImage.isNotEmpty
-                                ? NetworkImage(currentUser.profileImage)
+                            backgroundImage: _profileController
+                                        .currentUser?.profileImage.isNotEmpty ==
+                                    true
+                                ? NetworkImage(_profileController
+                                    .currentUser!.profileImage)
                                 : null,
-                            child: currentUser.profileImage.isEmpty
+                            child: _profileController
+                                        .currentUser?.profileImage.isEmpty !=
+                                    false
                                 ? Icon(Icons.person,
                                     color: AppColors.primary, size: 48)
                                 : null,
@@ -198,7 +126,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   ),
                   const SizedBox(height: 15),
                   Text(
-                    currentUser.name,
+                    _profileController.currentUser?.name ?? 'Unknown',
                     style: GoogleFonts.poppins(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
@@ -207,7 +135,8 @@ class _ProfilePageState extends State<ProfilePage> {
                   ),
                   const SizedBox(height: 5),
                   Text(
-                    currentUser.email ?? 'No email available',
+                    _profileController.currentUser?.email ??
+                        'No email available',
                     style: GoogleFonts.poppins(
                       fontSize: 14,
                       color: AppColors.textTertiary.withOpacity(0.8),
@@ -222,14 +151,24 @@ class _ProfilePageState extends State<ProfilePage> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  _buildStatCard(
-                      Icons.cake_outlined, 'Age', currentUser.age ?? 'N/A',
+                  ProfileWidgets.buildStatCard(
+                      icon: Icons.cake_outlined,
+                      label: 'Age',
+                      value: _profileController.currentUser?.age ?? 'N/A',
                       colors: colors),
-                  _buildStatCard(Icons.monitor_heart_outlined, 'BMI',
-                      currentUser.bmi ?? '0.0',
-                      isBmi: true, colors: colors),
-                  _buildStatCard(Icons.bloodtype_outlined, 'Blood Type',
-                      currentUser.bloodType,
+                  ProfileWidgets.buildStatCard(
+                      icon: Icons.monitor_heart_outlined,
+                      label: 'BMI',
+                      value: _profileController.currentUser?.bmi ?? '0.0',
+                      isBmi: true,
+                      colors: colors,
+                      bmiColor: _getBmiColor(double.tryParse(
+                              _profileController.currentUser?.bmi ?? '0.0') ??
+                          0.0)),
+                  ProfileWidgets.buildStatCard(
+                      icon: Icons.bloodtype_outlined,
+                      label: 'Blood Type',
+                      value: _profileController.currentUser?.bloodType ?? 'N/A',
                       colors: colors),
                 ],
               ),
@@ -238,7 +177,7 @@ class _ProfilePageState extends State<ProfilePage> {
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Column(
                 children: [
-                  _buildMenuCard(
+                  ProfileWidgets.buildMenuCard(
                     icon: Icons.person_outline,
                     title: 'Edit Profile',
                     subtitle: 'Update your personal information',
@@ -259,13 +198,13 @@ class _ProfilePageState extends State<ProfilePage> {
                           transitionDuration: const Duration(milliseconds: 500),
                         ),
                       ).then((_) {
-                        _fetchUserData();
+                        _profileController.fetchUserData();
                       });
                     },
                     colors: colors,
                   ),
                   const SizedBox(height: 15),
-                  _buildMenuCard(
+                  ProfileWidgets.buildMenuCard(
                     icon: Icons.help_outline,
                     title: 'Help & FAQs',
                     subtitle: 'Get answers to common questions',
@@ -275,7 +214,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     colors: colors,
                   ),
                   const SizedBox(height: 15),
-                  _buildMenuCard(
+                  ProfileWidgets.buildMenuCard(
                     icon: Icons.lock_outline,
                     title: 'Change Password',
                     subtitle: 'Update your account password',
@@ -298,19 +237,19 @@ class _ProfilePageState extends State<ProfilePage> {
                     colors: colors,
                   ),
                   const SizedBox(height: 15),
-                  _buildMenuCard(
+                  ProfileWidgets.buildMenuCard(
                       icon: Icons.dark_mode,
                       title: 'Theme',
                       subtitle: 'Change the theme of the app',
                       onTap: () {},
                       colors: colors),
                   const SizedBox(height: 15),
-                  _buildMenuCard(
+                  ProfileWidgets.buildMenuCard(
                     icon: Icons.logout,
                     title: 'Logout',
                     subtitle: 'Sign out of your account',
                     onTap: () async {
-                      await AuthService().signOut();
+                      await _profileController.signOut();
                       Navigator.pushAndRemoveUntil(
                         context,
                         MaterialPageRoute(builder: (_) => const LoginScreen()),
@@ -329,149 +268,11 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  Widget _buildStatCard(IconData icon, String label, String value,
-      {bool isBmi = false, required DynamicColors colors}) {
-    final double bmi = isBmi ? double.tryParse(value) ?? 0.0 : 0.0;
-    final Color bmiColor =
-        isBmi ? _getBmiColor(bmi).withOpacity(0.2) : colors.surface;
-
-    return Expanded(
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 5),
-        padding: const EdgeInsets.all(15),
-        decoration: BoxDecoration(
-          color: bmiColor,
-          borderRadius: BorderRadius.circular(15),
-          boxShadow: [
-            BoxShadow(
-              color: colors.textGrey.withOpacity(0.1),
-              blurRadius: 10,
-              spreadRadius: 2,
-              offset: const Offset(0, 5),
-            ),
-          ],
-        ),
-        child: Column(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: isBmi
-                    ? _getBmiColor(bmi).withOpacity(0.3)
-                    : AppColors.primary.withOpacity(0.1),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                icon,
-                color: isBmi ? _getBmiColor(bmi) : colors.primary,
-                size: 24,
-              ),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              label,
-              style: GoogleFonts.poppins(
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-                color: colors.textGrey,
-              ),
-            ),
-            const SizedBox(height: 5),
-            isBmi
-                ? _buildBmiValue(value)
-                : Text(
-                    value,
-                    style: GoogleFonts.poppins(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: colors.textPrimary,
-                    ),
-                  ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildBmiValue(String value) {
-    final bmi = double.tryParse(value) ?? 0.0;
-
-    return Text(
-      bmi.toStringAsFixed(1),
-      style: GoogleFonts.poppins(
-        fontSize: 16,
-        fontWeight: FontWeight.bold,
-        color: _getBmiColor(bmi),
-      ),
-    );
-  }
-
   Color _getBmiColor(double bmi) {
     if (bmi < 18.5) return Colors.orange;
     if (bmi < 25.0) return Colors.green;
     if (bmi < 30.0) return Colors.amber;
     return Colors.red;
-  }
-
-  Widget _buildMenuCard({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required VoidCallback onTap,
-    required DynamicColors colors,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(15),
-        decoration: BoxDecoration(
-          color: colors.surface,
-          borderRadius: BorderRadius.circular(15),
-          boxShadow: [
-            BoxShadow(
-              color: colors.textGrey.withOpacity(0.1),
-              blurRadius: 10,
-              spreadRadius: 2,
-              offset: const Offset(0, 3),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: colors.primary.withOpacity(0.1),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(icon, color: colors.primary, size: 24),
-            ),
-            const SizedBox(width: 15),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: GoogleFonts.poppins(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: colors.textPrimary),
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
-                    subtitle,
-                    style: GoogleFonts.poppins(
-                        fontSize: 12, color: colors.textGrey),
-                  ),
-                ],
-              ),
-            ),
-            Icon(Icons.chevron_right, color: colors.textLight),
-          ],
-        ),
-      ),
-    );
   }
 
   void _showProfileImageOptions(BuildContext context) {
@@ -499,7 +300,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 ),
               ),
               const SizedBox(height: 20),
-              _buildImageOption(
+              ProfileWidgets.buildImageOption(
                 icon: Icons.camera_alt,
                 color: AppColors.primary,
                 label: "Take Photo",
@@ -508,7 +309,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   _updateProfileImage(ImageSource.camera);
                 },
               ),
-              _buildImageOption(
+              ProfileWidgets.buildImageOption(
                 icon: Icons.photo_library,
                 color: AppColors.primary,
                 label: "Choose from Gallery",
@@ -532,32 +333,6 @@ class _ProfilePageState extends State<ProfilePage> {
           ),
         );
       },
-    );
-  }
-
-  Widget _buildImageOption({
-    required IconData icon,
-    required Color color,
-    required String label,
-    required VoidCallback onTap,
-  }) {
-    return ListTile(
-      leading: Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(icon, color: color)),
-      title: Text(
-        label,
-        style: GoogleFonts.poppins(
-          fontSize: 16,
-          fontWeight: FontWeight.w500,
-          color: AppColors.textPrimary,
-        ),
-      ),
-      onTap: onTap,
     );
   }
 
@@ -606,7 +381,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 30),
-              _buildTeamInfo(
+              ProfileWidgets.buildTeamInfo(
                 name: 'Jawad Mansoor',
                 role: 'Lead Developer',
               ),
