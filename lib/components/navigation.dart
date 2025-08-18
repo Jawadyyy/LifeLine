@@ -28,7 +28,16 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   void initState() {
     super.initState();
     // Initialize all data once when the navigation screen is created
-    _globalDataService.initializeAllData();
+    _initializeGlobalData();
+  }
+
+  Future<void> _initializeGlobalData() async {
+    try {
+      await _globalDataService.initializeAllData();
+      debugPrint('GlobalDataService: All data initialized successfully');
+    } catch (e) {
+      debugPrint('Error initializing GlobalDataService: $e');
+    }
   }
 
   void _onTabTapped(int index) {

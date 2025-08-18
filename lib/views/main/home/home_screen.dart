@@ -60,25 +60,64 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
     controller = HomeController(this, setState);
 
-    // Listen to global data service for location updates
-    _globalDataService.addListener(_onGlobalDataChanged);
+    // Initialize location data from global service (only once)
+    _initializeLocationData();
+  }
 
-    // Get location data from global service (already loaded)
+  void _initializeLocationData() {
+    // Get initial location data from global service
     _updateLocationFromGlobal();
+
+    // Listen to global data service for location updates (only when location actually changes)
+    _globalDataService.addListener(_onGlobalDataChanged);
   }
 
   void _onGlobalDataChanged() {
     if (mounted) {
-      _updateLocationFromGlobal();
+      // Only update if the location has actually changed
+      final newAddress = _globalDataService.currentAddress;
+      final newIsLocationFetched = _globalDataService.isLocationFetched;
+      final newIsLoadingLocation = _globalDataService.isLoadingLocation;
+
+      // Only update state if values have actually changed
+      if (_currentAddress != newAddress ||
+          _isLocationFetched != newIsLocationFetched ||
+          _isLoadingLocation != newIsLoadingLocation) {
+        _updateLocationFromGlobal();
+      }
     }
   }
 
   void _updateLocationFromGlobal() {
-    setState(() {
-      _currentAddress = _globalDataService.currentAddress;
-      _isLocationFetched = _globalDataService.isLocationFetched;
-      _isLoadingLocation = _globalDataService.isLoadingLocation;
-    });
+    if (mounted) {
+      setState(() {
+        _currentAddress = _globalDataService.currentAddress;
+        _isLocationFetched = _globalDataService.isLocationFetched;
+        _isLoadingLocation = _globalDataService.isLoadingLocation;
+      });
+    }
+  }
+
+  // Handle manual location refresh (only when user explicitly requests it)
+  Future<void> _handleManualLocationRefresh() async {
+    if (!_isLoadingLocation) {
+      // Check if location data is already fresh
+      if (_globalDataService.isLocationDataFresh) {
+        // Show a message that location is already up to date
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Location is already up to date'),
+              duration: Duration(seconds: 2),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      } else {
+        // Only update if location data is stale
+        await _globalDataService.updateLocationData();
+      }
+    }
   }
 
   @override
@@ -132,13 +171,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             ),
           ],
         ),
-        actions: [
-          IconButton(
-            onPressed: controller.getUserLocation,
-            icon: Icon(Icons.refresh, color: AppColors.textPrimary),
-            tooltip: 'Refresh location',
-          ),
-        ],
       ),
       body: Stack(
         children: [

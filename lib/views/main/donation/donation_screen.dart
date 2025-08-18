@@ -227,7 +227,7 @@ class _DonationScreenState extends State<DonationScreen> {
                       ),
                       child: PopupMenuButton<String>(
                         icon: Icon(Icons.more_vert,
-                            color: AppColors.tertiary, size: 24),
+                            color: AppColors.primary, size: 24),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                           side: BorderSide(color: AppColors.textSecondary),
@@ -364,63 +364,67 @@ class _DonationScreenState extends State<DonationScreen> {
                 ],
               ),
               const SizedBox(height: 16),
-              Row(
+              Column(
                 children: [
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      icon: const Icon(
-                        Icons.message_outlined,
-                        size: 20,
-                        color: AppColors.surface,
-                      ),
-                      label: const Text(
-                        'Contact',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w500,
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          icon: const Icon(
+                            Icons.message_outlined,
+                            size: 20,
+                            color: AppColors.surface,
+                          ),
+                          label: const Text(
+                            'Contact',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            foregroundColor: AppColors.surface,
+                            backgroundColor: AppColors.primary,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            elevation: 0,
+                            shadowColor: AppColors.transparent,
+                          ),
+                          onPressed: () =>
+                              _handleContact(data, userData, donationTime),
                         ),
                       ),
-                      style: ElevatedButton.styleFrom(
-                        foregroundColor: AppColors.surface,
-                        backgroundColor: AppColors.primary,
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        elevation: 0,
-                        shadowColor: AppColors.transparent,
-                      ),
-                      onPressed: () =>
-                          _handleContact(data, userData, donationTime),
-                    ),
-                  ),
-                  SizedBox(width: 12),
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      icon: Icon(
-                        Icons.map_outlined,
-                        size: 20,
-                        color: AppColors.primary,
-                      ),
-                      label: Text(
-                        'Directions',
-                        style: TextStyle(
-                          color: AppColors.primary,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.primary,
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        side: BorderSide(
-                          color: AppColors.primary,
-                          width: 1.5,
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          icon: Icon(
+                            Icons.map_outlined,
+                            size: 20,
+                            color: AppColors.primary,
+                          ),
+                          label: Text(
+                            'Directions',
+                            style: TextStyle(
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: AppColors.primary,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            side: BorderSide(
+                              color: AppColors.primary,
+                              width: 1.5,
+                            ),
+                          ),
+                          onPressed: () => _handleDirections(data['location']),
                         ),
                       ),
-                      onPressed: () => _handleDirections(data['location']),
-                    ),
+                    ],
                   ),
                 ],
               ),
@@ -455,6 +459,23 @@ class _DonationScreenState extends State<DonationScreen> {
     DateTime donationTime,
   ) async {
     final phoneRaw = userData['phone'] ?? '';
+
+    if (phoneRaw.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text("No phone number available for this user"),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: Colors.orange,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+        );
+      }
+      return;
+    }
+
     final success = await _donationController.contactViaWhatsApp(
       phoneRaw,
       data['location'],
@@ -464,8 +485,79 @@ class _DonationScreenState extends State<DonationScreen> {
     if (!success && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text("Could not open WhatsApp"),
+          content: const Text(
+              "Could not open WhatsApp. Please check if WhatsApp is installed."),
           behavior: SnackBarBehavior.floating,
+          backgroundColor: Colors.red,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
+      );
+    }
+  }
+
+  Future<void> _handlePhoneCall(String phone) async {
+    if (phone.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text("No phone number available for this user"),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: Colors.orange,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+        );
+      }
+      return;
+    }
+
+    final success = await _donationController.makePhoneCall(phone);
+
+    if (!success && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text(
+              "Could not make phone call. Please check your phone settings."),
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: Colors.red,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
+      );
+    }
+  }
+
+  Future<void> _handleEmail(String email) async {
+    if (email.isEmpty || !email.contains('@')) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content:
+                const Text("No valid email address available for this user"),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: Colors.orange,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+        );
+      }
+      return;
+    }
+
+    final success = await _donationController.sendEmail(email);
+
+    if (!success && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text(
+              "Could not open email app. Please check your email settings."),
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: Colors.red,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(10),
           ),
@@ -475,13 +567,31 @@ class _DonationScreenState extends State<DonationScreen> {
   }
 
   Future<void> _handleDirections(String destination) async {
+    if (destination.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text("No location information available"),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: Colors.orange,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+        );
+      }
+      return;
+    }
+
     final success = await _donationController.openMapDirections(destination);
 
     if (!success && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text("Could not open map"),
+          content: const Text(
+              "Could not open Google Maps. Please check if Google Maps is installed."),
           behavior: SnackBarBehavior.floating,
+          backgroundColor: Colors.red,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(10),
           ),

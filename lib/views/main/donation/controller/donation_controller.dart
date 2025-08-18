@@ -276,13 +276,16 @@ class DonationController extends ChangeNotifier {
           "Location: $location\n"
           "Time: ${DateFormat.yMd().add_jm().format(donationTime)}";
 
-      final url = 'https://wa.me/$phoneRaw?text=${Uri.encodeFull(message)}';
+      final whatsappUrl =
+          'https://wa.me/$phoneRaw?text=${Uri.encodeComponent(message)}';
 
-      if (await canLaunchUrl(Uri.parse(url))) {
-        await launchUrl(Uri.parse(url));
+      try {
+        await launchUrl(Uri.parse(whatsappUrl),
+            mode: LaunchMode.externalApplication);
         return true;
-      } else {
-        throw Exception('Could not open WhatsApp');
+      } catch (e) {
+        debugPrint('Error opening WhatsApp: $e');
+        return false;
       }
     } catch (e) {
       debugPrint('Error opening WhatsApp: $e');
@@ -293,12 +296,25 @@ class DonationController extends ChangeNotifier {
   // Make phone call
   Future<bool> makePhoneCall(String phone) async {
     try {
-      final Uri phoneUri = Uri(scheme: 'tel', path: phone);
-      if (await canLaunchUrl(phoneUri)) {
-        await launchUrl(phoneUri, mode: LaunchMode.externalApplication);
+      // Clean phone number
+      final cleanPhone = phone.replaceAll(RegExp(r'[^\d+]'), '');
+
+      if (cleanPhone.isEmpty) {
+        throw Exception('Invalid phone number');
+      }
+
+      final Uri phoneUri = Uri(scheme: 'tel', path: cleanPhone);
+
+      try {
+        final launched =
+            await launchUrl(phoneUri, mode: LaunchMode.externalApplication);
+        if (!launched) {
+          throw Exception('Could not launch phone call');
+        }
         return true;
-      } else {
-        throw Exception('Could not launch phone call');
+      } catch (e) {
+        debugPrint('Error launching phone call: $e');
+        return false;
       }
     } catch (e) {
       debugPrint('Error making phone call: $e');
@@ -312,16 +328,20 @@ class DonationController extends ChangeNotifier {
       final Uri emailUri = Uri(
         scheme: 'mailto',
         path: email,
-        query: 'subject=Urgent Medical Assistance Needed&'
-            'body=Hello $email,%0D%0A%0D%0AI found your contact on the LifeLine app and need urgent assistance. '
-            'Please respond as soon as possible.%0D%0A%0D%0AThank you.',
+        queryParameters: {
+          'subject': 'Urgent Medical Assistance Needed',
+          'body':
+              'Hello $email,\n\nI found your contact on the LifeLine app and need urgent assistance. '
+                  'Please respond as soon as possible.\n\nThank you.',
+        },
       );
 
       if (await canLaunchUrl(emailUri)) {
         await launchUrl(emailUri, mode: LaunchMode.externalApplication);
         return true;
       } else {
-        throw Exception('Could not launch email');
+        debugPrint("No email app available.");
+        return false;
       }
     } catch (e) {
       debugPrint('Error sending email: $e');
@@ -332,19 +352,46 @@ class DonationController extends ChangeNotifier {
   // Open map directions
   Future<bool> openMapDirections(String destination) async {
     try {
-      final current = await Geolocator.getCurrentPosition(
-          desiredAccuracy: LocationAccuracy.high);
+      if (destination.isEmpty) {
+        throw Exception('Destination is empty');
+      }
 
-      final dest = Uri.encodeComponent(destination);
-      final url = 'https://www.google.com/maps/dir/?api=1'
-          '&origin=${current.latitude},${current.longitude}'
-          '&destination=$dest&travelmode=driving';
+      // Try to get current location first
+      Position? current;
+      try {
+        current = await Geolocator.getCurrentPosition(
+          desiredAccuracy: LocationAccuracy.high,
+          timeLimit: const Duration(seconds: 10),
+        );
+      } catch (e) {
+        debugPrint('Could not get current location: $e');
+        // Continue without current location
+      }
 
-      if (await canLaunchUrl(Uri.parse(url))) {
-        await launchUrl(Uri.parse(url));
-        return true;
+      String url;
+      if (current != null) {
+        // With current location - use directions
+        final dest = Uri.encodeComponent(destination);
+        url = 'https://www.google.com/maps/dir/?api=1'
+            '&origin=${current.latitude},${current.longitude}'
+            '&destination=$dest&travelmode=driving';
       } else {
-        throw Exception('Could not open map');
+        // Without current location - just search for destination
+        final dest = Uri.encodeComponent(destination);
+        url = 'https://www.google.com/maps/search/$dest';
+      }
+
+      final uri = Uri.parse(url);
+      try {
+        final launched =
+            await launchUrl(uri, mode: LaunchMode.externalApplication);
+        if (!launched) {
+          throw Exception('Could not launch Google Maps.');
+        }
+        return true;
+      } catch (e) {
+        debugPrint('Error launching Google Maps: $e');
+        return false;
       }
     } catch (e) {
       debugPrint('Error opening map: $e');

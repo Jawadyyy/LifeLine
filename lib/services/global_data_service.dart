@@ -16,6 +16,7 @@ class GlobalDataService extends ChangeNotifier {
   UserModel? _currentUser;
   String _currentAddress = 'Fetching location...';
   bool _isLocationFetched = false;
+  DateTime? _locationLastUpdated;
 
   // Loading states
   bool _isLoadingContacts = false;
@@ -32,6 +33,7 @@ class GlobalDataService extends ChangeNotifier {
   UserModel? get currentUser => _currentUser;
   String get currentAddress => _currentAddress;
   bool get isLocationFetched => _isLocationFetched;
+  DateTime? get locationLastUpdated => _locationLastUpdated;
   bool get isLoadingContacts => _isLoadingContacts;
   bool get isLoadingUser => _isLoadingUser;
   bool get isLoadingLocation => _isLoadingLocation;
@@ -129,20 +131,36 @@ class GlobalDataService extends ChangeNotifier {
       final position = await LocationHandler.getCurrentPosition();
       if (position != null) {
         final address = await LocationHandler.getAddressFromLatLng(position);
-        _currentAddress = address ?? 'Location unavailable';
-        _isLocationFetched = true;
-        debugPrint(
-            'GlobalDataService: Location data loaded successfully: $_currentAddress');
+        final newAddress = address ?? 'Location unavailable';
+
+        // Only update and notify if the address has actually changed
+        if (_currentAddress != newAddress) {
+          _currentAddress = newAddress;
+          _isLocationFetched = true;
+          _locationLastUpdated = DateTime.now();
+          debugPrint(
+              'GlobalDataService: Location data loaded successfully: $_currentAddress');
+        } else {
+          debugPrint(
+              'GlobalDataService: Location address unchanged, skipping notification');
+        }
       } else {
-        _currentAddress = 'Location permission denied';
-        debugPrint('GlobalDataService: Location permission denied');
+        if (_currentAddress != 'Location permission denied') {
+          _currentAddress = 'Location permission denied';
+          _isLocationFetched = false;
+          debugPrint('GlobalDataService: Location permission denied');
+        }
       }
       _hasLoadedLocation = true;
     } catch (e) {
       debugPrint('Error loading location: $e');
-      _currentAddress = 'Error getting location';
+      if (_currentAddress != 'Error getting location') {
+        _currentAddress = 'Error getting location';
+        _isLocationFetched = false;
+      }
     } finally {
       _isLoadingLocation = false;
+      // Always notify listeners when loading state changes
       notifyListeners();
     }
   }
@@ -166,7 +184,30 @@ class GlobalDataService extends ChangeNotifier {
 
   // Update location data
   Future<void> updateLocationData() async {
-    await loadLocationData(forceReload: true);
+    // Only update if location data is stale or not available
+    if (!_hasLoadedLocation ||
+        _currentAddress.isEmpty ||
+        _currentAddress == 'Fetching location...') {
+      await loadLocationData(forceReload: true);
+    } else {
+      debugPrint(
+          'GlobalDataService: Location data is already fresh, skipping update');
+    }
+  }
+
+  // Check if location data is fresh (fetched within last 5 minutes)
+  bool get isLocationDataFresh {
+    if (!_hasLoadedLocation || !_isLocationFetched || _currentAddress.isEmpty) {
+      return false;
+    }
+
+    // Consider location fresh if it was updated within the last 5 minutes
+    if (_locationLastUpdated != null) {
+      final timeDifference = DateTime.now().difference(_locationLastUpdated!);
+      return timeDifference.inMinutes < 5;
+    }
+
+    return false;
   }
 
   // Clear all data (useful for logout)
@@ -175,6 +216,7 @@ class GlobalDataService extends ChangeNotifier {
     _currentUser = null;
     _currentAddress = 'Fetching location...';
     _isLocationFetched = false;
+    _locationLastUpdated = null;
     _hasLoadedContacts = false;
     _hasLoadedUser = false;
     _hasLoadedLocation = false;
