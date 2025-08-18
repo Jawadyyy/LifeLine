@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lifeline/constants/app_colors.dart';
 import 'package:lifeline/views/chatbot/screens/chat_home_screen.dart';
 import 'package:lifeline/views/main/home/controller/home_controller.dart';
+import 'package:lifeline/services/global_data_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -19,6 +20,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _scaleAnimation;
   late HomeController controller;
+  final GlobalDataService _globalDataService = GlobalDataService();
 
   // Expose fields for controller via dynamic calls (used internally by controller)
   dynamic getField(String name) => {
@@ -57,12 +59,32 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
     controller = HomeController(this, setState);
-    controller.getUserLocationIfNeeded();
+
+    // Listen to global data service for location updates
+    _globalDataService.addListener(_onGlobalDataChanged);
+
+    // Get location data from global service (already loaded)
+    _updateLocationFromGlobal();
+  }
+
+  void _onGlobalDataChanged() {
+    if (mounted) {
+      _updateLocationFromGlobal();
+    }
+  }
+
+  void _updateLocationFromGlobal() {
+    setState(() {
+      _currentAddress = _globalDataService.currentAddress;
+      _isLocationFetched = _globalDataService.isLocationFetched;
+      _isLoadingLocation = _globalDataService.isLoadingLocation;
+    });
   }
 
   @override
   void dispose() {
     _animationController.dispose();
+    _globalDataService.removeListener(_onGlobalDataChanged);
     super.dispose();
   }
 

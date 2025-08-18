@@ -26,48 +26,14 @@ class HomeController {
   void _setField(String name, dynamic value) =>
       (state as dynamic).setField(name, value);
 
+  // Location is now handled by GlobalDataService
+  // These methods are kept for backward compatibility but won't be used
   void getUserLocationIfNeeded() {
-    final bool isLocationFetched = _getField<bool>('_isLocationFetched');
-    if (!isLocationFetched) {
-      getUserLocation();
-    }
+    // Location is managed globally
   }
 
   Future<void> getUserLocation() async {
-    if (!mounted) return;
-    setStateFn(() {
-      _setField('_isLoadingLocation', true);
-    });
-
-    try {
-      final position = await LocationHandler.getCurrentPosition();
-      if (!mounted) return;
-
-      if (position != null) {
-        final address = await LocationHandler.getAddressFromLatLng(position);
-        if (!mounted) return;
-
-        setStateFn(() {
-          _setField('_currentAddress', address ?? 'Location unavailable');
-          _setField('_isLocationFetched', true);
-        });
-      } else {
-        if (!mounted) return;
-        setStateFn(() {
-          _setField('_currentAddress', 'Location permission denied');
-        });
-      }
-    } catch (e) {
-      if (!mounted) return;
-      setStateFn(() {
-        _setField('_currentAddress', 'Error getting location');
-      });
-    } finally {
-      if (!mounted) return;
-      setStateFn(() {
-        _setField('_isLoadingLocation', false);
-      });
-    }
+    // Location is managed globally
   }
 
   Future<void> sendEmergencyMessage(String emergencyType) async {

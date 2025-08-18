@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lifeline/constants/app_colors.dart';
 import 'package:lifeline/views/main/contact/controller/contacts_screen_controller.dart';
+import 'package:lifeline/services/global_data_service.dart';
 
 class ContactsPage extends StatefulWidget {
   const ContactsPage({super.key});
@@ -13,20 +14,40 @@ class _ContactsPageState extends State<ContactsPage> {
   List<Map<String, dynamic>> contacts = [];
   List<Map<String, dynamic>> filteredContacts = [];
   bool _isLoading = false;
-  bool _hasLoadedOnce = false;
   final TextEditingController _searchController = TextEditingController();
   ContactsScreenController? controller;
+  final GlobalDataService _globalDataService = GlobalDataService();
 
   @override
   void initState() {
     super.initState();
     controller = ContactsScreenController(this, setState);
-    controller!.loadStoredContacts();
+
+    // Listen to global data service for contacts updates
+    _globalDataService.addListener(_onGlobalDataChanged);
+
+    // Get contacts from global service (already loaded)
+    _updateContactsFromGlobal();
+  }
+
+  void _onGlobalDataChanged() {
+    if (mounted) {
+      _updateContactsFromGlobal();
+    }
+  }
+
+  void _updateContactsFromGlobal() {
+    setState(() {
+      contacts = _globalDataService.contacts;
+      filteredContacts = contacts;
+      _isLoading = _globalDataService.isLoadingContacts;
+    });
   }
 
   @override
   void dispose() {
     _searchController.dispose();
+    _globalDataService.removeListener(_onGlobalDataChanged);
     super.dispose();
   }
 
@@ -35,7 +56,6 @@ class _ContactsPageState extends State<ContactsPage> {
         'contacts': contacts,
         'filteredContacts': filteredContacts,
         '_isLoading': _isLoading,
-        '_hasLoadedOnce': _hasLoadedOnce,
       }[name];
 
   void setField(String name, dynamic value) {
@@ -48,9 +68,6 @@ class _ContactsPageState extends State<ContactsPage> {
         break;
       case '_isLoading':
         _isLoading = value as bool;
-        break;
-      case '_hasLoadedOnce':
-        _hasLoadedOnce = value as bool;
         break;
     }
   }

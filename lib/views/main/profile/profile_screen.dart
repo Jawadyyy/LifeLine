@@ -8,16 +8,18 @@ import 'package:lifeline/views/main/profile/controller/profile_controller.dart';
 import 'package:lifeline/views/main/profile/controller/profile_widgets.dart';
 import 'package:lifeline/constants/app_colors.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:lifeline/services/global_data_service.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
 
   @override
-  State<ProfilePage> createState() => _ProfilePageState();
+  _ProfilePageState createState() => _ProfilePageState();
 }
 
 class _ProfilePageState extends State<ProfilePage> {
   late final ProfileController _profileController;
+  final GlobalDataService _globalDataService = GlobalDataService();
 
   @override
   void initState() {
@@ -26,12 +28,45 @@ class _ProfilePageState extends State<ProfilePage> {
     _profileController.addListener(() {
       if (mounted) setState(() {});
     });
-    _profileController.fetchUserData();
+
+    // Listen to global data service for user data updates
+    _globalDataService.addListener(_onGlobalDataChanged);
+
+    // Get user data from global service (already loaded)
+    _updateUserFromGlobal();
+
+    // If global service doesn't have user data yet, fetch it directly
+    if (_globalDataService.currentUser == null) {
+      debugPrint('ProfileScreen: No global data, fetching directly...');
+      _profileController.fetchUserData();
+    }
+  }
+
+  void _onGlobalDataChanged() {
+    if (mounted) {
+      _updateUserFromGlobal();
+    }
+  }
+
+  void _updateUserFromGlobal() {
+    if (_globalDataService.currentUser != null) {
+      // Only update if the user data is different to prevent infinite loops
+      final globalUser = _globalDataService.currentUser!;
+      final currentUser = _profileController.currentUser;
+
+      if (currentUser == null ||
+          currentUser.name != globalUser.name ||
+          currentUser.email != globalUser.email) {
+        debugPrint('ProfileScreen: Updating user data from global service');
+        _profileController.setCurrentUser(globalUser);
+      }
+    }
   }
 
   @override
   void dispose() {
     _profileController.dispose();
+    _globalDataService.removeListener(_onGlobalDataChanged);
     super.dispose();
   }
 

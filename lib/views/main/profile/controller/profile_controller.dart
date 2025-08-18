@@ -7,11 +7,13 @@ import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:lifeline/models/user_model.dart';
 import 'package:lifeline/services/auth_service.dart';
+import 'package:lifeline/services/global_data_service.dart';
 
 class ProfileController extends ChangeNotifier {
   final ImagePicker _picker = ImagePicker();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final AuthService _authService = AuthService();
+  final GlobalDataService _globalDataService = GlobalDataService();
 
   // Common dropdown options
   static const List<String> diseaseOptions = [
@@ -73,6 +75,12 @@ class ProfileController extends ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
 
+  // Set current user (for external updates from GlobalDataService)
+  void setCurrentUser(UserModel user) {
+    _currentUser = user;
+    notifyListeners();
+  }
+
   // Set loading state
   void _setLoading(bool loading) {
     _isLoading = loading;
@@ -119,6 +127,9 @@ class ProfileController extends ChangeNotifier {
           address: data['home_address'] ?? '',
           emergencyText: data['emergency_text'] ?? '',
         );
+
+        // Update global service silently to avoid loops
+        _globalDataService.updateUserDataSilently(_currentUser!);
       }
     } catch (e) {
       _setError("Error fetching user data: $e");
