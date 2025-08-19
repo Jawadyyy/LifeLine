@@ -6,9 +6,6 @@ import 'package:lifeline/constants/app_colors.dart';
 import 'package:lifeline/views/entry/splash_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-// Import your DynamicColors class here if in another file
-// import 'path_to_dynamic_colors.dart';
-
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
