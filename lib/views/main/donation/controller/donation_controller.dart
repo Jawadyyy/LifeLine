@@ -5,6 +5,8 @@ import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:lifeline/constants/app_colors.dart';
+import 'package:lifeline/services/global_data_service.dart';
 
 class DonationController extends ChangeNotifier {
   // Form controllers
@@ -423,6 +425,71 @@ class DonationController extends ChangeNotifier {
   // Check if donation is upcoming
   bool isUpcomingDonation(DateTime donationTime) {
     return donationTime.isAfter(DateTime.now());
+  }
+
+  // Check if donation is expired
+  bool isExpiredDonation(DateTime donationTime) {
+    return donationTime.isBefore(DateTime.now());
+  }
+
+  // Get donation status
+  String getDonationStatus(DateTime donationTime) {
+    if (isExpiredDonation(donationTime)) {
+      return 'Expired';
+    } else if (isUpcomingDonation(donationTime)) {
+      return 'Upcoming';
+    } else {
+      return 'Today';
+    }
+  }
+
+  // Get donation status color
+  Color getDonationStatusColor(DateTime donationTime) {
+    if (isExpiredDonation(donationTime)) {
+      return Colors.red;
+    } else if (isUpcomingDonation(donationTime)) {
+      return AppColors.primary;
+    } else {
+      return Colors.orange;
+    }
+  }
+
+  // Extract city from address
+  String extractCityFromAddress(String address) {
+    if (address.isEmpty) return '';
+
+    // Split by comma and get the first part (usually city)
+    final parts = address.split(',');
+    if (parts.isNotEmpty) {
+      return parts.first.trim();
+    }
+    return address;
+  }
+
+  // Check if donation is in user's city
+  bool isDonationInUserCity(String donationLocation, String userCity) {
+    if (donationLocation.isEmpty || userCity.isEmpty) return false;
+
+    final donationCity = extractCityFromAddress(donationLocation);
+    return donationCity.toLowerCase() == userCity.toLowerCase();
+  }
+
+  // Get current user's city
+  String getCurrentUserCity() {
+    // Try to get from GlobalDataService first
+    try {
+      final globalDataService = GlobalDataService();
+      final currentAddress = globalDataService.currentAddress;
+      if (currentAddress.isNotEmpty &&
+          currentAddress != 'Fetching location...') {
+        return extractCityFromAddress(currentAddress);
+      }
+    } catch (e) {
+      debugPrint('Error getting city from GlobalDataService: $e');
+    }
+
+    // Fallback: try to get from current user's address in Firestore
+    return '';
   }
 
   // Format donation time

@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:lifeline/constants/app_colors.dart';
 import 'package:lifeline/views/main/donation/controller/donation_controller.dart';
 import 'package:lifeline/views/main/donation/controller/donation_dialog_controller.dart';
+import 'package:lifeline/services/global_data_service.dart';
 
 class DonationScreen extends StatefulWidget {
   const DonationScreen({super.key});
@@ -15,6 +16,7 @@ class DonationScreen extends StatefulWidget {
 class _DonationScreenState extends State<DonationScreen> {
   late DonationController _donationController;
   late DonationDialogController _dialogController;
+  bool _showOnlyCityDonations = true;
 
   @override
   void initState() {
@@ -22,6 +24,18 @@ class _DonationScreenState extends State<DonationScreen> {
     _donationController = DonationController();
     _dialogController = DonationDialogController(_donationController);
     _donationController.init();
+
+    // Refresh location data to ensure we have the latest city information
+    _refreshLocationData();
+  }
+
+  Future<void> _refreshLocationData() async {
+    try {
+      final globalDataService = GlobalDataService();
+      await globalDataService.updateLocationData();
+    } catch (e) {
+      debugPrint('Error refreshing location data: $e');
+    }
   }
 
   @override
@@ -50,6 +64,22 @@ class _DonationScreenState extends State<DonationScreen> {
           iconTheme: const IconThemeData(
             color: AppColors.surface,
           ),
+          actions: [
+            IconButton(
+              onPressed: () {
+                setState(() {
+                  _showOnlyCityDonations = !_showOnlyCityDonations;
+                });
+              },
+              icon: Icon(
+                _showOnlyCityDonations ? Icons.location_city : Icons.public,
+                color: AppColors.surface,
+              ),
+              tooltip: _showOnlyCityDonations
+                  ? 'Show all donations'
+                  : 'Show city-only donations',
+            ),
+          ],
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.vertical(
               bottom: Radius.circular(20),
@@ -64,7 +94,10 @@ class _DonationScreenState extends State<DonationScreen> {
         backgroundColor: AppColors.surface,
         body: Column(children: [
           const SizedBox(height: 20),
-          const Text("Active Donation Requests",
+          Text(
+              _showOnlyCityDonations
+                  ? "City Donation Requests"
+                  : "All Donation Requests",
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
           const SizedBox(height: 10),
           Expanded(
@@ -90,6 +123,55 @@ class _DonationScreenState extends State<DonationScreen> {
         if (!userSnap.hasData || userSnap.data!.docs.isEmpty) {
           return const Center(child: Text("No donation requests yet"));
         }
+
+        // Check if there are any donations in user's city
+        final userCity = _donationController.getCurrentUserCity();
+        if (userCity.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.location_off,
+                  size: 64,
+                  color: AppColors.textSecondary,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  "Location not available",
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  "Please enable location services to see donations in your city",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: _refreshLocationData,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: AppColors.surface,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 24, vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: const Text("Refresh Location"),
+                ),
+              ],
+            ),
+          );
+        }
         final users = userSnap.data!.docs;
         return ListView(
           shrinkWrap: true,
@@ -104,20 +186,60 @@ class _DonationScreenState extends State<DonationScreen> {
                   if (!postSnap.hasData || postSnap.data!.docs.isEmpty) {
                     return const SizedBox.shrink();
                   }
-                  return Column(
-                    children: postSnap.data!.docs.map((postDoc) {
-                      final data = postDoc.data() as Map<String, dynamic>;
-                      final postId = postDoc.id;
-                      final ownerId = userDoc.id;
 
-                      return _buildPostCard(
-                        data,
-                        userData,
-                        postId: postId,
-                        ownerId: ownerId,
-                        isDetailView: false,
-                      );
-                    }).toList(),
+                  // Filter donations by city if enabled
+                  final filteredPosts = _showOnlyCityDonations
+                      ? postSnap.data!.docs.where((postDoc) {
+                          final data = postDoc.data() as Map<String, dynamic>;
+                          final donationLocation = data['location'] ?? '';
+                          final userCity =
+                              _donationController.getCurrentUserCity();
+
+                          // Only show donations in user's city
+                          return _donationController.isDonationInUserCity(
+                              donationLocation, userCity);
+                        }).toList()
+                      : postSnap.data!.docs.toList();
+
+                  if (filteredPosts.isEmpty) {
+                    return const SizedBox.shrink();
+                  }
+
+                  // Add city info header for first post
+                  final isFirstPost = userDoc == users.first;
+                  final cityHeader = isFirstPost
+                      ? _buildCityHeader(userCity, _showOnlyCityDonations)
+                      : null;
+
+                  // Check if this is the first user and we have no donations in city
+                  if (isFirstPost &&
+                      filteredPosts.isEmpty &&
+                      _showOnlyCityDonations) {
+                    return Column(
+                      children: [
+                        cityHeader!,
+                        _buildNoDonationsInCityMessage(userCity),
+                      ],
+                    );
+                  }
+
+                  return Column(
+                    children: [
+                      if (cityHeader != null) cityHeader,
+                      ...filteredPosts.map((postDoc) {
+                        final data = postDoc.data() as Map<String, dynamic>;
+                        final postId = postDoc.id;
+                        final ownerId = userDoc.id;
+
+                        return _buildPostCard(
+                          data,
+                          userData,
+                          postId: postId,
+                          ownerId: ownerId,
+                          isDetailView: false,
+                        );
+                      }).toList(),
+                    ],
                   );
                 },
               )
@@ -125,6 +247,83 @@ class _DonationScreenState extends State<DonationScreen> {
           }).toList(),
         );
       },
+    );
+  }
+
+  Widget _buildCityHeader(String city, bool showOnlyCity) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.primary.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: AppColors.primary.withOpacity(0.3),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            showOnlyCity ? Icons.location_city : Icons.public,
+            color: AppColors.primary,
+            size: 20,
+          ),
+          const SizedBox(width: 8),
+          Text(
+            showOnlyCity
+                ? "Showing donations in $city"
+                : "Showing all donations",
+            style: TextStyle(
+              color: AppColors.primary,
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNoDonationsInCityMessage(String city) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: AppColors.textSecondary.withOpacity(0.2),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        children: [
+          Icon(
+            Icons.bloodtype_outlined,
+            size: 48,
+            color: AppColors.textSecondary,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            "No donations in $city",
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            "There are currently no blood donation requests in your city.\nBe the first to create one!",
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 14,
+              color: AppColors.textSecondary,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -197,29 +396,34 @@ class _DonationScreenState extends State<DonationScreen> {
                       ],
                     ),
                   ),
-                  if (isUpcoming)
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 5,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.primary.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: AppColors.primary.withOpacity(0.3),
-                          width: 1,
-                        ),
-                      ),
-                      child: Text(
-                        'Upcoming',
-                        style: TextStyle(
-                          color: AppColors.primary,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                        ),
+                  // Status label for donation
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 5,
+                    ),
+                    decoration: BoxDecoration(
+                      color: _donationController
+                          .getDonationStatusColor(donationTime)
+                          .withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: _donationController
+                            .getDonationStatusColor(donationTime)
+                            .withOpacity(0.3),
+                        width: 1,
                       ),
                     ),
+                    child: Text(
+                      _donationController.getDonationStatus(donationTime),
+                      style: TextStyle(
+                        color: _donationController
+                            .getDonationStatusColor(donationTime),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
                   if (isOwner)
                     Theme(
                       data: Theme.of(context).copyWith(
