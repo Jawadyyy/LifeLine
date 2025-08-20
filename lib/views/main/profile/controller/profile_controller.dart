@@ -117,7 +117,7 @@ class ProfileController extends ChangeNotifier {
           bloodType: data['blood_group'] ?? 'N/A',
           height: data['height']?.toString() ?? 'N/A',
           weight: data['weight']?.toString() ?? 'N/A',
-          profileImage: data['profile_image'] ?? '',
+          profileImage: data['profileImageUrl'] ?? '',
           email: data['email'] ?? '',
           phone: data['phone'] ?? '',
           age: data['age'] ?? '',
