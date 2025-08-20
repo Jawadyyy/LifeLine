@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -79,6 +78,20 @@ class ProfileController extends ChangeNotifier {
   void setCurrentUser(UserModel user) {
     _currentUser = user;
     notifyListeners();
+  }
+
+  // Refresh user data from GlobalDataService
+  Future<void> refreshUserData() async {
+    final globalUser = _globalDataService.currentUser;
+    if (globalUser != null) {
+      _currentUser = globalUser;
+      notifyListeners();
+    }
+  }
+
+  // Refresh profile image specifically
+  Future<void> refreshProfileImage() async {
+    await fetchUserData();
   }
 
   // Set loading state
@@ -237,6 +250,10 @@ class ProfileController extends ChangeNotifier {
           address: _currentUser!.address,
           emergencyText: _currentUser!.emergencyText,
         );
+
+        // Update GlobalDataService to keep it in sync
+        _globalDataService.updateUserDataSilently(_currentUser!);
+
         notifyListeners();
       }
 

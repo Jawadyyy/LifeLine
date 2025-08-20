@@ -17,13 +17,15 @@ class ProfilePage extends StatefulWidget {
   _ProfilePageState createState() => _ProfilePageState();
 }
 
-class _ProfilePageState extends State<ProfilePage> {
+class _ProfilePageState extends State<ProfilePage> with WidgetsBindingObserver {
   late final ProfileController _profileController;
   final GlobalDataService _globalDataService = GlobalDataService();
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+
     _profileController = ProfileController();
     _profileController.addListener(() {
       if (mounted) setState(() {});
@@ -42,6 +44,15 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Refresh user data when dependencies change (e.g., when returning to this screen)
+    _updateUserFromGlobal();
+    // Also refresh profile image to ensure it's up-to-date
+    _profileController.refreshProfileImage();
+  }
+
   void _onGlobalDataChanged() {
     if (mounted) {
       _updateUserFromGlobal();
@@ -56,7 +67,8 @@ class _ProfilePageState extends State<ProfilePage> {
 
       if (currentUser == null ||
           currentUser.name != globalUser.name ||
-          currentUser.email != globalUser.email) {
+          currentUser.email != globalUser.email ||
+          currentUser.profileImage != globalUser.profileImage) {
         debugPrint('ProfileScreen: Updating user data from global service');
         _profileController.setCurrentUser(globalUser);
       }
@@ -65,14 +77,28 @@ class _ProfilePageState extends State<ProfilePage> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _profileController.dispose();
     _globalDataService.removeListener(_onGlobalDataChanged);
     super.dispose();
   }
 
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    if (state == AppLifecycleState.resumed) {
+      // Refresh user data when app resumes
+      _updateUserFromGlobal();
+      // Also refresh profile image specifically
+      _profileController.refreshProfileImage();
+    }
+  }
+
   Future<void> _updateProfileImage(ImageSource source) async {
     final success = await _profileController.updateProfileImage(source);
     if (success) {
+      // Force refresh user data from GlobalDataService to ensure consistency
+      await _globalDataService.updateUserData();
       setState(() {}); // Trigger rebuild to show updated image
     }
   }
@@ -459,39 +485,6 @@ class _ProfilePageState extends State<ProfilePage> {
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildTeamInfo({
-    required String name,
-    required String role,
-  }) {
-    return Column(
-      children: [
-        Text(
-          'Developed By',
-          style: GoogleFonts.poppins(
-            fontSize: 14,
-            color: AppColors.textGrey,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          name,
-          style: GoogleFonts.poppins(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: AppColors.textPrimary,
-          ),
-        ),
-        Text(
-          role,
-          style: GoogleFonts.poppins(
-            fontSize: 14,
-            color: AppColors.textGrey,
-          ),
-        ),
-      ],
     );
   }
 }
