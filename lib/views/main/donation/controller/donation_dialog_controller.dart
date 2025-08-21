@@ -80,6 +80,10 @@ class DonationDialogController {
     String description = postData['description'] ?? '';
     final descController = TextEditingController(text: description);
 
+    // Create variables to track the updated values
+    DateTime updatedDonationTime = donationTime;
+    String updatedBloodGroup = bloodGroup;
+
     showDialog(
       context: context,
       builder: (context) => Dialog(
@@ -102,14 +106,31 @@ class DonationDialogController {
                 children: [
                   _buildEditDialogHeader(context),
                   const SizedBox(height: 24),
-                  _buildBloodGroupDropdown(setState, bloodGroup),
+                  _buildBloodGroupDropdown(
+                    setState,
+                    updatedBloodGroup,
+                    (newBloodGroup) {
+                      setState(() {
+                        updatedBloodGroup = newBloodGroup;
+                      });
+                    },
+                  ),
                   const SizedBox(height: 20),
-                  _buildDateTimePicker(context, setState, donationTime),
+                  _buildDateTimePicker(
+                    context,
+                    setState,
+                    updatedDonationTime,
+                    (newDateTime) {
+                      setState(() {
+                        updatedDonationTime = newDateTime;
+                      });
+                    },
+                  ),
                   const SizedBox(height: 20),
                   _buildDescriptionField(descController),
                   const SizedBox(height: 32),
-                  _buildSaveButton(context, userId, postId, bloodGroup,
-                      donationTime, descController),
+                  _buildSaveButton(context, userId, postId, updatedBloodGroup,
+                      updatedDonationTime, descController),
                 ],
               ),
             ),
@@ -321,7 +342,8 @@ class DonationDialogController {
   }
 
   // Build blood group dropdown for edit dialog
-  Widget _buildBloodGroupDropdown(StateSetter setState, String bloodGroup) {
+  Widget _buildBloodGroupDropdown(StateSetter setState, String bloodGroup,
+      Function(String) onBloodGroupChanged) {
     return DropdownButtonFormField<String>(
       value: bloodGroup,
       items: _donationController.bloodGroups
@@ -330,7 +352,7 @@ class DonationDialogController {
                 child: Text(bg),
               ))
           .toList(),
-      onChanged: (val) => setState(() => bloodGroup = val!),
+      onChanged: (val) => setState(() => onBloodGroupChanged(val!)),
       decoration: InputDecoration(
         labelText: 'Blood Group',
         labelStyle: const TextStyle(color: AppColors.textSecondary),
@@ -401,6 +423,7 @@ class DonationDialogController {
     BuildContext context,
     StateSetter setState,
     DateTime donationTime,
+    Function(DateTime) onDateTimeChanged,
   ) {
     return InkWell(
       onTap: () async {
@@ -440,14 +463,16 @@ class DonationDialogController {
         );
         if (time == null) return;
 
+        final newDateTime = DateTime(
+          date.year,
+          date.month,
+          date.day,
+          time.hour,
+          time.minute,
+        );
+
         setState(() {
-          donationTime = DateTime(
-            date.year,
-            date.month,
-            date.day,
-            time.hour,
-            time.minute,
-          );
+          onDateTimeChanged(newDateTime);
         });
       },
       child: InputDecorator(
@@ -475,7 +500,7 @@ class DonationDialogController {
           children: [
             Text(
               DateFormat.yMd().add_jm().format(donationTime),
-              style: const TextStyle(color: Colors.grey),
+              style: const TextStyle(color: AppColors.textPrimary),
             ),
             const Icon(Icons.calendar_today, color: AppColors.primary),
           ],
@@ -1081,7 +1106,7 @@ class DonationDialogController {
             value,
             style: const TextStyle(
               fontSize: 15,
-              color: Colors.grey,
+              color: AppColors.textPrimary,
             ),
           ),
         ),
