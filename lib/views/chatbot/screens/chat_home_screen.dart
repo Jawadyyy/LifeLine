@@ -20,7 +20,7 @@ class ChatHomeScreen extends StatelessWidget {
       ),
       body: const Center(
         child: Text(
-          "Chat Home Placeholder",
+          "Ai ChatBot",
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w500,
