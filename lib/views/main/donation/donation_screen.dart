@@ -24,8 +24,6 @@ class _DonationScreenState extends State<DonationScreen> {
     _donationController = DonationController();
     _dialogController = DonationDialogController(_donationController);
     _donationController.init();
-
-    // Refresh location data to ensure we have the latest city information
     _refreshLocationData();
   }
 

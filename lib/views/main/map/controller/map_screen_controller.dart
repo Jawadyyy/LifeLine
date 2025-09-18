@@ -43,7 +43,7 @@ class MapScreenController {
 
   Future<void> _showLocationServiceDialog() async {
     final theme = Theme.of(context);
-    final mainColor = theme.colorScheme.primary;
+    final Color mainColor = Color(0xFFFF6F61);
 
     await showDialog(
       context: context,

@@ -2,7 +2,6 @@ import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:geocoding/geocoding.dart';
 import 'package:lifeline/constants/app_colors.dart';
 import 'package:lifeline/services/firestore_service.dart';
 import 'package:lifeline/services/location_handler.dart';
@@ -15,26 +14,12 @@ class HomeController {
 
   HomeController(this.state, this.setStateFn);
 
-  // Convenience getters
   BuildContext get context => state.context;
   bool get mounted => state.mounted;
-
-  // These require the State to expose the following private fields via callbacks or direct access if placed in same file.
-  // We will access them using dynamic calls on the provided State.
 
   T _getField<T>(String name) => (state as dynamic).getField(name) as T;
   void _setField(String name, dynamic value) =>
       (state as dynamic).setField(name, value);
-
-  // Location is now handled by GlobalDataService
-  // These methods are kept for backward compatibility but won't be used
-  void getUserLocationIfNeeded() {
-    // Location is managed globally
-  }
-
-  Future<void> getUserLocation() async {
-    // Location is managed globally
-  }
 
   Future<void> sendEmergencyMessage(String emergencyType) async {
     final user = FirebaseAuth.instance.currentUser;
@@ -81,32 +66,17 @@ class HomeController {
         return;
       }
 
-      final address = await LocationHandler.getAddressFromLatLng(position) ??
-          'Address unavailable';
-
-      List<Placemark> placemarks = await placemarkFromCoordinates(
-        position.latitude,
-        position.longitude,
-      );
-      String city = placemarks.isNotEmpty
-          ? (placemarks.first.locality?.isNotEmpty == true
-              ? placemarks.first.locality!
-              : placemarks.first.administrativeArea ?? 'Unknown City')
-          : 'Unknown City';
-
       final mapUrl =
           'https://www.google.com/maps/search/?api=1&query=${position.latitude},${position.longitude}';
 
       final fallbackMessage = '🚨 EMERGENCY: $emergencyType\n'
           '👤 Name: $username\n'
-          '📍 Address: $address\n'
-          '🌆 City: $city\n'
           '🗺️ Location: $mapUrl\n'
           '🕒 ${DateTime.now().toString().substring(0, 16)}';
 
       final message = (customMessage == null || customMessage.isEmpty)
           ? fallbackMessage
-          : '$customMessage\n📍 Address: $address\n🌆 City: $city\n🗺️ Location: $mapUrl\n🕒 ${DateTime.now().toString().substring(0, 16)}';
+          : '$customMessage\n🗺️ Location: $mapUrl\n🕒 ${DateTime.now().toString().substring(0, 16)}';
 
       for (String contact in contacts) {
         final whatsappUrl =
