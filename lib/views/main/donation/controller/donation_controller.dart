@@ -163,6 +163,7 @@ class DonationController extends ChangeNotifier {
   }
 
   // Submit donation post
+  // Submit donation post
   Future<bool> submitPost() async {
     if (selectedDateTime == null) return false;
 
@@ -181,13 +182,29 @@ class DonationController extends ChangeNotifier {
       final userData = userDoc.data();
       if (userData == null) throw Exception('User data not found');
 
-      // Get current address
-      final currentAddress = await getCurrentAddress();
+      // Get current position & address
+      Position position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+      );
+      List<Placemark> placemarks = await placemarkFromCoordinates(
+        position.latitude,
+        position.longitude,
+      );
+
+      String currentAddress = '';
+      String city = '';
+      if (placemarks.isNotEmpty) {
+        final place = placemarks.first;
+        currentAddress =
+            "${place.locality ?? ''}, ${place.street ?? ''}, ${place.country ?? ''}";
+        city = place.locality ?? '';
+      }
 
       // Create post data
       final post = {
         'blood_group': selectedBloodGroup,
         'location': currentAddress,
+        'city': city, // 👈 store city separately
         'donation_time': selectedDateTime,
         'timestamp': Timestamp.now(),
         'description': descriptionController.text.trim(),
