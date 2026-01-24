@@ -23,7 +23,7 @@ class _SplashScreenState extends State<SplashScreen>
 
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 2000),
+      duration: const Duration(milliseconds: 1000),
     )..repeat(reverse: true);
 
     _heartbeatAnimation = Tween<double>(begin: 0.95, end: 1.05).animate(

@@ -41,3 +41,17 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Firebase Configuration Files - IMPORTANT: Never commit these!
+android/app/google-services.json
+ios/Runner/GoogleService-Info.plist
+
+# Environment Variables
+.env
+.env.*
+*.env
+
+# API Keys and Secrets
+**/apiKeys.dart
+**/secrets.dart
+**/firebase_options.dart

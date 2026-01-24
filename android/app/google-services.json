@@ -1,51 +1,26 @@
 {
   "project_info": {
-    "project_number": "108936893907",
-    "project_id": "lifeline-4e98c",
-    "storage_bucket": "lifeline-4e98c.firebasestorage.app"
+    "project_number": "670366419389",
+    "project_id": "lifelinev2-7cad5",
+    "storage_bucket": "lifelinev2-7cad5.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:108936893907:android:8df9eb432e5fcba89d4b26",
+        "mobilesdk_app_id": "1:670366419389:android:6608d3d4140e397a5fead4",
         "android_client_info": {
           "package_name": "com.example.lifeline"
         }
       },
-      "oauth_client": [
-        {
-          "client_id": "108936893907-pplt6svkocnr7uln4hffjr1dqto7b0fo.apps.googleusercontent.com",
-          "client_type": 1,
-          "android_info": {
-            "package_name": "com.example.lifeline",
-            "certificate_hash": "b1e974efae54c6ee9d3fcf0a2a2aa71a495cb09b"
-          }
-        },
-        {
-          "client_id": "108936893907-rvo0cbf6cej8tgrvedgpgfa0rgrg4muq.apps.googleusercontent.com",
-          "client_type": 3
-        }
-      ],
+      "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyDYeU_1OgU-cTLqdv4PhWp9-vcSnDpBDnQ"
+          "current_key": "AIzaSyDSSMkMCoP9yy_FzJp_cKoK8g75okaOJeg"
         }
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": [
-            {
-              "client_id": "108936893907-rvo0cbf6cej8tgrvedgpgfa0rgrg4muq.apps.googleusercontent.com",
-              "client_type": 3
-            },
-            {
-              "client_id": "108936893907-qe03l5tft76u6ifvhduq4ivntjkff3fn.apps.googleusercontent.com",
-              "client_type": 2,
-              "ios_info": {
-                "bundle_id": "com.example.lifeline"
-              }
-            }
-          ]
+          "other_platform_oauth_client": []
         }
       }
     }
