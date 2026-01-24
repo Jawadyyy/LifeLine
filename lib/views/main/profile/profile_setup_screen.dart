@@ -88,28 +88,35 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
 
     try {
       final uid = FirebaseAuth.instance.currentUser?.uid;
-      if (uid == null) return;
+      if (uid == null) {
+        setState(() => _isLoading = false);
+        return;
+      }
 
       final phone = _phoneController.text.trim();
 
-      final alreadyExists = await _profileController.isPhoneNumberUnique(phone,
-          excludeUserId: uid);
+      // Only check uniqueness if phone is not empty
+      if (phone.isNotEmpty) {
+        final isUnique = await _profileController.isPhoneNumberUnique(phone,
+            excludeUserId: uid);
 
-      if (alreadyExists) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'This phone number is already in use.',
-              style: GoogleFonts.poppins(color: Colors.white),
+        if (!isUnique) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'This phone number is already in use.',
+                style: GoogleFonts.poppins(color: Colors.white),
+              ),
+              backgroundColor: Colors.red,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
             ),
-            backgroundColor: Colors.red,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
-          ),
-        );
-        return;
+          );
+          setState(() => _isLoading = false);
+          return;
+        }
       }
 
       final double height = double.tryParse(_heightController.text.trim()) ?? 0;

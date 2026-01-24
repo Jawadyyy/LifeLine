@@ -290,22 +290,31 @@ class ProfileController extends ChangeNotifier {
   }
 
   // Validate phone number uniqueness
+  // Validate phone number uniqueness
   Future<bool> isPhoneNumberUnique(String phone,
       {String? excludeUserId}) async {
     try {
+      // If phone is empty, consider it unique (allow empty phones)
+      if (phone.isEmpty) return true; // Returns true = unique = no error
+
       final query =
           _firestore.collection('users').where('phone', isEqualTo: phone);
 
       final snapshot = await query.get();
 
       if (excludeUserId != null) {
-        return snapshot.docs.every((doc) => doc.id != excludeUserId);
+        // Check if any user OTHER than the excluded one has this phone
+        // Return true if NO other user has it (unique)
+        // Return false if another user has it (not unique = already exists)
+        return !snapshot.docs.any((doc) => doc.id != excludeUserId);
       }
 
+      // Return true if no documents found (unique)
+      // Return false if documents found (not unique = already exists)
       return snapshot.docs.isEmpty;
     } catch (e) {
       _setError("Error checking phone number: $e");
-      return false;
+      return true; // On error, assume unique to not block user
     }
   }
 

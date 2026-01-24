@@ -86,29 +86,47 @@ class AuthService {
 
   Future<AuthResult<User>> signInWithGoogle() async {
     try {
-      final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
-      if (googleUser == null) return AuthResult.failure('Sign-in cancelled');
+      print('🔍 Starting Google Sign-In...');
 
+      final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
+
+      print('✅ Google User: $googleUser');
+
+      if (googleUser == null) {
+        print('❌ User cancelled sign-in');
+        return AuthResult.failure('Sign-in cancelled');
+      }
+
+      print('🔑 Getting authentication...');
       final GoogleSignInAuthentication googleAuth =
           await googleUser.authentication;
+
+      print(
+          '🎫 Access Token: ${googleAuth.accessToken != null ? "✅ Present" : "❌ Missing"}');
+      print(
+          '🎫 ID Token: ${googleAuth.idToken != null ? "✅ Present" : "❌ Missing"}');
 
       final credential = GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
       );
 
+      print('🔐 Signing in with credential...');
       final UserCredential userCredential =
           await FirebaseAuth.instance.signInWithCredential(credential);
 
       User? user = userCredential.user;
+      print('👤 User: ${user?.email ?? "No user"}');
 
       if (user != null) {
+        print('💾 Checking/Creating Firestore document...');
         final doc = await FirebaseFirestore.instance
             .collection('users')
             .doc(user.uid)
             .get();
 
         if (!doc.exists) {
+          print('📝 Creating new user document');
           await FirebaseFirestore.instance
               .collection('users')
               .doc(user.uid)
@@ -119,11 +137,16 @@ class AuthService {
             'created_at': FieldValue.serverTimestamp(),
             'isProfileComplete': false,
           });
+        } else {
+          print('✅ User document already exists');
         }
       }
 
+      print('🎉 Google Sign-In successful!');
       return AuthResult.success(user, 'Login successful');
     } catch (e) {
+      print('💥 Google Sign-In Error: $e');
+      print('💥 Error Type: ${e.runtimeType}');
       return AuthResult.failure('Google sign-in failed: ${e.toString()}');
     }
   }
