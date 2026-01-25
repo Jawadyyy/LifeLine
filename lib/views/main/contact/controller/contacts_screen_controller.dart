@@ -3,11 +3,13 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_contacts/flutter_contacts.dart';
 import 'package:lifeline/constants/app_colors.dart';
+import 'package:lifeline/services/global_data_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class ContactsScreenController {
   final State state;
   final void Function(void Function()) setStateFn;
+  final GlobalDataService _globalDataService = GlobalDataService();
 
   ContactsScreenController(this.state, this.setStateFn);
 
@@ -31,32 +33,6 @@ class ContactsScreenController {
         .collection('users')
         .doc(_currentUser!.uid)
         .collection('contacts');
-  }
-
-  Future<void> loadStoredContacts({bool forceReload = false}) async {
-    final hasLoadedOnce = _getField<bool>('_hasLoadedOnce');
-    if (hasLoadedOnce && !forceReload) return;
-
-    if (_currentUser != null) {
-      setStateFn(() => _setField('_isLoading', true));
-      try {
-        final querySnapshot = await _contactsRef.get();
-        final contacts = querySnapshot.docs.map((doc) {
-          final data = doc.data();
-          data['id'] = doc.id;
-          return data;
-        }).toList();
-        setStateFn(() {
-          _setField('contacts', contacts);
-          _setField('filteredContacts', contacts);
-          _setField('_hasLoadedOnce', true);
-        });
-      } catch (e) {
-        _showErrorSnackbar('Failed to load contacts');
-      } finally {
-        setStateFn(() => _setField('_isLoading', false));
-      }
-    }
   }
 
   void filterContacts(String query) {
@@ -181,10 +157,15 @@ class ContactsScreenController {
         };
 
         await _contactsRef.add(newContact);
-        await loadStoredContacts(forceReload: true);
+
+        // Reload contacts through GlobalDataService
+        await _globalDataService.loadContactsData(forceReload: true);
+
         _showSuccessSnackbar('Contact added successfully');
       } catch (e) {
-        _showErrorSnackbar('Failed to add contact');
+        _showErrorSnackbar('Failed to add contact: ${e.toString()}');
+        // ignore: avoid_print
+        print('Error adding contact: $e');
       } finally {
         setStateFn(() => _setField('_isLoading', false));
       }
@@ -196,10 +177,15 @@ class ContactsScreenController {
       setStateFn(() => _setField('_isLoading', true));
       try {
         await _contactsRef.doc(contactId).delete();
-        await loadStoredContacts(forceReload: true);
+
+        // Reload contacts through GlobalDataService
+        await _globalDataService.loadContactsData(forceReload: true);
+
         _showSuccessSnackbar('Contact deleted');
       } catch (e) {
-        _showErrorSnackbar('Failed to delete contact');
+        _showErrorSnackbar('Failed to delete contact: ${e.toString()}');
+        // ignore: avoid_print
+        print('Error deleting contact: $e');
       } finally {
         setStateFn(() => _setField('_isLoading', false));
       }
