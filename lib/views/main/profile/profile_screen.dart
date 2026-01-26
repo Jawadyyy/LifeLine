@@ -17,22 +17,31 @@ class ProfilePage extends StatefulWidget {
   _ProfilePageState createState() => _ProfilePageState();
 }
 
-class _ProfilePageState extends State<ProfilePage> with WidgetsBindingObserver {
+class _ProfilePageState extends State<ProfilePage> {
   late final ProfileController _profileController;
   final GlobalDataService _globalDataService = GlobalDataService();
+  bool _isInitialized = false;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addObserver(this);
 
     _profileController = ProfileController();
-    _profileController.addListener(() {
-      if (mounted) setState(() {});
-    });
+    _profileController.addListener(_onProfileControllerChanged);
 
     // Listen to global data service for user data updates
     _globalDataService.addListener(_onGlobalDataChanged);
+
+    // Initialize data once
+    _initializeData();
+  }
+
+  void _onProfileControllerChanged() {
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _initializeData() async {
+    if (_isInitialized) return;
 
     // Get user data from global service (already loaded)
     _updateUserFromGlobal();
@@ -40,17 +49,10 @@ class _ProfilePageState extends State<ProfilePage> with WidgetsBindingObserver {
     // If global service doesn't have user data yet, fetch it directly
     if (_globalDataService.currentUser == null) {
       debugPrint('ProfileScreen: No global data, fetching directly...');
-      _profileController.fetchUserData();
+      await _profileController.fetchUserData();
     }
-  }
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    // Refresh user data when dependencies change (e.g., when returning to this screen)
-    _updateUserFromGlobal();
-    // Also refresh profile image to ensure it's up-to-date
-    _profileController.refreshProfileImage();
+    _isInitialized = true;
   }
 
   void _onGlobalDataChanged() {
@@ -77,21 +79,10 @@ class _ProfilePageState extends State<ProfilePage> with WidgetsBindingObserver {
 
   @override
   void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    _profileController.dispose();
+    _profileController.removeListener(_onProfileControllerChanged);
     _globalDataService.removeListener(_onGlobalDataChanged);
+    _profileController.dispose();
     super.dispose();
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    super.didChangeAppLifecycleState(state);
-    if (state == AppLifecycleState.resumed) {
-      // Refresh user data when app resumes
-      _updateUserFromGlobal();
-      // Also refresh profile image specifically
-      _profileController.refreshProfileImage();
-    }
   }
 
   Future<void> _updateProfileImage(ImageSource source) async {
@@ -99,7 +90,7 @@ class _ProfilePageState extends State<ProfilePage> with WidgetsBindingObserver {
     if (success) {
       // Force refresh user data from GlobalDataService to ensure consistency
       await _globalDataService.updateUserData();
-      setState(() {}); // Trigger rebuild to show updated image
+      if (mounted) setState(() {}); // Trigger rebuild to show updated image
     }
   }
 
@@ -107,6 +98,7 @@ class _ProfilePageState extends State<ProfilePage> with WidgetsBindingObserver {
   Widget build(BuildContext context) {
     final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
     final DynamicColors colors = DynamicColors(isDarkMode);
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SingleChildScrollView(
@@ -150,22 +142,7 @@ class _ProfilePageState extends State<ProfilePage> with WidgetsBindingObserver {
                         CircleAvatar(
                           radius: 50,
                           backgroundColor: AppColors.surface,
-                          child: CircleAvatar(
-                            radius: 48,
-                            backgroundColor: AppColors.background,
-                            backgroundImage: _profileController
-                                        .currentUser?.profileImage.isNotEmpty ==
-                                    true
-                                ? NetworkImage(_profileController
-                                    .currentUser!.profileImage)
-                                : null,
-                            child: _profileController
-                                        .currentUser?.profileImage.isEmpty !=
-                                    false
-                                ? Icon(Icons.person,
-                                    color: AppColors.primary, size: 48)
-                                : null,
-                          ),
+                          child: _buildProfileImage(),
                         ),
                         Positioned(
                           bottom: 0,
@@ -242,8 +219,8 @@ class _ProfilePageState extends State<ProfilePage> with WidgetsBindingObserver {
                     icon: Icons.person_outline,
                     title: 'Edit Profile',
                     subtitle: 'Update your personal information',
-                    onTap: () {
-                      Navigator.push(
+                    onTap: () async {
+                      await Navigator.push(
                         context,
                         PageRouteBuilder(
                           pageBuilder:
@@ -258,9 +235,9 @@ class _ProfilePageState extends State<ProfilePage> with WidgetsBindingObserver {
                           },
                           transitionDuration: const Duration(milliseconds: 500),
                         ),
-                      ).then((_) {
-                        _profileController.fetchUserData();
-                      });
+                      );
+                      // Refresh from global service after returning
+                      _updateUserFromGlobal();
                     },
                     colors: colors,
                   ),
@@ -326,6 +303,29 @@ class _ProfilePageState extends State<ProfilePage> with WidgetsBindingObserver {
           ],
         ),
       ),
+    );
+  }
+
+  // Build profile image with caching
+  Widget _buildProfileImage() {
+    final imageUrl = _profileController.currentUser?.profileImage ?? '';
+
+    if (imageUrl.isEmpty) {
+      return CircleAvatar(
+        radius: 48,
+        backgroundColor: AppColors.background,
+        child: Icon(Icons.person, color: AppColors.primary, size: 48),
+      );
+    }
+
+    return CircleAvatar(
+      radius: 48,
+      backgroundColor: AppColors.background,
+      backgroundImage: NetworkImage(imageUrl),
+      onBackgroundImageError: (exception, stackTrace) {
+        debugPrint('Error loading profile image: $exception');
+      },
+      child: null,
     );
   }
 
@@ -477,7 +477,7 @@ class _ProfilePageState extends State<ProfilePage> with WidgetsBindingObserver {
                   'Close',
                   style: GoogleFonts.poppins(
                     color: AppColors.textTertiary,
-                    fontWeight: FontWeight.w500,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
