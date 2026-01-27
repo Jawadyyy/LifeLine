@@ -69,14 +69,19 @@ class ProfileController extends ChangeNotifier {
   bool _isLoading = false;
   String? _errorMessage;
 
+  // Track if initial data has been loaded
+  bool _hasLoadedInitialData = false;
+
   // Getters
   UserModel? get currentUser => _currentUser;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
+  bool get hasLoadedInitialData => _hasLoadedInitialData;
 
   // Set current user (for external updates from GlobalDataService)
   void setCurrentUser(UserModel user) {
     _currentUser = user;
+    _hasLoadedInitialData = true;
     notifyListeners();
   }
 
@@ -85,13 +90,17 @@ class ProfileController extends ChangeNotifier {
     final globalUser = _globalDataService.currentUser;
     if (globalUser != null) {
       _currentUser = globalUser;
+      _hasLoadedInitialData = true;
       notifyListeners();
     }
   }
 
-  // Refresh profile image specifically
+  // Only refresh profile image when explicitly needed (after upload)
   Future<void> refreshProfileImage() async {
-    await fetchUserData();
+    if (!_hasLoadedInitialData) {
+      // Only fetch if we haven't loaded data yet
+      await fetchUserData();
+    }
   }
 
   // Set loading state
@@ -140,6 +149,8 @@ class ProfileController extends ChangeNotifier {
           address: data['home_address'] ?? '',
           emergencyText: data['emergency_text'] ?? '',
         );
+
+        _hasLoadedInitialData = true;
 
         // Update global service silently to avoid loops
         _globalDataService.updateUserDataSilently(_currentUser!);
@@ -290,12 +301,11 @@ class ProfileController extends ChangeNotifier {
   }
 
   // Validate phone number uniqueness
-  // Validate phone number uniqueness
   Future<bool> isPhoneNumberUnique(String phone,
       {String? excludeUserId}) async {
     try {
       // If phone is empty, consider it unique (allow empty phones)
-      if (phone.isEmpty) return true; // Returns true = unique = no error
+      if (phone.isEmpty) return true;
 
       final query =
           _firestore.collection('users').where('phone', isEqualTo: phone);
@@ -303,18 +313,13 @@ class ProfileController extends ChangeNotifier {
       final snapshot = await query.get();
 
       if (excludeUserId != null) {
-        // Check if any user OTHER than the excluded one has this phone
-        // Return true if NO other user has it (unique)
-        // Return false if another user has it (not unique = already exists)
         return !snapshot.docs.any((doc) => doc.id != excludeUserId);
       }
 
-      // Return true if no documents found (unique)
-      // Return false if documents found (not unique = already exists)
       return snapshot.docs.isEmpty;
     } catch (e) {
       _setError("Error checking phone number: $e");
-      return true; // On error, assume unique to not block user
+      return true;
     }
   }
 
@@ -322,6 +327,8 @@ class ProfileController extends ChangeNotifier {
   Future<void> signOut() async {
     try {
       await _authService.signOut();
+      _currentUser = null;
+      _hasLoadedInitialData = false;
     } catch (e) {
       _setError("Error signing out: $e");
     }

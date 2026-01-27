@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:lifeline/services/hospital_service.dart';
+import 'package:lifeline/services/emergency_service.dart';
 import 'package:lifeline/services/location_handler.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -23,7 +23,7 @@ class MapScreenController {
     setStateFn(() {
       _setField('_isLoading', true);
       _setField('_showRoute', false);
-      _setField('_selectedHospital', null);
+      _setField('_selectedLocation', null);
       _setField('_routePoints', <LatLng>[]);
     });
 
@@ -122,10 +122,8 @@ class MapScreenController {
           mapController.move(current, 15.0);
         }
 
-        final hospitals = await HospitalService.getNearbyHospitals(
-            _getField<LatLng>('_currentPosition'));
-        if (!mounted) return;
-        setStateFn(() => _setField('_hospitals', hospitals));
+        // Load emergency locations based on selected type
+        await loadEmergencyLocations();
       }
     } catch (e) {
       if (!mounted) return;
@@ -139,6 +137,80 @@ class MapScreenController {
         ),
       );
     }
+  }
+
+  Future<void> loadEmergencyLocations() async {
+    final currentPosition = _getField<LatLng?>('_currentPosition');
+    if (currentPosition == null) return;
+
+    final emergencyType = _getField<EmergencyType>('_emergencyType');
+    final isOnline = await EmergencyService.isOnline();
+
+    if (!mounted) return;
+
+    try {
+      final locations = await EmergencyService.getNearbyEmergencyLocations(
+        currentPosition,
+        emergencyType,
+      );
+
+      if (!mounted) return;
+
+      setStateFn(() {
+        _setField('_emergencyLocations', locations);
+        _setField('_isOnline', isOnline);
+      });
+
+      // Show offline indicator if using cached data
+      if (!isOnline && locations.isNotEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.offline_bolt, color: Colors.white),
+                SizedBox(width: 8),
+                Expanded(
+                  child: Text('Offline mode: Showing cached locations'),
+                ),
+              ],
+            ),
+            backgroundColor: Colors.orange,
+            behavior: SnackBarBehavior.floating,
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('No cached data available. Connect to internet.'),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        ),
+      );
+    }
+  }
+
+  Future<void> switchEmergencyType(EmergencyType newType) async {
+    if (!mounted) return;
+
+    setStateFn(() {
+      _setField('_emergencyType', newType);
+      _setField('_isLoading', true);
+      _setField('_showRoute', false);
+      _setField('_selectedLocation', null);
+      _setField('_routePoints', <LatLng>[]);
+    });
+
+    await loadEmergencyLocations();
+
+    if (!mounted) return;
+    setStateFn(() => _setField('_isLoading', false));
   }
 
   Future<void> launchMapsApp(LatLng destination) async {

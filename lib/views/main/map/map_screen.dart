@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:lifeline/services/emergency_service.dart';
 import 'package:lifeline/views/main/map/controller/map_screen_controller.dart';
 
 class MapScreen extends StatefulWidget {
@@ -17,12 +18,14 @@ class _MapScreenState extends State<MapScreen> {
   bool _isLoading = true;
   bool _isMapReady = false;
   bool _showRoute = false;
-  Map<String, dynamic>? _selectedHospital;
+  bool _isOnline = true;
+  Map<String, dynamic>? _selectedLocation;
   List<LatLng> _routePoints = [];
   final Duration _animationDuration = const Duration(milliseconds: 300);
   final Curve _animationCurve = Curves.easeInOut;
 
-  List<Map<String, dynamic>> _hospitals = [];
+  List<Map<String, dynamic>> _emergencyLocations = [];
+  EmergencyType _emergencyType = EmergencyType.hospital;
   final Distance _distance = const Distance();
   late MapScreenController screenController;
 
@@ -38,13 +41,15 @@ class _MapScreenState extends State<MapScreen> {
   dynamic getField(String name) => {
         '_isLoading': _isLoading,
         '_showRoute': _showRoute,
-        '_selectedHospital': _selectedHospital,
+        '_selectedLocation': _selectedLocation,
         '_routePoints': _routePoints,
         '_currentPosition': _currentPosition,
         '_currentAddress': _currentAddress,
         '_isMapReady': _isMapReady,
         '_mapController': _mapController,
-        '_hospitals': _hospitals,
+        '_emergencyLocations': _emergencyLocations,
+        '_emergencyType': _emergencyType,
+        '_isOnline': _isOnline,
       }[name];
 
   void setField(String name, dynamic value) {
@@ -55,8 +60,8 @@ class _MapScreenState extends State<MapScreen> {
       case '_showRoute':
         _showRoute = value as bool;
         break;
-      case '_selectedHospital':
-        _selectedHospital = value as Map<String, dynamic>?;
+      case '_selectedLocation':
+        _selectedLocation = value as Map<String, dynamic>?;
         break;
       case '_routePoints':
         _routePoints = value as List<LatLng>;
@@ -70,10 +75,32 @@ class _MapScreenState extends State<MapScreen> {
       case '_isMapReady':
         _isMapReady = value as bool;
         break;
-      case '_hospitals':
-        _hospitals = value as List<Map<String, dynamic>>;
+      case '_emergencyLocations':
+        _emergencyLocations = value as List<Map<String, dynamic>>;
+        break;
+      case '_emergencyType':
+        _emergencyType = value as EmergencyType;
+        break;
+      case '_isOnline':
+        _isOnline = value as bool;
         break;
     }
+  }
+
+  Color _getEmergencyColor() {
+    return _emergencyType == EmergencyType.hospital
+        ? Color(0xFFFF6F61) // Red for hospitals
+        : Color(0xFF4A90E2); // Blue for police
+  }
+
+  IconData _getEmergencyIcon() {
+    return _emergencyType == EmergencyType.hospital
+        ? Icons.local_hospital
+        : Icons.local_police;
+  }
+
+  String _getEmergencyLabel() {
+    return _emergencyType == EmergencyType.hospital ? 'Hospitals' : 'Police';
   }
 
   @override
@@ -81,7 +108,7 @@ class _MapScreenState extends State<MapScreen> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final textTheme = theme.textTheme;
-    final Color mainColor = Color(0xFFFF6F61);
+    final Color mainColor = _getEmergencyColor();
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -90,39 +117,66 @@ class _MapScreenState extends State<MapScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
-        title: AnimatedSwitcher(
-          duration: _animationDuration,
-          child: _selectedHospital != null
-              ? Text(
-                  'Route to ${_selectedHospital!['name']}',
-                  style: textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: colorScheme.onSurface,
-                    shadows: [
-                      Shadow(
-                        color: colorScheme.surface.withOpacity(0.5),
-                        blurRadius: 8,
+        title: Column(
+          children: [
+            AnimatedSwitcher(
+              duration: _animationDuration,
+              child: _selectedLocation != null
+                  ? Text(
+                      'Route to ${_selectedLocation!['name']}',
+                      style: textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: colorScheme.onSurface,
+                        shadows: [
+                          Shadow(
+                            color: colorScheme.surface.withOpacity(0.5),
+                            blurRadius: 8,
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                )
-              : Text(
-                  _currentAddress ?? "Locating...",
-                  style: textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: colorScheme.onSurface,
-                    shadows: [
-                      Shadow(
-                        color: colorScheme.surface.withOpacity(0.5),
-                        blurRadius: 8,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    )
+                  : Text(
+                      _currentAddress ?? "Locating...",
+                      style: textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: colorScheme.onSurface,
+                        shadows: [
+                          Shadow(
+                            color: colorScheme.surface.withOpacity(0.5),
+                            blurRadius: 8,
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+            ),
+            if (!_isOnline)
+              Container(
+                margin: EdgeInsets.only(top: 2),
+                padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Colors.orange.withOpacity(0.9),
+                  borderRadius: BorderRadius.circular(8),
                 ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.offline_bolt, size: 12, color: Colors.white),
+                    SizedBox(width: 4),
+                    Text(
+                      'Offline',
+                      style: textTheme.labelSmall?.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+          ],
         ),
         leading: Container(
           margin: const EdgeInsets.only(left: 8),
@@ -139,7 +193,7 @@ class _MapScreenState extends State<MapScreen> {
               if (_showRoute) {
                 setState(() {
                   _showRoute = false;
-                  _selectedHospital = null;
+                  _selectedLocation = null;
                   _routePoints = [];
                 });
                 _mapController.move(_currentPosition!, 15.0);
@@ -252,14 +306,14 @@ class _MapScreenState extends State<MapScreen> {
                             ),
                           ),
                         ),
-                        ..._hospitals.map((hospital) => Marker(
-                              point: LatLng(hospital['lat'], hospital['lon']),
+                        ..._emergencyLocations.map((location) => Marker(
+                              point: LatLng(location['lat'], location['lon']),
                               width: 40,
                               height: 40,
                               child: GestureDetector(
                                 onTap: () {
                                   setState(() {
-                                    _selectedHospital = hospital;
+                                    _selectedLocation = location;
                                     _showRoute = true;
                                     _routePoints = [];
                                   });
@@ -268,9 +322,9 @@ class _MapScreenState extends State<MapScreen> {
                                   duration: _animationDuration,
                                   curve: _animationCurve,
                                   decoration: BoxDecoration(
-                                    color: _selectedHospital == hospital
+                                    color: _selectedLocation == location
                                         ? colorScheme.secondaryContainer
-                                        : colorScheme.errorContainer,
+                                        : mainColor.withOpacity(0.2),
                                     shape: BoxShape.circle,
                                     border: Border.all(
                                       color: mainColor,
@@ -285,7 +339,7 @@ class _MapScreenState extends State<MapScreen> {
                                     ],
                                   ),
                                   child: Icon(
-                                    Icons.local_hospital,
+                                    _getEmergencyIcon(),
                                     color: mainColor,
                                     size: 20,
                                   ),
@@ -294,13 +348,13 @@ class _MapScreenState extends State<MapScreen> {
                             )),
                       ],
                     ),
-                    if (_selectedHospital != null)
+                    if (_selectedLocation != null)
                       MarkerLayer(
                         markers: [
                           Marker(
                             point: LatLng(
-                              _selectedHospital!['lat'],
-                              _selectedHospital!['lon'],
+                              _selectedLocation!['lat'],
+                              _selectedLocation!['lon'],
                             ),
                             width: 50,
                             height: 50,
@@ -311,20 +365,20 @@ class _MapScreenState extends State<MapScreen> {
                                 color: mainColor,
                                 shape: BoxShape.circle,
                                 border: Border.all(
-                                  color: Colors.black,
+                                  color: Colors.white,
                                   width: 3,
                                 ),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: Colors.black.withOpacity(0.2),
+                                    color: Colors.black.withOpacity(0.3),
                                     blurRadius: 8,
                                     spreadRadius: 1,
                                   ),
                                 ],
                               ),
                               child: Icon(
-                                Icons.local_hospital,
-                                color: Colors.black,
+                                _getEmergencyIcon(),
+                                color: Colors.white,
                                 size: 30,
                               ),
                             ),
@@ -333,6 +387,120 @@ class _MapScreenState extends State<MapScreen> {
                       ),
                   ],
                 ),
+                // Emergency type toggle
+                if (!_showRoute)
+                  Positioned(
+                    top: 100,
+                    left: 16,
+                    right: 16,
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: colorScheme.surface.withOpacity(0.95),
+                        borderRadius: BorderRadius.circular(30),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: GestureDetector(
+                              onTap: () => screenController
+                                  .switchEmergencyType(EmergencyType.hospital),
+                              child: AnimatedContainer(
+                                duration: _animationDuration,
+                                curve: _animationCurve,
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 12),
+                                decoration: BoxDecoration(
+                                  color:
+                                      _emergencyType == EmergencyType.hospital
+                                          ? Color(0xFFFF6F61)
+                                          : Colors.transparent,
+                                  borderRadius: BorderRadius.circular(25),
+                                ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.local_hospital,
+                                      color: _emergencyType ==
+                                              EmergencyType.hospital
+                                          ? Colors.white
+                                          : colorScheme.onSurface
+                                              .withOpacity(0.6),
+                                      size: 20,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      'Hospitals',
+                                      style: textTheme.bodyMedium?.copyWith(
+                                        fontWeight: FontWeight.bold,
+                                        color: _emergencyType ==
+                                                EmergencyType.hospital
+                                            ? Colors.white
+                                            : colorScheme.onSurface
+                                                .withOpacity(0.6),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                          Expanded(
+                            child: GestureDetector(
+                              onTap: () => screenController
+                                  .switchEmergencyType(EmergencyType.police),
+                              child: AnimatedContainer(
+                                duration: _animationDuration,
+                                curve: _animationCurve,
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 12),
+                                decoration: BoxDecoration(
+                                  color: _emergencyType == EmergencyType.police
+                                      ? Color(0xFF4A90E2)
+                                      : Colors.transparent,
+                                  borderRadius: BorderRadius.circular(25),
+                                ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.local_police,
+                                      color:
+                                          _emergencyType == EmergencyType.police
+                                              ? Colors.white
+                                              : colorScheme.onSurface
+                                                  .withOpacity(0.6),
+                                      size: 20,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      'Police',
+                                      style: textTheme.bodyMedium?.copyWith(
+                                        fontWeight: FontWeight.bold,
+                                        color: _emergencyType ==
+                                                EmergencyType.police
+                                            ? Colors.white
+                                            : colorScheme.onSurface
+                                                .withOpacity(0.6),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                 Positioned(
                   bottom: _showRoute ? 180 : 100,
                   right: 16,
@@ -344,11 +512,11 @@ class _MapScreenState extends State<MapScreen> {
                         FloatingActionButton.small(
                           heroTag: 'center',
                           onPressed: () {
-                            if (_selectedHospital != null) {
+                            if (_selectedLocation != null) {
                               final bounds = LatLngBounds.fromPoints([
                                 _currentPosition!,
-                                LatLng(_selectedHospital!['lat'],
-                                    _selectedHospital!['lon']),
+                                LatLng(_selectedLocation!['lat'],
+                                    _selectedLocation!['lon']),
                                 ..._routePoints
                               ]);
                               _mapController.fitCamera(
@@ -362,13 +530,13 @@ class _MapScreenState extends State<MapScreen> {
                           backgroundColor: mainColor,
                           elevation: 2,
                           child: Icon(Icons.center_focus_strong,
-                              color: colorScheme.onPrimary),
+                              color: Colors.white),
                         ),
                       ],
                     ],
                   ),
                 ),
-                if (_hospitals.isNotEmpty && !_showRoute)
+                if (_emergencyLocations.isNotEmpty && !_showRoute)
                   Positioned(
                     bottom: 16,
                     left: 16,
@@ -380,20 +548,20 @@ class _MapScreenState extends State<MapScreen> {
                       padding: const EdgeInsets.symmetric(horizontal: 8),
                       child: ListView.separated(
                         scrollDirection: Axis.horizontal,
-                        itemCount: _hospitals.length,
+                        itemCount: _emergencyLocations.length,
                         separatorBuilder: (context, index) =>
                             const SizedBox(width: 12),
                         itemBuilder: (context, index) {
-                          final hospital = _hospitals[index];
+                          final location = _emergencyLocations[index];
                           final distanceInKm = _distance.as(
                               LengthUnit.Kilometer,
                               _currentPosition!,
-                              LatLng(hospital['lat'], hospital['lon']));
+                              LatLng(location['lat'], location['lon']));
 
                           return GestureDetector(
                             onTap: () {
                               setState(() {
-                                _selectedHospital = hospital;
+                                _selectedLocation = location;
                                 _showRoute = true;
                                 _routePoints = [];
                               });
@@ -424,7 +592,7 @@ class _MapScreenState extends State<MapScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    hospital['name'],
+                                    location['name'],
                                     style: textTheme.bodyLarge?.copyWith(
                                       fontWeight: FontWeight.bold,
                                       color: colorScheme.onSurface,
@@ -487,7 +655,7 @@ class _MapScreenState extends State<MapScreen> {
                       ),
                     ),
                   ),
-                if (_showRoute && _selectedHospital != null)
+                if (_showRoute && _selectedLocation != null)
                   Positioned(
                     bottom: 16,
                     left: 16,
@@ -524,14 +692,14 @@ class _MapScreenState extends State<MapScreen> {
                             Row(
                               children: [
                                 Icon(
-                                  Icons.local_hospital,
+                                  _getEmergencyIcon(),
                                   color: mainColor,
                                   size: 24,
                                 ),
                                 const SizedBox(width: 12),
                                 Expanded(
                                   child: Text(
-                                    _selectedHospital!['name'],
+                                    _selectedLocation!['name'],
                                     style: textTheme.titleMedium?.copyWith(
                                       fontWeight: FontWeight.bold,
                                       color: colorScheme.onSurface,
@@ -569,7 +737,7 @@ class _MapScreenState extends State<MapScreen> {
                                       ),
                                     ),
                                     Text(
-                                      "${_distance.as(LengthUnit.Kilometer, _currentPosition!, LatLng(_selectedHospital!['lat'], _selectedHospital!['lon'])).toStringAsFixed(1)} km",
+                                      "${_distance.as(LengthUnit.Kilometer, _currentPosition!, LatLng(_selectedLocation!['lat'], _selectedLocation!['lon'])).toStringAsFixed(1)} km",
                                       style: textTheme.bodyLarge?.copyWith(
                                         fontWeight: FontWeight.bold,
                                         color: colorScheme.onSurface,
@@ -602,7 +770,7 @@ class _MapScreenState extends State<MapScreen> {
                                       ),
                                     ),
                                     Text(
-                                      "${(_distance.as(LengthUnit.Kilometer, _currentPosition!, LatLng(_selectedHospital!['lat'], _selectedHospital!['lon'])) ~/ 0.5)} min",
+                                      "${(_distance.as(LengthUnit.Kilometer, _currentPosition!, LatLng(_selectedLocation!['lat'], _selectedLocation!['lon'])) ~/ 0.5)} min",
                                       style: textTheme.bodyLarge?.copyWith(
                                         fontWeight: FontWeight.bold,
                                         color: colorScheme.onSurface,
@@ -618,7 +786,7 @@ class _MapScreenState extends State<MapScreen> {
                               child: ElevatedButton(
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: mainColor,
-                                  foregroundColor: colorScheme.onPrimary,
+                                  foregroundColor: Colors.white,
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(12),
                                   ),
@@ -627,8 +795,8 @@ class _MapScreenState extends State<MapScreen> {
                                   elevation: 2,
                                 ),
                                 onPressed: () => screenController.launchMapsApp(
-                                  LatLng(_selectedHospital!['lat'],
-                                      _selectedHospital!['lon']),
+                                  LatLng(_selectedLocation!['lat'],
+                                      _selectedLocation!['lon']),
                                 ),
                                 child: Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
@@ -665,7 +833,7 @@ class _MapScreenState extends State<MapScreen> {
                 onPressed: () =>
                     screenController.checkLocationServiceAndLoadLocation(),
                 backgroundColor: mainColor,
-                foregroundColor: colorScheme.onPrimary,
+                foregroundColor: Colors.white,
                 elevation: 4,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
