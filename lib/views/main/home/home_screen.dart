@@ -76,45 +76,40 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         ),
         centerTitle: true,
       ),
-      body: Stack(
+      body: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                'Emergency Assistance',
-                style: theme.textTheme.headlineSmall
-                    ?.copyWith(fontWeight: FontWeight.bold),
+          Text(
+            'Emergency Assistance',
+            style: theme.textTheme.headlineSmall
+                ?.copyWith(fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 40),
+            child: Text(
+              'Press the emergency button below to get immediate help',
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurface.withOpacity(0.7),
               ),
-              const SizedBox(height: 8),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 40),
-                child: Text(
-                  'Press the emergency button below to get immediate help',
-                  textAlign: TextAlign.center,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.onSurface.withOpacity(0.7),
-                  ),
+            ),
+          ),
+          const SizedBox(height: 40),
+          Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ScaleTransition(
+                scale: _scaleAnimation,
+                child: controller.buildMainEmergencyButton(
+                  context,
+                  onTap: controller.toggleEmergencyOptions,
                 ),
               ),
-              const SizedBox(height: 40),
-              Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  ScaleTransition(
-                    scale: _scaleAnimation,
-                    child: controller.buildMainEmergencyButton(
-                      context,
-                      onTap: controller.toggleEmergencyOptions,
-                    ),
-                  ),
-                  const SizedBox(height: 30),
-                  controller.buildBloodDonationCard(context),
-                ],
-              ),
+              const SizedBox(height: 30),
+              controller.buildBloodDonationCard(context),
             ],
           ),
-          if (_showEmergencyOptions) ...controller.buildEmergencyOptions(),
         ],
       ),
       floatingActionButton: FloatingActionButton(

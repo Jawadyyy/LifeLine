@@ -17,6 +17,13 @@ class DonationController extends ChangeNotifier {
   DateTime? selectedDateTime;
   String selectedBloodGroup = 'O+';
   bool isLoading = false;
+  String? currentUserCity;
+  String? currentUserAddress;
+
+  // Filter state
+  String selectedBloodFilter = 'All';
+  bool showOnlyCityDonations = true;
+  String searchQuery = '';
 
   // Blood groups list
   final List<String> bloodGroups = [
@@ -37,9 +44,58 @@ class DonationController extends ChangeNotifier {
       : 'Select date and time';
 
   // Initialize controller
-  void init() {
-    // Reset form state
+  void init() async {
     resetForm();
+    await loadUserLocation();
+  }
+
+  // Load user location
+  Future<void> loadUserLocation() async {
+    try {
+      final globalDataService = GlobalDataService();
+      currentUserAddress = globalDataService.currentAddress;
+
+      if (currentUserAddress != null &&
+          currentUserAddress!.isNotEmpty &&
+          currentUserAddress != 'Fetching location...') {
+        currentUserCity = extractCityFromAddress(currentUserAddress!);
+        notifyListeners();
+      } else {
+        // Try to get location directly
+        await refreshUserLocation();
+      }
+    } catch (e) {
+      debugPrint('Error loading user location: $e');
+    }
+  }
+
+  // Refresh user location
+  Future<void> refreshUserLocation() async {
+    try {
+      final address = await getCurrentAddress();
+      currentUserAddress = address;
+      currentUserCity = extractCityFromAddress(address);
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Error refreshing location: $e');
+      rethrow;
+    }
+  }
+
+  // Update filter settings
+  void updateBloodFilter(String bloodGroup) {
+    selectedBloodFilter = bloodGroup;
+    notifyListeners();
+  }
+
+  void toggleCityFilter() {
+    showOnlyCityDonations = !showOnlyCityDonations;
+    notifyListeners();
+  }
+
+  void updateSearchQuery(String query) {
+    searchQuery = query.toLowerCase();
+    notifyListeners();
   }
 
   // Reset form to initial state
@@ -66,13 +122,11 @@ class DonationController extends ChangeNotifier {
   // Get current location address
   Future<String> getCurrentAddress() async {
     try {
-      // Check if location services are enabled
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
         throw Exception('Location services are disabled');
       }
 
-      // Check location permission
       LocationPermission permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
@@ -85,12 +139,10 @@ class DonationController extends ChangeNotifier {
         throw Exception('Location permission permanently denied');
       }
 
-      // Get current position
       Position position = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
       );
 
-      // Get address from coordinates
       List<Placemark> placemarks = await placemarkFromCoordinates(
         position.latitude,
         position.longitude,
@@ -101,7 +153,40 @@ class DonationController extends ChangeNotifier {
       }
 
       Placemark place = placemarks.first;
-      return '${place.locality}, ${place.street}, ${place.country}';
+
+      // Build address with available components, prioritizing readable location
+      String address = '';
+
+      if (place.locality != null && place.locality!.isNotEmpty) {
+        address = place.locality!;
+      } else if (place.subAdministrativeArea != null &&
+          place.subAdministrativeArea!.isNotEmpty) {
+        address = place.subAdministrativeArea!;
+      } else if (place.administrativeArea != null &&
+          place.administrativeArea!.isNotEmpty) {
+        address = place.administrativeArea!;
+      }
+
+      if (place.subLocality != null && place.subLocality!.isNotEmpty) {
+        address +=
+            address.isNotEmpty ? ', ${place.subLocality}' : place.subLocality!;
+      } else if (place.thoroughfare != null && place.thoroughfare!.isNotEmpty) {
+        address += address.isNotEmpty
+            ? ', ${place.thoroughfare}'
+            : place.thoroughfare!;
+      }
+
+      if (place.country != null && place.country!.isNotEmpty) {
+        address += address.isNotEmpty ? ', ${place.country}' : place.country!;
+      }
+
+      // Fallback if no proper address found
+      if (address.isEmpty) {
+        address =
+            'Location: ${position.latitude.toStringAsFixed(4)}, ${position.longitude.toStringAsFixed(4)}';
+      }
+
+      return address;
     } catch (e) {
       rethrow;
     }
@@ -110,17 +195,16 @@ class DonationController extends ChangeNotifier {
   // Pick date and time
   Future<void> pickDateTime(BuildContext context) async {
     try {
-      // Pick date
       final date = await showDatePicker(
         context: context,
         firstDate: DateTime.now(),
-        lastDate: DateTime(2100),
+        lastDate: DateTime.now().add(const Duration(days: 365)),
         initialDate: DateTime.now(),
         builder: (context, child) {
           return Theme(
             data: Theme.of(context).copyWith(
               colorScheme: const ColorScheme.light(
-                primary: Color(0xFF2196F3), // AppColors.primary
+                primary: AppColors.primary,
                 onPrimary: Colors.white,
                 surface: Colors.white,
                 onSurface: Colors.black87,
@@ -133,7 +217,6 @@ class DonationController extends ChangeNotifier {
 
       if (date == null) return;
 
-      // Pick time
       final time = await showTimePicker(
         context: context,
         initialTime: TimeOfDay.now(),
@@ -141,7 +224,7 @@ class DonationController extends ChangeNotifier {
           return Theme(
             data: Theme.of(context).copyWith(
               colorScheme: const ColorScheme.light(
-                primary: Color(0xFF2196F3), // AppColors.primary
+                primary: AppColors.primary,
                 onPrimary: Colors.white,
                 surface: Colors.white,
                 onSurface: Colors.black87,
@@ -154,7 +237,6 @@ class DonationController extends ChangeNotifier {
 
       if (time == null) return;
 
-      // Update selected date time
       updateSelectedDateTime(
           DateTime(date.year, date.month, date.day, time.hour, time.minute));
     } catch (e) {
@@ -162,7 +244,6 @@ class DonationController extends ChangeNotifier {
     }
   }
 
-  // Submit donation post
   // Submit donation post
   Future<bool> submitPost() async {
     if (selectedDateTime == null) return false;
@@ -173,7 +254,6 @@ class DonationController extends ChangeNotifier {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) throw Exception('User not authenticated');
 
-      // Get user data
       final userDoc = await FirebaseFirestore.instance
           .collection('users')
           .doc(user.uid)
@@ -182,10 +262,10 @@ class DonationController extends ChangeNotifier {
       final userData = userDoc.data();
       if (userData == null) throw Exception('User data not found');
 
-      // Get current position & address
       Position position = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
       );
+
       List<Placemark> placemarks = await placemarkFromCoordinates(
         position.latitude,
         position.longitude,
@@ -193,33 +273,61 @@ class DonationController extends ChangeNotifier {
 
       String currentAddress = '';
       String city = '';
+      String subLocality = '';
+
       if (placemarks.isNotEmpty) {
         final place = placemarks.first;
-        currentAddress =
-            "${place.locality ?? ''}, ${place.street ?? ''}, ${place.country ?? ''}";
-        city = place.locality ?? '';
+
+        // Get city
+        city = place.locality ??
+            place.subAdministrativeArea ??
+            place.administrativeArea ??
+            '';
+
+        // Get sub-locality
+        subLocality = place.subLocality ?? place.thoroughfare ?? '';
+
+        // Build readable address
+        currentAddress = '';
+        if (city.isNotEmpty) {
+          currentAddress = city;
+        }
+        if (subLocality.isNotEmpty) {
+          currentAddress +=
+              currentAddress.isNotEmpty ? ', $subLocality' : subLocality;
+        }
+        if (place.country != null && place.country!.isNotEmpty) {
+          currentAddress +=
+              currentAddress.isNotEmpty ? ', ${place.country}' : place.country!;
+        }
+
+        // Fallback
+        if (currentAddress.isEmpty) {
+          currentAddress =
+              'Location: ${position.latitude.toStringAsFixed(4)}, ${position.longitude.toStringAsFixed(4)}';
+        }
       }
 
-      // Create post data
       final post = {
         'blood_group': selectedBloodGroup,
         'location': currentAddress,
-        'city': city, // 👈 store city separately
+        'city': city,
+        'sub_locality': subLocality,
         'donation_time': selectedDateTime,
         'timestamp': Timestamp.now(),
         'description': descriptionController.text.trim(),
+        'status': 'active', // active, completed, expired
+        'latitude': position.latitude,
+        'longitude': position.longitude,
       };
 
-      // Save to Firestore
       await FirebaseFirestore.instance
           .collection('users')
           .doc(user.uid)
           .collection('donation_posts')
           .add(post);
 
-      // Reset form
       resetForm();
-
       return true;
     } catch (e) {
       debugPrint('Error submitting post: $e');
@@ -254,6 +362,30 @@ class DonationController extends ChangeNotifier {
       return true;
     } catch (e) {
       debugPrint('Error updating post: $e');
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // Mark donation as completed
+  Future<bool> markAsCompleted(String userId, String postId) async {
+    setLoading(true);
+
+    try {
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .collection('donation_posts')
+          .doc(postId)
+          .update({
+        'status': 'completed',
+        'completed_at': Timestamp.now(),
+      });
+
+      return true;
+    } catch (e) {
+      debugPrint('Error marking as completed: $e');
       return false;
     } finally {
       setLoading(false);
@@ -298,14 +430,9 @@ class DonationController extends ChangeNotifier {
       final whatsappUrl =
           'https://wa.me/$phoneRaw?text=${Uri.encodeComponent(message)}';
 
-      try {
-        await launchUrl(Uri.parse(whatsappUrl),
-            mode: LaunchMode.externalApplication);
-        return true;
-      } catch (e) {
-        debugPrint('Error opening WhatsApp: $e');
-        return false;
-      }
+      await launchUrl(Uri.parse(whatsappUrl),
+          mode: LaunchMode.externalApplication);
+      return true;
     } catch (e) {
       debugPrint('Error opening WhatsApp: $e');
       return false;
@@ -315,7 +442,6 @@ class DonationController extends ChangeNotifier {
   // Make phone call
   Future<bool> makePhoneCall(String phone) async {
     try {
-      // Clean phone number
       final cleanPhone = phone.replaceAll(RegExp(r'[^\d+]'), '');
 
       if (cleanPhone.isEmpty) {
@@ -324,17 +450,9 @@ class DonationController extends ChangeNotifier {
 
       final Uri phoneUri = Uri(scheme: 'tel', path: cleanPhone);
 
-      try {
-        final launched =
-            await launchUrl(phoneUri, mode: LaunchMode.externalApplication);
-        if (!launched) {
-          throw Exception('Could not launch phone call');
-        }
-        return true;
-      } catch (e) {
-        debugPrint('Error launching phone call: $e');
-        return false;
-      }
+      final launched =
+          await launchUrl(phoneUri, mode: LaunchMode.externalApplication);
+      return launched;
     } catch (e) {
       debugPrint('Error making phone call: $e');
       return false;
@@ -348,20 +466,18 @@ class DonationController extends ChangeNotifier {
         scheme: 'mailto',
         path: email,
         queryParameters: {
-          'subject': 'Urgent Medical Assistance Needed',
+          'subject': 'Blood Donation Request - LifeLine',
           'body':
-              'Hello $email,\n\nI found your contact on the LifeLine app and need urgent assistance. '
-                  'Please respond as soon as possible.\n\nThank you.',
+              'Hello,\n\nI found your blood donation request on the LifeLine app and would like to help. '
+                  'Please let me know how I can assist.\n\nThank you.',
         },
       );
 
       if (await canLaunchUrl(emailUri)) {
         await launchUrl(emailUri, mode: LaunchMode.externalApplication);
         return true;
-      } else {
-        debugPrint("No email app available.");
-        return false;
       }
+      return false;
     } catch (e) {
       debugPrint('Error sending email: $e');
       return false;
@@ -369,13 +485,13 @@ class DonationController extends ChangeNotifier {
   }
 
   // Open map directions
-  Future<bool> openMapDirections(String destination) async {
+  Future<bool> openMapDirections(String destination,
+      {double? lat, double? lng}) async {
     try {
       if (destination.isEmpty) {
         throw Exception('Destination is empty');
       }
 
-      // Try to get current location first
       Position? current;
       try {
         current = await Geolocator.getCurrentPosition(
@@ -384,43 +500,97 @@ class DonationController extends ChangeNotifier {
         );
       } catch (e) {
         debugPrint('Could not get current location: $e');
-        // Continue without current location
       }
 
       String url;
-      if (current != null) {
-        // With current location - use directions
+      if (current != null && lat != null && lng != null) {
+        url = 'https://www.google.com/maps/dir/?api=1'
+            '&origin=${current.latitude},${current.longitude}'
+            '&destination=$lat,$lng&travelmode=driving';
+      } else if (current != null) {
         final dest = Uri.encodeComponent(destination);
         url = 'https://www.google.com/maps/dir/?api=1'
             '&origin=${current.latitude},${current.longitude}'
             '&destination=$dest&travelmode=driving';
       } else {
-        // Without current location - just search for destination
         final dest = Uri.encodeComponent(destination);
         url = 'https://www.google.com/maps/search/$dest';
       }
 
       final uri = Uri.parse(url);
-      try {
-        final launched =
-            await launchUrl(uri, mode: LaunchMode.externalApplication);
-        if (!launched) {
-          throw Exception('Could not launch Google Maps.');
-        }
-        return true;
-      } catch (e) {
-        debugPrint('Error launching Google Maps: $e');
-        return false;
-      }
+      final launched =
+          await launchUrl(uri, mode: LaunchMode.externalApplication);
+      return launched;
     } catch (e) {
       debugPrint('Error opening map: $e');
       return false;
     }
   }
 
-  // Get donation posts stream
-  Stream<QuerySnapshot> getDonationPostsStream() {
-    return FirebaseFirestore.instance.collection('users').snapshots();
+  // Get donation posts stream with filters
+  Stream<List<Map<String, dynamic>>> getFilteredDonationPostsStream() {
+    return FirebaseFirestore.instance
+        .collection('users')
+        .snapshots()
+        .asyncMap((userSnapshot) async {
+      List<Map<String, dynamic>> allPosts = [];
+
+      for (var userDoc in userSnapshot.docs) {
+        final userData = userDoc.data();
+        final postsSnapshot = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(userDoc.id)
+            .collection('donation_posts')
+            .orderBy('timestamp', descending: true)
+            .get();
+
+        for (var postDoc in postsSnapshot.docs) {
+          final postData = postDoc.data();
+
+          // Apply filters
+          bool matchesCity = true;
+          if (showOnlyCityDonations && currentUserCity != null) {
+            final postCity = postData['city'] ?? '';
+            matchesCity =
+                postCity.toLowerCase() == currentUserCity!.toLowerCase();
+          }
+
+          bool matchesBlood = selectedBloodFilter == 'All' ||
+              postData['blood_group'] == selectedBloodFilter;
+
+          bool matchesSearch = searchQuery.isEmpty ||
+              postData['blood_group']
+                  .toString()
+                  .toLowerCase()
+                  .contains(searchQuery) ||
+              postData['location']
+                  .toString()
+                  .toLowerCase()
+                  .contains(searchQuery) ||
+              (userData['username'] ?? '')
+                  .toString()
+                  .toLowerCase()
+                  .contains(searchQuery);
+
+          // Only include active and upcoming donations
+          final donationTime =
+              (postData['donation_time'] as Timestamp).toDate();
+          bool isActive = donationTime
+              .isAfter(DateTime.now().subtract(const Duration(hours: 24)));
+
+          if (matchesCity && matchesBlood && matchesSearch && isActive) {
+            allPosts.add({
+              'postId': postDoc.id,
+              'ownerId': userDoc.id,
+              'userData': userData,
+              'postData': postData,
+            });
+          }
+        }
+      }
+
+      return allPosts;
+    });
   }
 
   // Get user donation posts stream
@@ -451,23 +621,32 @@ class DonationController extends ChangeNotifier {
 
   // Get donation status
   String getDonationStatus(DateTime donationTime) {
-    if (isExpiredDonation(donationTime)) {
+    final now = DateTime.now();
+    final difference = donationTime.difference(now);
+
+    if (difference.isNegative) {
       return 'Expired';
-    } else if (isUpcomingDonation(donationTime)) {
-      return 'Upcoming';
-    } else {
+    } else if (difference.inHours < 24) {
       return 'Today';
+    } else if (difference.inDays < 7) {
+      return 'This Week';
+    } else {
+      return 'Upcoming';
     }
   }
 
   // Get donation status color
   Color getDonationStatusColor(DateTime donationTime) {
-    if (isExpiredDonation(donationTime)) {
-      return Colors.red;
-    } else if (isUpcomingDonation(donationTime)) {
-      return AppColors.primary;
-    } else {
-      return Colors.orange;
+    final status = getDonationStatus(donationTime);
+    switch (status) {
+      case 'Expired':
+        return Colors.red;
+      case 'Today':
+        return Colors.orange;
+      case 'This Week':
+        return Colors.blue;
+      default:
+        return AppColors.primary;
     }
   }
 
@@ -475,7 +654,6 @@ class DonationController extends ChangeNotifier {
   String extractCityFromAddress(String address) {
     if (address.isEmpty) return '';
 
-    // Split by comma and get the first part (usually city)
     final parts = address.split(',');
     if (parts.isNotEmpty) {
       return parts.first.trim();
@@ -484,29 +662,19 @@ class DonationController extends ChangeNotifier {
   }
 
   // Check if donation is in user's city
-  bool isDonationInUserCity(String donationLocation, String userCity) {
-    if (donationLocation.isEmpty || userCity.isEmpty) return false;
-
-    final donationCity = extractCityFromAddress(donationLocation);
-    return donationCity.toLowerCase() == userCity.toLowerCase();
-  }
-
-  // Get current user's city
-  String getCurrentUserCity() {
-    // Try to get from GlobalDataService first
-    try {
-      final globalDataService = GlobalDataService();
-      final currentAddress = globalDataService.currentAddress;
-      if (currentAddress.isNotEmpty &&
-          currentAddress != 'Fetching location...') {
-        return extractCityFromAddress(currentAddress);
-      }
-    } catch (e) {
-      debugPrint('Error getting city from GlobalDataService: $e');
+  bool isDonationInUserCity(String donationCity) {
+    if (donationCity.isEmpty ||
+        currentUserCity == null ||
+        currentUserCity!.isEmpty) {
+      return false;
     }
 
-    // Fallback: try to get from current user's address in Firestore
-    return '';
+    return donationCity.toLowerCase() == currentUserCity!.toLowerCase();
+  }
+
+  // Calculate distance between two locations (simplified)
+  double calculateDistance(double lat1, double lon1, double lat2, double lon2) {
+    return Geolocator.distanceBetween(lat1, lon1, lat2, lon2) / 1000; // in km
   }
 
   // Format donation time
@@ -522,6 +690,24 @@ class DonationController extends ChangeNotifier {
   // Format donation time only
   String formatDonationTimeOnly(DateTime donationTime) {
     return DateFormat('h:mm a').format(donationTime);
+  }
+
+  // Get relative time
+  String getRelativeTime(DateTime dateTime) {
+    final now = DateTime.now();
+    final difference = dateTime.difference(now);
+
+    if (difference.isNegative) {
+      return 'Expired';
+    } else if (difference.inMinutes < 60) {
+      return 'In ${difference.inMinutes} minutes';
+    } else if (difference.inHours < 24) {
+      return 'In ${difference.inHours} hours';
+    } else if (difference.inDays < 7) {
+      return 'In ${difference.inDays} days';
+    } else {
+      return formatDonationDate(dateTime);
+    }
   }
 
   // Set loading state

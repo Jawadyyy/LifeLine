@@ -115,107 +115,212 @@ class HomeController {
   }
 
   void toggleEmergencyOptions() {
-    final bool show = _getField<bool>('_showEmergencyOptions');
-    final animationController =
-        _getField<AnimationController>('_animationController');
-    setStateFn(() {
-      _setField('_showEmergencyOptions', !show);
-      if (!show) {
-        animationController.forward();
-      } else {
-        animationController.reverse();
-      }
-    });
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) => _buildEmergencyBottomSheet(),
+    );
   }
 
-  List<Widget> buildEmergencyOptions() {
+  Widget _buildEmergencyBottomSheet() {
     final List<Map<String, dynamic>> emergencyTypes = [
       {
         "image": 'assets/images/icons/ambulance.png',
         "type": 'Medical Emergency',
-        "color": AppColors.surface
+        "description": 'Request immediate medical assistance',
+        "color": Color(0xFFFF6B6B),
       },
       {
         "image": 'assets/images/icons/policeman.png',
         "type": 'Police Assistance',
-        "color": AppColors.surface
+        "description": 'Alert for security or law enforcement',
+        "color": Color(0xFF4ECDC4),
       },
       {
         "image": 'assets/images/icons/fire.png',
         "type": 'Fire Alert',
-        "color": AppColors.surface
+        "description": 'Report fire or smoke emergency',
+        "color": Color(0xFFFF8C42),
       },
       {
         "image": 'assets/images/icons/healthcare.png',
         "type": 'Health Issue',
-        "color": AppColors.surface
+        "description": 'Non-critical health concern',
+        "color": Color(0xFF95E1D3),
       },
       {
         "image": 'assets/images/icons/warning.png',
         "type": 'SOS',
-        "color": AppColors.surface
+        "description": 'General distress signal',
+        "color": Color(0xFFFFA07A),
       },
       {
         "image": 'assets/images/icons/bandage.png',
         "type": 'General Emergency',
-        "color": AppColors.surface
+        "description": 'Other emergency situations',
+        "color": Color(0xFFAA96DA),
       },
     ];
 
-    final size = MediaQuery.of(context).size;
-    const double radius = 155.0;
-    final double centerX = size.width / 2;
-    final double centerY = size.height * 0.4;
-
-    return List.generate(emergencyTypes.length, (index) {
-      final angle = (index * 60) * (pi / 180);
-      final offsetX = radius * cos(angle);
-      final offsetY = radius * sin(angle);
-
-      return AnimatedPositioned(
-        duration: const Duration(milliseconds: 300),
-        left: centerX + offsetX - 35,
-        top: centerY + offsetY - 35,
-        child: GestureDetector(
-          onTap: () => sendEmergencyMessage(emergencyTypes[index]["type"]),
-          child: Container(
-            height: 70,
-            width: 70,
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.background,
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.circular(24),
+          topRight: Radius.circular(24),
+        ),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Handle bar
+          Container(
+            margin: const EdgeInsets.only(top: 12, bottom: 8),
+            width: 40,
+            height: 4,
             decoration: BoxDecoration(
-              color: emergencyTypes[index]["color"],
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.textPrimary.withOpacity(0.2),
-                  blurRadius: 10,
-                  spreadRadius: 2,
+              color: AppColors.textGrey.withOpacity(0.3),
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          // Header
+          Padding(
+            padding: const EdgeInsets.fromLTRB(24, 8, 24, 16),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(
+                    Icons.warning_rounded,
+                    color: AppColors.primary,
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                const Text(
+                  'Select Emergency Type',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary,
+                  ),
                 ),
               ],
             ),
-            child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Image.asset(
-                    emergencyTypes[index]["image"],
-                    height: 30,
+          ),
+          // Emergency type tiles
+          ListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            itemCount: emergencyTypes.length,
+            itemBuilder: (context, index) {
+              return TweenAnimationBuilder<double>(
+                duration: Duration(milliseconds: 300 + (index * 80)),
+                curve: Curves.easeOutCubic,
+                tween: Tween(begin: 0.0, end: 1.0),
+                builder: (context, value, child) {
+                  return Transform.translate(
+                    offset: Offset(0, 50 * (1 - value)),
+                    child: Opacity(
+                      opacity: value,
+                      child: child,
+                    ),
+                  );
+                },
+                child: Container(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  decoration: BoxDecoration(
+                    color: AppColors.surface,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: emergencyTypes[index]["color"].withOpacity(0.3),
+                      width: 1.5,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: emergencyTypes[index]["color"].withOpacity(0.1),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    emergencyTypes[index]["type"].toString().split(' ')[0],
-                    style: const TextStyle(
-                      color: AppColors.textPrimary,
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () {
+                        Navigator.pop(context);
+                        sendEmergencyMessage(emergencyTypes[index]["type"]);
+                      },
+                      borderRadius: BorderRadius.circular(16),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 56,
+                              height: 56,
+                              decoration: BoxDecoration(
+                                color: emergencyTypes[index]["color"]
+                                    .withOpacity(0.15),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Center(
+                                child: Image.asset(
+                                  emergencyTypes[index]["image"],
+                                  height: 32,
+                                  width: 32,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    emergencyTypes[index]["type"],
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      color: AppColors.textPrimary,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    emergencyTypes[index]["description"],
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      color:
+                                          AppColors.textGrey.withOpacity(0.8),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Icon(
+                              Icons.arrow_forward_ios_rounded,
+                              size: 18,
+                              color: emergencyTypes[index]["color"],
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
-                ],
-              ),
-            ),
+                ),
+              );
+            },
           ),
-        ),
-      );
-    });
+          const SizedBox(height: 24),
+        ],
+      ),
+    );
   }
 
   Widget buildMainEmergencyButton(BuildContext context,

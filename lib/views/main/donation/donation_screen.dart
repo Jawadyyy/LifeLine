@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import 'package:lifeline/constants/app_colors.dart';
 import 'package:lifeline/views/main/donation/controller/donation_controller.dart';
 import 'package:lifeline/views/main/donation/controller/donation_dialog_controller.dart';
-import 'package:lifeline/services/global_data_service.dart';
 
 class DonationScreen extends StatefulWidget {
   const DonationScreen({super.key});
@@ -13,32 +12,35 @@ class DonationScreen extends StatefulWidget {
   State<DonationScreen> createState() => _DonationScreenState();
 }
 
-class _DonationScreenState extends State<DonationScreen> {
+class _DonationScreenState extends State<DonationScreen>
+    with SingleTickerProviderStateMixin {
   late DonationController _donationController;
   late DonationDialogController _dialogController;
-  bool _showOnlyCityDonations = true;
+  late TabController _tabController;
+  final TextEditingController _searchController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
     _donationController = DonationController();
     _dialogController = DonationDialogController(_donationController);
+    _tabController = TabController(length: 2, vsync: this);
     _donationController.init();
-    _refreshLocationData();
-  }
 
-  Future<void> _refreshLocationData() async {
-    try {
-      final globalDataService = GlobalDataService();
-      await globalDataService.updateLocationData();
-    } catch (e) {
-      debugPrint('Error refreshing location data: $e');
-    }
+    _tabController.addListener(() {
+      if (_tabController.indexIsChanging) {
+        setState(() {
+          _donationController.showOnlyCityDonations = _tabController.index == 0;
+        });
+      }
+    });
   }
 
   @override
   void dispose() {
     _donationController.dispose();
+    _tabController.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
@@ -47,325 +49,409 @@ class _DonationScreenState extends State<DonationScreen> {
     return ChangeNotifierProvider.value(
       value: _donationController,
       child: Scaffold(
-        appBar: AppBar(
-          title: const Text(
-            'Blood Donation',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: AppColors.surface,
-            ),
-          ),
-          backgroundColor: AppColors.primary,
-          elevation: 0,
-          centerTitle: true,
-          iconTheme: const IconThemeData(
-            color: AppColors.surface,
-          ),
-          actions: [
-            IconButton(
-              onPressed: () {
-                setState(() {
-                  _showOnlyCityDonations = !_showOnlyCityDonations;
-                });
-              },
-              icon: Icon(
-                _showOnlyCityDonations ? Icons.location_city : Icons.public,
-                color: AppColors.surface,
+        appBar: _buildAppBar(),
+        floatingActionButton: _buildFAB(),
+        backgroundColor: AppColors.background,
+        body: Column(
+          children: [
+            _buildTabBar(),
+            _buildSearchAndFilters(),
+            Expanded(
+              child: TabBarView(
+                controller: _tabController,
+                children: [
+                  _buildDonationList(true),
+                  _buildDonationList(false),
+                ],
               ),
-              tooltip: _showOnlyCityDonations
-                  ? 'Show all donations'
-                  : 'Show city-only donations',
             ),
           ],
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.vertical(
-              bottom: Radius.circular(20),
-            ),
-          ),
         ),
-        floatingActionButton: FloatingActionButton(
-          onPressed: () => _dialogController.showCreatePostDialog(context),
-          backgroundColor: AppColors.primary,
-          child: const Icon(Icons.add, color: AppColors.surface),
-        ),
-        backgroundColor: AppColors.surface,
-        body: Column(children: [
-          const SizedBox(height: 20),
-          Text(
-              _showOnlyCityDonations
-                  ? "City Donation Requests"
-                  : "All Donation Requests",
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 10),
-          Expanded(
-            child: RefreshIndicator(
-              onRefresh: () async => setState(() {}),
-              color: AppColors.primary,
-              child: SingleChildScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.only(bottom: 80),
-                child: _buildAllDonationPosts(),
-              ),
-            ),
-          )
-        ]),
       ),
     );
   }
 
-  Widget _buildAllDonationPosts() {
-    return StreamBuilder<QuerySnapshot>(
-      stream: _donationController.getDonationPostsStream(),
-      builder: (context, userSnap) {
-        if (!userSnap.hasData || userSnap.data!.docs.isEmpty) {
-          return const Center(child: Text("No donation requests yet"));
-        }
-
-        // Check if there are any donations in user's city
-        final userCity = _donationController.getCurrentUserCity();
-        if (userCity.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.location_off,
-                  size: 64,
-                  color: AppColors.textSecondary,
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  "Location not available",
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  "Please enable location services to see donations in your city",
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                ElevatedButton(
-                  onPressed: _refreshLocationData,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: AppColors.surface,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 24, vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                  child: const Text("Refresh Location"),
-                ),
-              ],
-            ),
-          );
-        }
-        final users = userSnap.data!.docs;
-        return ListView(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          children: users.expand((userDoc) {
-            final userData = userDoc.data() as Map<String, dynamic>;
-            return [
-              StreamBuilder<QuerySnapshot>(
-                stream:
-                    _donationController.getUserDonationPostsStream(userDoc.id),
-                builder: (context, postSnap) {
-                  if (!postSnap.hasData || postSnap.data!.docs.isEmpty) {
-                    return const SizedBox.shrink();
+  PreferredSizeWidget _buildAppBar() {
+    return AppBar(
+      title: const Text(
+        'Blood Donation',
+        style: TextStyle(
+          fontSize: 20,
+          fontWeight: FontWeight.bold,
+          color: AppColors.surface,
+        ),
+      ),
+      backgroundColor: AppColors.primary,
+      elevation: 0,
+      centerTitle: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          bottom: Radius.circular(20),
+        ),
+      ),
+      iconTheme: const IconThemeData(color: AppColors.surface),
+      actions: [
+        Consumer<DonationController>(
+          builder: (context, controller, child) {
+            if (controller.currentUserCity == null) {
+              return IconButton(
+                icon: const Icon(Icons.refresh),
+                onPressed: () async {
+                  try {
+                    await controller.refreshUserLocation();
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Location updated successfully'),
+                          backgroundColor: AppColors.primary,
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                    }
+                  } catch (e) {
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Failed to get location: $e'),
+                          backgroundColor: Colors.red,
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                    }
                   }
-
-                  // Filter donations by city if enabled
-                  final filteredPosts = _showOnlyCityDonations
-                      ? postSnap.data!.docs.where((postDoc) {
-                          final data = postDoc.data() as Map<String, dynamic>;
-                          final donationLocation = data['location'] ?? '';
-                          final userCity =
-                              _donationController.getCurrentUserCity();
-
-                          // Only show donations in user's city
-                          return _donationController.isDonationInUserCity(
-                              donationLocation, userCity);
-                        }).toList()
-                      : postSnap.data!.docs.toList();
-
-                  if (filteredPosts.isEmpty) {
-                    return const SizedBox.shrink();
-                  }
-
-                  // Add city info header for first post
-                  final isFirstPost = userDoc == users.first;
-                  final cityHeader = isFirstPost
-                      ? _buildCityHeader(userCity, _showOnlyCityDonations)
-                      : null;
-
-                  // Check if this is the first user and we have no donations in city
-                  if (isFirstPost &&
-                      filteredPosts.isEmpty &&
-                      _showOnlyCityDonations) {
-                    return Column(
-                      children: [
-                        cityHeader!,
-                        _buildNoDonationsInCityMessage(userCity),
-                      ],
-                    );
-                  }
-
-                  return Column(
-                    children: [
-                      if (cityHeader != null) cityHeader,
-                      ...filteredPosts.map((postDoc) {
-                        final data = postDoc.data() as Map<String, dynamic>;
-                        final postId = postDoc.id;
-                        final ownerId = userDoc.id;
-
-                        return _buildPostCard(
-                          data,
-                          userData,
-                          postId: postId,
-                          ownerId: ownerId,
-                          isDetailView: false,
-                        );
-                      }).toList(),
-                    ],
-                  );
                 },
-              )
-            ];
-          }).toList(),
+              );
+            }
+            return const SizedBox.shrink();
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTabBar() {
+    return Consumer<DonationController>(
+      builder: (context, controller, child) {
+        return Container(
+          margin: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: TabBar(
+            controller: _tabController,
+            indicator: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              color: AppColors.primary,
+            ),
+            labelColor: AppColors.surface,
+            unselectedLabelColor: AppColors.textSecondary,
+            indicatorSize: TabBarIndicatorSize.tab,
+            dividerColor: Colors.transparent,
+            labelStyle: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+            ),
+            tabs: [
+              Tab(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.location_city, size: 18),
+                    const SizedBox(width: 8),
+                    Flexible(
+                      child: Text(
+                        controller.currentUserCity ?? 'My City',
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Tab(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.public, size: 18),
+                    SizedBox(width: 8),
+                    Text('All Donations'),
+                  ],
+                ),
+              ),
+            ],
+          ),
         );
       },
     );
   }
 
-  Widget _buildCityHeader(String city, bool showOnlyCity) {
+  Widget _buildSearchAndFilters() {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.primary.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: AppColors.primary.withOpacity(0.3),
-          width: 1,
-        ),
-      ),
-      child: Row(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Column(
         children: [
-          Icon(
-            showOnlyCity ? Icons.location_city : Icons.public,
-            color: AppColors.primary,
-            size: 20,
-          ),
-          const SizedBox(width: 8),
-          Text(
-            showOnlyCity
-                ? "Showing donations in $city"
-                : "Showing all donations",
-            style: TextStyle(
-              color: AppColors.primary,
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
+          // Search bar
+          TextField(
+            controller: _searchController,
+            onChanged: (value) {
+              _donationController.updateSearchQuery(value);
+            },
+            decoration: InputDecoration(
+              hintText: 'Search by blood group, location, or name...',
+              hintStyle: const TextStyle(color: AppColors.textSecondary),
+              prefixIcon: const Icon(Icons.search, color: AppColors.primary),
+              suffixIcon: _searchController.text.isNotEmpty
+                  ? IconButton(
+                      icon: const Icon(Icons.clear, color: AppColors.textGrey),
+                      onPressed: () {
+                        _searchController.clear();
+                        _donationController.updateSearchQuery('');
+                      },
+                    )
+                  : null,
+              filled: true,
+              fillColor: AppColors.surface,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             ),
           ),
+          const SizedBox(height: 12),
+          // Blood group filter chips
+          Consumer<DonationController>(
+            builder: (context, controller, child) {
+              return SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    _buildFilterChip(
+                        'All', controller.selectedBloodFilter == 'All'),
+                    ...controller.bloodGroups.map((bg) => _buildFilterChip(
+                        bg, controller.selectedBloodFilter == bg)),
+                  ],
+                ),
+              );
+            },
+          ),
+          const SizedBox(height: 12),
         ],
       ),
     );
   }
 
-  Widget _buildNoDonationsInCityMessage(String city) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: AppColors.textSecondary.withOpacity(0.2),
-          width: 1,
+  Widget _buildFilterChip(String label, bool isSelected) {
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: FilterChip(
+        label: Text(label),
+        selected: isSelected,
+        onSelected: (selected) {
+          _donationController.updateBloodFilter(selected ? label : 'All');
+        },
+        selectedColor: AppColors.primary,
+        backgroundColor: AppColors.surface,
+        checkmarkColor: AppColors.surface,
+        labelStyle: TextStyle(
+          color: isSelected ? AppColors.surface : AppColors.textPrimary,
+          fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        showCheckmark: false,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: BorderSide(
+            color: isSelected ? AppColors.primary : AppColors.tertiary,
+            width: 1.5,
+          ),
         ),
       ),
+    );
+  }
+
+  Widget _buildDonationList(bool cityOnly) {
+    return Consumer<DonationController>(
+      builder: (context, controller, child) {
+        // Handle loading state for location
+        if (cityOnly && controller.currentUserCity == null) {
+          return _buildLocationLoadingState();
+        }
+
+        return StreamBuilder<List<Map<String, dynamic>>>(
+          stream: controller.getFilteredDonationPostsStream(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(
+                child: CircularProgressIndicator(color: AppColors.primary),
+              );
+            }
+
+            if (!snapshot.hasData || snapshot.data!.isEmpty) {
+              return _buildEmptyState(cityOnly);
+            }
+
+            final donations = snapshot.data!;
+            return RefreshIndicator(
+              onRefresh: () async {
+                setState(() {});
+              },
+              color: AppColors.primary,
+              child: ListView.builder(
+                padding: const EdgeInsets.only(bottom: 80),
+                itemCount: donations.length,
+                itemBuilder: (context, index) {
+                  final donation = donations[index];
+                  return _buildEnhancedPostCard(
+                    donation['postData'],
+                    donation['userData'],
+                    postId: donation['postId'],
+                    ownerId: donation['ownerId'],
+                  );
+                },
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildLocationLoadingState() {
+    return Center(
       child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.bloodtype_outlined,
-            size: 48,
-            color: AppColors.textSecondary,
-          ),
+          const CircularProgressIndicator(color: AppColors.primary),
           const SizedBox(height: 16),
-          Text(
-            "No donations in $city",
+          const Text(
+            'Getting your location...',
             style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
               color: AppColors.textPrimary,
             ),
           ),
           const SizedBox(height: 8),
-          Text(
-            "There are currently no blood donation requests in your city.\nBe the first to create one!",
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 14,
-              color: AppColors.textSecondary,
+          TextButton(
+            onPressed: () async {
+              try {
+                await _donationController.refreshUserLocation();
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Error: $e'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              }
+            },
+            style: TextButton.styleFrom(
+              foregroundColor: AppColors.primary,
             ),
+            child: const Text('Retry'),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildPostCard(
+  Widget _buildEmptyState(bool cityOnly) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              cityOnly ? Icons.location_off : Icons.bloodtype_outlined,
+              size: 80,
+              color: AppColors.textSecondary.withOpacity(0.5),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              cityOnly
+                  ? 'No donations in your city'
+                  : 'No donation requests yet',
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              cityOnly
+                  ? 'Be the first to create a donation request in ${_donationController.currentUserCity}!'
+                  : 'Be the first to create a blood donation request!',
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 14,
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEnhancedPostCard(
     Map<String, dynamic> data,
     Map<String, dynamic> userData, {
     required String postId,
     required String ownerId,
-    bool isDetailView = false,
   }) {
     final donationTime = (data['donation_time'] as Timestamp).toDate();
-    final isUpcoming = _donationController.isUpcomingDonation(donationTime);
     final isOwner = _donationController.isPostOwner(ownerId);
+    final city = data['city'] ?? '';
+    final latitude = data['latitude'] as double?;
+    final longitude = data['longitude'] as double?;
 
     return GestureDetector(
       onTap: () {
-        if (!isDetailView) {
-          _dialogController.showPostDetailsDialog(
-              context, data, userData, postId, ownerId);
-        }
+        _dialogController.showPostDetailsDialog(
+            context, data, userData, postId, ownerId);
       },
-      child: Card(
+      child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        shape: RoundedRectangleBorder(
+        decoration: BoxDecoration(
+          color: AppColors.surface,
           borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
-        color: AppColors.surface.withOpacity(0.56),
-        elevation: 2,
-        shadowColor: AppColors.primary.withOpacity(0.15),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
+        child: Column(
+          children: [
+            // Header with user info and status
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
                 children: [
                   CircleAvatar(
-                    radius: 24,
-                    backgroundColor: Colors.grey[100],
+                    radius: 26,
+                    backgroundColor: AppColors.primary.withOpacity(0.1),
                     backgroundImage: userData['profileImageUrl'] != null
                         ? NetworkImage(userData['profileImageUrl'])
                         : null,
                     child: userData['profileImageUrl'] == null
-                        ? Icon(Icons.person, color: AppColors.primary, size: 24)
+                        ? const Icon(Icons.person,
+                            color: AppColors.primary, size: 26)
                         : null,
                   ),
                   const SizedBox(width: 12),
@@ -373,20 +459,47 @@ class _DonationScreenState extends State<DonationScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          userData['username'] ?? 'Anonymous Donor',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 16,
-                            color: AppColors.textPrimary,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                        Row(
+                          children: [
+                            Flexible(
+                              child: Text(
+                                userData['username'] ?? 'Anonymous Donor',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 16,
+                                  color: AppColors.textPrimary,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            if (isOwner) ...[
+                              const SizedBox(width: 6),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: AppColors.primary.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: const Text(
+                                  'You',
+                                  style: TextStyle(
+                                    color: AppColors.primary,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ],
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          _donationController.formatDonationTime(donationTime),
-                          style: TextStyle(
+                          _donationController.getRelativeTime(donationTime),
+                          style: const TextStyle(
                             color: AppColors.textSecondary,
                             fontSize: 12,
                           ),
@@ -394,17 +507,17 @@ class _DonationScreenState extends State<DonationScreen> {
                       ],
                     ),
                   ),
-                  // Status label for donation
+                  // Status badge
                   Container(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 5,
+                      horizontal: 12,
+                      vertical: 6,
                     ),
                     decoration: BoxDecoration(
                       color: _donationController
                           .getDonationStatusColor(donationTime)
                           .withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(20),
                       border: Border.all(
                         color: _donationController
                             .getDonationStatusColor(donationTime)
@@ -417,122 +530,223 @@ class _DonationScreenState extends State<DonationScreen> {
                       style: TextStyle(
                         color: _donationController
                             .getDonationStatusColor(donationTime),
-                        fontSize: 12,
+                        fontSize: 11,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),
                   if (isOwner)
-                    Theme(
-                      data: Theme.of(context).copyWith(
-                        cardColor: AppColors.surface,
+                    PopupMenuButton<String>(
+                      icon: const Icon(Icons.more_vert,
+                          color: AppColors.textGrey),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                      child: PopupMenuButton<String>(
-                        icon: Icon(Icons.more_vert,
-                            color: AppColors.primary, size: 24),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          side: BorderSide(color: AppColors.textSecondary),
+                      onSelected: (value) {
+                        if (value == 'edit') {
+                          _dialogController.showEditPostDialog(
+                              context, data, ownerId, postId);
+                        } else if (value == 'complete') {
+                          _handleMarkComplete(ownerId, postId);
+                        } else if (value == 'delete') {
+                          _handleDeletePost(ownerId, postId);
+                        }
+                      },
+                      itemBuilder: (context) => [
+                        const PopupMenuItem(
+                          value: 'edit',
+                          child: Row(
+                            children: [
+                              Icon(Icons.edit,
+                                  color: AppColors.primary, size: 20),
+                              SizedBox(width: 12),
+                              Text('Edit'),
+                            ],
+                          ),
                         ),
-                        elevation: 4,
-                        color: AppColors.surface,
-                        onSelected: (value) {
-                          if (value == 'edit') {
-                            _dialogController.showEditPostDialog(
-                                context, data, ownerId, postId);
-                          } else if (value == 'delete') {
-                            _handleDeletePost(ownerId, postId);
-                          }
-                        },
-                        itemBuilder: (context) => [
-                          PopupMenuItem<String>(
-                            value: 'edit',
-                            child: Container(
-                              color: AppColors.surface,
-                              child: Row(
-                                children: [
-                                  Icon(Icons.edit,
-                                      color: AppColors.primary, size: 20),
-                                  const SizedBox(width: 12),
-                                  Text(
-                                    'Edit',
-                                    style: TextStyle(
-                                      color: AppColors.textPrimary,
-                                      fontSize: 14,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
+                        const PopupMenuItem(
+                          value: 'complete',
+                          child: Row(
+                            children: [
+                              Icon(Icons.check_circle,
+                                  color: Colors.green, size: 20),
+                              SizedBox(width: 12),
+                              Text('Mark Complete'),
+                            ],
                           ),
-                          PopupMenuItem<String>(
-                            value: 'delete',
-                            child: Container(
-                              color: AppColors.surface,
-                              child: const Row(
-                                children: [
-                                  Icon(Icons.delete,
-                                      color: AppColors.primary, size: 20),
-                                  SizedBox(width: 12),
-                                  Text(
-                                    'Delete',
-                                    style: TextStyle(
-                                      color: AppColors.primary,
-                                      fontSize: 14,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
+                        ),
+                        const PopupMenuItem(
+                          value: 'delete',
+                          child: Row(
+                            children: [
+                              Icon(Icons.delete, color: Colors.red, size: 20),
+                              SizedBox(width: 12),
+                              Text('Delete'),
+                            ],
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                 ],
               ),
-              const SizedBox(height: 16),
-              Row(
+            ),
+
+            const Divider(height: 1, color: AppColors.tertiary),
+
+            // Blood group and location info
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
                 children: [
+                  Row(
+                    children: [
+                      // Blood group
+                      Expanded(
+                        child: Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                AppColors.primary.withOpacity(0.1),
+                                AppColors.primary.withOpacity(0.05),
+                              ],
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: AppColors.primary.withOpacity(0.3),
+                              width: 1.5,
+                            ),
+                          ),
+                          child: Column(
+                            children: [
+                              const Icon(
+                                Icons.bloodtype,
+                                color: AppColors.primary,
+                                size: 32,
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                data['blood_group'],
+                                style: const TextStyle(
+                                  color: AppColors.primary,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 24,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              const Text(
+                                'Blood Group',
+                                style: TextStyle(
+                                  color: AppColors.textSecondary,
+                                  fontSize: 11,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      // Date and time
+                      Expanded(
+                        child: Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: AppColors.background,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: AppColors.tertiary,
+                              width: 1,
+                            ),
+                          ),
+                          child: Column(
+                            children: [
+                              const Icon(
+                                Icons.calendar_today,
+                                color: AppColors.textSecondary,
+                                size: 28,
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                _donationController
+                                    .formatDonationDate(donationTime),
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(
+                                  color: AppColors.textPrimary,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 13,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                _donationController
+                                    .formatDonationTimeOnly(donationTime),
+                                style: const TextStyle(
+                                  color: AppColors.textSecondary,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  // Location
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
-                    ),
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: AppColors.primary.withOpacity(0.1),
+                      color: AppColors.background,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: AppColors.primary.withOpacity(0.3),
+                        color: AppColors.tertiary,
                         width: 1,
                       ),
                     ),
                     child: Row(
-                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(
-                          Icons.bloodtype,
+                        const Icon(
+                          Icons.location_on,
                           color: AppColors.primary,
-                          size: 18,
+                          size: 20,
                         ),
                         const SizedBox(width: 8),
-                        Text(
-                          data['blood_group'],
-                          style: TextStyle(
-                            color: AppColors.primary,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 14,
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              if (city.isNotEmpty)
+                                Text(
+                                  city,
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.textPrimary,
+                                  ),
+                                ),
+                              Text(
+                                data['location'],
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: AppColors.textSecondary,
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
                           ),
                         ),
                       ],
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
-                      ),
+                  // Description if available
+                  if (data['description'] != null &&
+                      data['description'].toString().isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
                         color: AppColors.background,
                         borderRadius: BorderRadius.circular(12),
@@ -541,100 +755,124 @@ class _DonationScreenState extends State<DonationScreen> {
                           width: 1,
                         ),
                       ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.location_on_outlined,
-                            size: 18,
-                            color: AppColors.textSecondary,
-                          ),
-                          const SizedBox(width: 8),
-                          Flexible(
-                            child: Text(
-                              data['location'],
-                              style: const TextStyle(
-                                fontSize: 14,
-                                color: AppColors.textMedium,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
+                      child: Text(
+                        data['description'],
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: AppColors.textMedium,
+                          height: 1.4,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+
+            const Divider(height: 1, color: AppColors.tertiary),
+
+            // Action buttons
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      icon: const Icon(Icons.message,
+                          size: 18, color: AppColors.surface),
+                      label: const Text('Contact'),
+                      style: ElevatedButton.styleFrom(
+                        foregroundColor: AppColors.surface,
+                        backgroundColor: AppColors.primary,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        elevation: 0,
+                      ),
+                      onPressed: () =>
+                          _handleContact(data, userData, donationTime),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      icon: const Icon(Icons.directions,
+                          size: 18, color: AppColors.primary),
+                      label: const Text('Directions'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.primary,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        side: const BorderSide(
+                          color: AppColors.primary,
+                          width: 1.5,
+                        ),
+                      ),
+                      onPressed: () => _handleDirections(
+                          data['location'], latitude, longitude),
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
-              Column(
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: ElevatedButton.icon(
-                          icon: const Icon(
-                            Icons.message_outlined,
-                            size: 20,
-                            color: AppColors.surface,
-                          ),
-                          label: const Text(
-                            'Contact',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          style: ElevatedButton.styleFrom(
-                            foregroundColor: AppColors.surface,
-                            backgroundColor: AppColors.primary,
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            elevation: 0,
-                            shadowColor: AppColors.transparent,
-                          ),
-                          onPressed: () =>
-                              _handleContact(data, userData, donationTime),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          icon: Icon(
-                            Icons.map_outlined,
-                            size: 20,
-                            color: AppColors.primary,
-                          ),
-                          label: Text(
-                            'Directions',
-                            style: TextStyle(
-                              color: AppColors.primary,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: AppColors.primary,
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            side: BorderSide(
-                              color: AppColors.primary,
-                              width: 1.5,
-                            ),
-                          ),
-                          onPressed: () => _handleDirections(data['location']),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
+  }
+
+  Widget _buildFAB() {
+    return FloatingActionButton.extended(
+      onPressed: () => _dialogController.showCreatePostDialog(context),
+      backgroundColor: AppColors.primary,
+      icon: const Icon(Icons.add, color: AppColors.surface),
+      label: const Text(
+        'Create Request',
+        style: TextStyle(
+          color: AppColors.surface,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _handleMarkComplete(String userId, String postId) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Mark as Complete'),
+        content: const Text('Has this donation been completed?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('CANCEL'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+            child: const Text('COMPLETE'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      final success = await _donationController.markAsCompleted(userId, postId);
+      if (success && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Donation marked as completed'),
+            backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
   }
 
   Future<void> _handleDeletePost(String userId, String postId) async {
@@ -643,13 +881,10 @@ class _DonationScreenState extends State<DonationScreen> {
 
     if (success && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text("Post deleted successfully"),
+        const SnackBar(
+          content: Text('Post deleted successfully'),
           behavior: SnackBarBehavior.floating,
           backgroundColor: Colors.green,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
         ),
       );
     }
@@ -665,13 +900,10 @@ class _DonationScreenState extends State<DonationScreen> {
     if (phoneRaw.isEmpty) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text("No phone number available for this user"),
+          const SnackBar(
+            content: Text('No phone number available'),
             behavior: SnackBarBehavior.floating,
             backgroundColor: Colors.orange,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
           ),
         );
       }
@@ -686,117 +918,39 @@ class _DonationScreenState extends State<DonationScreen> {
 
     if (!success && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text(
-              "Could not open WhatsApp. Please check if WhatsApp is installed."),
+        const SnackBar(
+          content: Text('Could not open WhatsApp'),
           behavior: SnackBarBehavior.floating,
           backgroundColor: Colors.red,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
         ),
       );
     }
   }
 
-  Future<void> _handlePhoneCall(String phone) async {
-    if (phone.isEmpty) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text("No phone number available for this user"),
-            behavior: SnackBarBehavior.floating,
-            backgroundColor: Colors.orange,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
-          ),
-        );
-      }
-      return;
-    }
-
-    final success = await _donationController.makePhoneCall(phone);
-
-    if (!success && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text(
-              "Could not make phone call. Please check your phone settings."),
-          behavior: SnackBarBehavior.floating,
-          backgroundColor: Colors.red,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-        ),
-      );
-    }
-  }
-
-  Future<void> _handleEmail(String email) async {
-    if (email.isEmpty || !email.contains('@')) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content:
-                const Text("No valid email address available for this user"),
-            behavior: SnackBarBehavior.floating,
-            backgroundColor: Colors.orange,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
-          ),
-        );
-      }
-      return;
-    }
-
-    final success = await _donationController.sendEmail(email);
-
-    if (!success && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text(
-              "Could not open email app. Please check your email settings."),
-          behavior: SnackBarBehavior.floating,
-          backgroundColor: Colors.red,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-        ),
-      );
-    }
-  }
-
-  Future<void> _handleDirections(String destination) async {
+  Future<void> _handleDirections(
+      String destination, double? lat, double? lng) async {
     if (destination.isEmpty) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text("No location information available"),
+          const SnackBar(
+            content: Text('No location information available'),
             behavior: SnackBarBehavior.floating,
             backgroundColor: Colors.orange,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
           ),
         );
       }
       return;
     }
 
-    final success = await _donationController.openMapDirections(destination);
+    final success = await _donationController.openMapDirections(destination,
+        lat: lat, lng: lng);
 
     if (!success && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text(
-              "Could not open Google Maps. Please check if Google Maps is installed."),
+        const SnackBar(
+          content: Text('Could not open Google Maps'),
           behavior: SnackBarBehavior.floating,
           backgroundColor: Colors.red,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
         ),
       );
     }
