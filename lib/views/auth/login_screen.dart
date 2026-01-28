@@ -3,10 +3,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lifeline/components/custom_button.dart';
-import 'package:lifeline/components/navigation.dart';
 import 'package:lifeline/views/auth/forgotpass_screen.dart';
 import 'package:lifeline/views/auth/signup_screen.dart';
-import 'package:lifeline/views/main/profile/profile_setup_screen.dart';
 import 'package:lifeline/services/auth_service.dart';
 import 'package:lifeline/components/custom_text_field.dart';
 import 'package:lifeline/constants/app_colors.dart';
@@ -36,11 +34,6 @@ class _LoginScreenState extends State<LoginScreen> {
       Image.asset('assets/images/icons/show.png', width: 24, height: 24);
   final eyeIcon =
       Image.asset('assets/images/icons/hide.png', width: 24, height: 24);
-
-  // Kept for backwards compatibility; not used after AuthValidators adoption.
-  // ignore: unused_field
-  final RegExp _emailRegex =
-      RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$');
 
   void _validateAndLogin() async {
     if (_isLoggingIn || _isGoogleLoading) return;
@@ -72,6 +65,8 @@ class _LoginScreenState extends State<LoginScreen> {
       final result =
           await AuthService().loginWithEmail(email: email, password: password);
 
+      if (!mounted) return;
+
       if (!result.isSuccess) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -82,29 +77,9 @@ class _LoginScreenState extends State<LoginScreen> {
         return;
       }
 
-      final user = FirebaseAuth.instance.currentUser;
-      if (user == null) return;
-
-      final doc = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .get();
-
-      final data = doc.data();
-      final isProfileComplete = data?['isProfileComplete'] == true;
-
-      Navigator.pushReplacement(
-        context,
-        PageRouteBuilder(
-          pageBuilder: (context, animation, secondaryAnimation) =>
-              isProfileComplete
-                  ? const MainNavigationScreen()
-                  : const ProfileSetupScreen(),
-          transitionsBuilder: (context, animation, secondaryAnimation, child) =>
-              FadeTransition(opacity: animation, child: child),
-          transitionDuration: const Duration(milliseconds: 500),
-        ),
-      );
+      // ✅ Login successful - AuthWrapper will handle navigation automatically
+      print('✅ Email login successful: ${result.data?.email}');
+      print('✅ User ID: ${result.data?.uid}');
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -112,7 +87,12 @@ class _LoginScreenState extends State<LoginScreen> {
           backgroundColor: AppColors.secondary,
         ),
       );
+
+      // ✅ NEW: Pop the login screen so AuthWrapper can show the correct screen
+      Navigator.of(context).pop();
     } catch (e) {
+      if (!mounted) return;
+
       String message = "Error: ${e.toString()}";
       if (e is FirebaseAuthException) {
         if (e.code == 'user-not-found') {
@@ -134,6 +114,9 @@ class _LoginScreenState extends State<LoginScreen> {
     try {
       setState(() => _isGoogleLoading = true);
       final result = await AuthService().signInWithGoogle();
+
+      if (!mounted) return;
+
       if (!result.isSuccess || result.data == null) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -144,23 +127,9 @@ class _LoginScreenState extends State<LoginScreen> {
         return;
       }
 
-      final user = result.data!;
-      final doc = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .get();
-
-      final data = doc.data();
-      final isProfileComplete = data?['isProfileComplete'] == true;
-
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) => isProfileComplete
-              ? const MainNavigationScreen()
-              : const ProfileSetupScreen(),
-        ),
-      );
+      // ✅ Google login successful - AuthWrapper will handle navigation automatically
+      print('✅ Google login successful: ${result.data?.email}');
+      print('✅ User ID: ${result.data?.uid}');
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -168,7 +137,12 @@ class _LoginScreenState extends State<LoginScreen> {
           backgroundColor: AppColors.secondary,
         ),
       );
+
+      // ✅ NEW: Pop the login screen so AuthWrapper can show the correct screen
+      Navigator.of(context).pop();
     } catch (e) {
+      if (!mounted) return;
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text("Google Sign-In Failed: ${e.toString()}"),

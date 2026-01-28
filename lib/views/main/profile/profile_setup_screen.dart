@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:lifeline/components/navigation.dart';
 import 'package:lifeline/models/user_model.dart';
 import 'package:lifeline/services/user_service.dart';
 import 'package:lifeline/views/main/profile/controller/profile_controller.dart';
@@ -157,9 +156,12 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
 
       await _userService.updateCurrentUser(newUser);
 
+      // ✅ Mark profile as complete
       await _profileController.markProfileComplete();
 
       if (!mounted) return;
+
+      print('✅ Profile setup complete for user: $uid');
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -175,10 +177,9 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
         ),
       );
 
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const MainNavigationScreen()),
-      );
+      // ❌ REMOVED: Navigator.pushReplacement
+      // ✅ AuthWrapper will automatically detect isProfileComplete = true
+      // and navigate to MainNavigationScreen
     } catch (e) {
       if (!mounted) return;
 

@@ -1,6 +1,6 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'package:hive_flutter/adapters.dart';
 import 'package:lifeline/firebase/firebase_options.dart';
 import 'package:lifeline/constants/app_colors.dart';
 import 'package:lifeline/views/entry/splash_screen.dart';
@@ -8,11 +8,12 @@ import 'package:google_fonts/google_fonts.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
-  await Hive.initFlutter();
-  await Hive.openBox('chat_sessions');
+  // CRITICAL: Disable Firestore persistence to prevent caching issues
+  FirebaseFirestore.instance.settings = const Settings(
+    persistenceEnabled: false,
+  );
 
   runApp(const MyApp());
 }

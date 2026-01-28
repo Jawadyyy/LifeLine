@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:lifeline/components/custom_bottom_navbar.dart';
 import 'package:lifeline/views/main/contact/contacts_screen.dart';
 import 'package:lifeline/views/main/home/home_screen.dart';
@@ -16,6 +17,7 @@ class MainNavigationScreen extends StatefulWidget {
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
   int _currentIndex = 0;
   final GlobalDataService _globalDataService = GlobalDataService();
+  String? _currentUserId; // Track current user
 
   final List<Widget> _screens = const [
     HomeScreen(key: ValueKey("Home")),
@@ -27,8 +29,42 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   @override
   void initState() {
     super.initState();
-    // Initialize all data once when the navigation screen is created
+    _currentUserId = FirebaseAuth.instance.currentUser?.uid;
+    print('🏠 MainNavigationScreen initialized for user: $_currentUserId');
     _initializeGlobalData();
+  }
+
+  @override
+  void didUpdateWidget(MainNavigationScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    // Check if user has changed
+    final newUserId = FirebaseAuth.instance.currentUser?.uid;
+    if (_currentUserId != newUserId) {
+      print('👤 User changed from $_currentUserId to $newUserId');
+      _currentUserId = newUserId;
+
+      // Clear old data and reinitialize for new user
+      _clearAndReinitialize();
+    }
+  }
+
+  Future<void> _clearAndReinitialize() async {
+    try {
+      // Clear cached data
+      await _globalDataService.clearAllData();
+      print('🧹 Cleared old user data');
+
+      // Reinitialize for new user
+      await _globalDataService.initializeAllData();
+      print('✅ Reinitialized data for new user: $_currentUserId');
+
+      if (mounted) {
+        setState(() {}); // Trigger rebuild
+      }
+    } catch (e) {
+      debugPrint('Error clearing and reinitializing data: $e');
+    }
   }
 
   Future<void> _initializeGlobalData() async {
@@ -38,6 +74,13 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     } catch (e) {
       debugPrint('Error initializing GlobalDataService: $e');
     }
+  }
+
+  @override
+  void dispose() {
+    // Clear data when disposing
+    _globalDataService.clearAllData();
+    super.dispose();
   }
 
   void _onTabTapped(int index) {
