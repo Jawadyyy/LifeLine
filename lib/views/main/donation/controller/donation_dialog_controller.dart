@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:lifeline/constants/app_colors.dart';
 import 'package:lifeline/views/main/donation/controller/donation_controller.dart';
+import 'package:lifeline/views/main/donation/widgets/location_picker.dart';
 
 class DonationDialogController {
   final DonationController _donationController;
@@ -80,9 +81,17 @@ class DonationDialogController {
     String description = postData['description'] ?? '';
     final descController = TextEditingController(text: description);
 
+    // Location state
+    double? latitude = postData['latitude']?.toDouble();
+    double? longitude = postData['longitude']?.toDouble();
+    String? locationAddress = postData['location'];
+
     // Create variables to track the updated values
     DateTime updatedDonationTime = donationTime;
     String updatedBloodGroup = bloodGroup;
+    double? updatedLatitude = latitude;
+    double? updatedLongitude = longitude;
+    String? updatedLocationAddress = locationAddress;
 
     showDialog(
       context: context,
@@ -116,6 +125,21 @@ class DonationDialogController {
                     },
                   ),
                   const SizedBox(height: 20),
+                  _buildLocationPicker(
+                    context,
+                    setState,
+                    updatedLocationAddress,
+                    updatedLatitude,
+                    updatedLongitude,
+                    (lat, lng, address) {
+                      setState(() {
+                        updatedLatitude = lat;
+                        updatedLongitude = lng;
+                        updatedLocationAddress = address;
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 20),
                   _buildDateTimePicker(
                     context,
                     setState,
@@ -129,8 +153,17 @@ class DonationDialogController {
                   const SizedBox(height: 20),
                   _buildDescriptionField(descController),
                   const SizedBox(height: 32),
-                  _buildSaveButton(context, userId, postId, updatedBloodGroup,
-                      updatedDonationTime, descController),
+                  _buildSaveButton(
+                    context,
+                    userId,
+                    postId,
+                    updatedBloodGroup,
+                    updatedDonationTime,
+                    descController,
+                    updatedLatitude,
+                    updatedLongitude,
+                    updatedLocationAddress,
+                  ),
                 ],
               ),
             ),
@@ -142,12 +175,11 @@ class DonationDialogController {
 
   // Show create post dialog
   void showCreatePostDialog(BuildContext context) {
-    // Create a persistent form key
     final formKey = GlobalKey<FormState>();
 
     showDialog(
       context: context,
-      barrierDismissible: false, // Prevent closing by tapping outside
+      barrierDismissible: false,
       builder: (context) => Dialog(
         backgroundColor: AppColors.surface,
         shape: RoundedRectangleBorder(
@@ -174,6 +206,8 @@ class DonationDialogController {
                     _buildCreateDialogHeader(context),
                     const SizedBox(height: 24),
                     _buildCreateBloodGroupDropdown(context, setState),
+                    const SizedBox(height: 20),
+                    _buildCreateLocationPicker(context, setState),
                     const SizedBox(height: 20),
                     _buildCreateDescriptionField(),
                     const SizedBox(height: 20),
@@ -262,6 +296,138 @@ class DonationDialogController {
       return await _donationController.deletePost(userId, postId);
     }
     return false;
+  }
+
+  // Build location picker for edit dialog
+  Widget _buildLocationPicker(
+    BuildContext context,
+    StateSetter setState,
+    String? currentAddress,
+    double? currentLat,
+    double? currentLng,
+    Function(double, double, String) onLocationSelected,
+  ) {
+    return InkWell(
+      onTap: () async {
+        await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => LocationPickerWidget(
+              initialLatitude: currentLat,
+              initialLongitude: currentLng,
+              onLocationSelected: (lat, lng, address) {
+                onLocationSelected(lat, lng, address);
+              },
+            ),
+          ),
+        );
+        setState(() {});
+      },
+      child: InputDecorator(
+        decoration: InputDecoration(
+          labelText: 'Location',
+          labelStyle: const TextStyle(color: AppColors.textSecondary),
+          floatingLabelStyle: const TextStyle(color: AppColors.primary),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: AppColors.tertiary),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: AppColors.tertiary),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: AppColors.primary),
+          ),
+          filled: true,
+          fillColor: AppColors.background,
+          suffixIcon: const Icon(Icons.map, color: AppColors.primary),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(
+              child: Text(
+                currentAddress ?? 'Tap to select location',
+                style: TextStyle(
+                  color: currentAddress != null
+                      ? AppColors.textPrimary
+                      : AppColors.textGrey,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            const Icon(Icons.location_pin, color: AppColors.primary, size: 20),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Build location picker for create dialog
+  Widget _buildCreateLocationPicker(
+      BuildContext context, StateSetter setState) {
+    return InkWell(
+      onTap: () async {
+        await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => LocationPickerWidget(
+              initialLatitude: _donationController.selectedLatitude,
+              initialLongitude: _donationController.selectedLongitude,
+              onLocationSelected: (lat, lng, address) {
+                _donationController.updateSelectedLocation(
+                  latitude: lat,
+                  longitude: lng,
+                  address: address,
+                );
+              },
+            ),
+          ),
+        );
+        setState(() {});
+      },
+      child: InputDecorator(
+        decoration: InputDecoration(
+          labelText: 'Location *',
+          labelStyle: const TextStyle(color: AppColors.textSecondary),
+          floatingLabelStyle: const TextStyle(color: AppColors.primary),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: AppColors.tertiary),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: AppColors.tertiary),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: AppColors.primary),
+          ),
+          filled: true,
+          fillColor: AppColors.background,
+          prefixIcon: const Icon(Icons.location_on, color: AppColors.primary),
+          errorText: _donationController.hasSelectedLocation ? null : null,
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(
+              child: Text(
+                _donationController.formattedLocation,
+                style: TextStyle(
+                  color: _donationController.hasSelectedLocation
+                      ? AppColors.textPrimary
+                      : AppColors.textGrey,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   // Build dialog header
@@ -391,7 +557,7 @@ class DonationDialogController {
           .toList(),
       onChanged: (val) {
         _donationController.updateBloodGroup(val!);
-        setState(() {}); // Force rebuild to show updated value
+        setState(() {});
       },
       decoration: InputDecoration(
         labelText: 'Blood Group',
@@ -515,7 +681,6 @@ class DonationDialogController {
     return InkWell(
       onTap: () async {
         await _donationController.pickDateTime(context);
-        // Force rebuild of the dialog to show updated date/time
         setState(() {});
       },
       child: InputDecorator(
@@ -613,6 +778,9 @@ class DonationDialogController {
     String bloodGroup,
     DateTime donationTime,
     TextEditingController descController,
+    double? latitude,
+    double? longitude,
+    String? location,
   ) {
     return SizedBox(
       width: double.infinity,
@@ -624,6 +792,9 @@ class DonationDialogController {
             bloodGroup: bloodGroup,
             donationTime: donationTime,
             description: descController.text,
+            latitude: latitude,
+            longitude: longitude,
+            location: location,
           );
 
           if (success && context.mounted) {
@@ -670,6 +841,17 @@ class DonationDialogController {
             : () async {
                 // Validate form before submitting
                 if (formKey.currentState?.validate() == true) {
+                  if (!_donationController.hasSelectedLocation) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text("Please select a location"),
+                        backgroundColor: Colors.red,
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                    return;
+                  }
+
                   final success = await _donationController.submitPost();
                   if (success && context.mounted) {
                     Navigator.of(context).pop();
@@ -730,8 +912,18 @@ class DonationDialogController {
       child: Row(
         children: [
           Expanded(
-            child: OutlinedButton(
-              onPressed: () => Navigator.pop(context),
+            child: OutlinedButton.icon(
+              onPressed: () async {
+                final lat = data['latitude']?.toDouble();
+                final lng = data['longitude']?.toDouble();
+                final location = data['location'];
+
+                await _donationController.openMapDirections(
+                  location ?? '',
+                  lat: lat,
+                  lng: lng,
+                );
+              },
               style: OutlinedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(
@@ -742,8 +934,10 @@ class DonationDialogController {
                   width: 1.5,
                 ),
               ),
-              child: const Text(
-                'Close',
+              icon: const Icon(Icons.directions,
+                  color: AppColors.primary, size: 18),
+              label: const Text(
+                'Directions',
                 style: TextStyle(
                   color: AppColors.primary,
                   fontWeight: FontWeight.w500,
@@ -753,7 +947,7 @@ class DonationDialogController {
           ),
           const SizedBox(width: 12),
           Expanded(
-            child: ElevatedButton(
+            child: ElevatedButton.icon(
               onPressed: () async {
                 final phoneRaw = userData['phone'] ?? '';
                 final success = await _donationController.contactViaWhatsApp(
@@ -783,23 +977,10 @@ class DonationDialogController {
                 ),
                 elevation: 0,
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.message_outlined,
-                    size: 20,
-                    color: AppColors.textTertiary,
-                  ),
-                  SizedBox(width: 8),
-                  Text(
-                    'Contact',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w500,
-                      color: AppColors.textTertiary,
-                    ),
-                  ),
-                ],
+              icon: const Icon(Icons.message_outlined, size: 18),
+              label: const Text(
+                'Contact',
+                style: TextStyle(fontWeight: FontWeight.w500),
               ),
             ),
           ),
@@ -825,7 +1006,7 @@ class DonationDialogController {
             color: AppColors.textPrimary,
           ),
         ),
-        SizedBox(height: 12),
+        const SizedBox(height: 12),
         Row(
           children: [
             CircleAvatar(
@@ -1027,7 +1208,7 @@ class DonationDialogController {
               ),
             if (userData['email'] != null && userData['email'].isNotEmpty) ...[
               if (userData['phone'] != null && userData['phone'].isNotEmpty)
-                SizedBox(height: 12),
+                const SizedBox(height: 12),
               _buildContactRow(
                 icon: Icons.email_outlined,
                 value: userData['email'],

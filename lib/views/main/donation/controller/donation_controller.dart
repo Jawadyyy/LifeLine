@@ -20,6 +20,12 @@ class DonationController extends ChangeNotifier {
   String? currentUserCity;
   String? currentUserAddress;
 
+  // Location picker state
+  double? selectedLatitude;
+  double? selectedLongitude;
+  String? selectedLocationAddress;
+  bool isLoadingLocation = false;
+
   // Filter state
   String selectedBloodFilter = 'All';
   bool showOnlyCityDonations = true;
@@ -39,9 +45,13 @@ class DonationController extends ChangeNotifier {
 
   // Getters
   bool get hasSelectedDateTime => selectedDateTime != null;
+  bool get hasSelectedLocation =>
+      selectedLatitude != null && selectedLongitude != null;
   String get formattedDateTime => selectedDateTime != null
       ? DateFormat.yMd().add_jm().format(selectedDateTime!)
       : 'Select date and time';
+  String get formattedLocation =>
+      selectedLocationAddress ?? 'Select location on map';
 
   // Initialize controller
   void init() async {
@@ -104,6 +114,9 @@ class DonationController extends ChangeNotifier {
     selectedBloodGroup = 'O+';
     descriptionController.clear();
     locationController.clear();
+    selectedLatitude = null;
+    selectedLongitude = null;
+    selectedLocationAddress = null;
     notifyListeners();
   }
 
@@ -119,42 +132,70 @@ class DonationController extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Get current location address
-  Future<String> getCurrentAddress() async {
+  // Update selected location
+  void updateSelectedLocation({
+    required double latitude,
+    required double longitude,
+    required String address,
+  }) {
+    selectedLatitude = latitude;
+    selectedLongitude = longitude;
+    selectedLocationAddress = address;
+    locationController.text = address;
+    notifyListeners();
+  }
+
+  // Clear selected location
+  void clearSelectedLocation() {
+    selectedLatitude = null;
+    selectedLongitude = null;
+    selectedLocationAddress = null;
+    locationController.clear();
+    notifyListeners();
+  }
+
+  // Use current location
+  Future<void> useCurrentLocation() async {
+    setLoadingLocation(true);
     try {
-      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-      if (!serviceEnabled) {
-        throw Exception('Location services are disabled');
-      }
-
-      LocationPermission permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied) {
-        permission = await Geolocator.requestPermission();
-        if (permission == LocationPermission.denied) {
-          throw Exception('Location permission denied');
-        }
-      }
-
-      if (permission == LocationPermission.deniedForever) {
-        throw Exception('Location permission permanently denied');
-      }
-
-      Position position = await Geolocator.getCurrentPosition(
+      final position = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
       );
 
-      List<Placemark> placemarks = await placemarkFromCoordinates(
+      final address = await getAddressFromCoordinates(
         position.latitude,
         position.longitude,
       );
 
+      updateSelectedLocation(
+        latitude: position.latitude,
+        longitude: position.longitude,
+        address: address,
+      );
+    } catch (e) {
+      debugPrint('Error getting current location: $e');
+      rethrow;
+    } finally {
+      setLoadingLocation(false);
+    }
+  }
+
+  // Get address from coordinates
+  Future<String> getAddressFromCoordinates(
+      double latitude, double longitude) async {
+    try {
+      List<Placemark> placemarks = await placemarkFromCoordinates(
+        latitude,
+        longitude,
+      );
+
       if (placemarks.isEmpty) {
-        throw Exception('Could not determine location');
+        return 'Location: ${latitude.toStringAsFixed(4)}, ${longitude.toStringAsFixed(4)}';
       }
 
       Placemark place = placemarks.first;
 
-      // Build address with available components, prioritizing readable location
+      // Build address with available components
       String address = '';
 
       if (place.locality != null && place.locality!.isNotEmpty) {
@@ -183,10 +224,43 @@ class DonationController extends ChangeNotifier {
       // Fallback if no proper address found
       if (address.isEmpty) {
         address =
-            'Location: ${position.latitude.toStringAsFixed(4)}, ${position.longitude.toStringAsFixed(4)}';
+            'Location: ${latitude.toStringAsFixed(4)}, ${longitude.toStringAsFixed(4)}';
       }
 
       return address;
+    } catch (e) {
+      return 'Location: ${latitude.toStringAsFixed(4)}, ${longitude.toStringAsFixed(4)}';
+    }
+  }
+
+  // Get current location address
+  Future<String> getCurrentAddress() async {
+    try {
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        throw Exception('Location services are disabled');
+      }
+
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          throw Exception('Location permission denied');
+        }
+      }
+
+      if (permission == LocationPermission.deniedForever) {
+        throw Exception('Location permission permanently denied');
+      }
+
+      Position position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+      );
+
+      return await getAddressFromCoordinates(
+        position.latitude,
+        position.longitude,
+      );
     } catch (e) {
       rethrow;
     }
@@ -246,7 +320,11 @@ class DonationController extends ChangeNotifier {
 
   // Submit donation post
   Future<bool> submitPost() async {
-    if (selectedDateTime == null) return false;
+    if (selectedDateTime == null ||
+        selectedLatitude == null ||
+        selectedLongitude == null) {
+      return false;
+    }
 
     setLoading(true);
 
@@ -262,63 +340,39 @@ class DonationController extends ChangeNotifier {
       final userData = userDoc.data();
       if (userData == null) throw Exception('User data not found');
 
-      Position position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
-      );
-
-      List<Placemark> placemarks = await placemarkFromCoordinates(
-        position.latitude,
-        position.longitude,
-      );
-
-      String currentAddress = '';
+      // Get city and sublocality from selected location
       String city = '';
       String subLocality = '';
 
-      if (placemarks.isNotEmpty) {
-        final place = placemarks.first;
+      try {
+        List<Placemark> placemarks = await placemarkFromCoordinates(
+          selectedLatitude!,
+          selectedLongitude!,
+        );
 
-        // Get city
-        city = place.locality ??
-            place.subAdministrativeArea ??
-            place.administrativeArea ??
-            '';
-
-        // Get sub-locality
-        subLocality = place.subLocality ?? place.thoroughfare ?? '';
-
-        // Build readable address
-        currentAddress = '';
-        if (city.isNotEmpty) {
-          currentAddress = city;
+        if (placemarks.isNotEmpty) {
+          final place = placemarks.first;
+          city = place.locality ??
+              place.subAdministrativeArea ??
+              place.administrativeArea ??
+              '';
+          subLocality = place.subLocality ?? place.thoroughfare ?? '';
         }
-        if (subLocality.isNotEmpty) {
-          currentAddress +=
-              currentAddress.isNotEmpty ? ', $subLocality' : subLocality;
-        }
-        if (place.country != null && place.country!.isNotEmpty) {
-          currentAddress +=
-              currentAddress.isNotEmpty ? ', ${place.country}' : place.country!;
-        }
-
-        // Fallback
-        if (currentAddress.isEmpty) {
-          currentAddress =
-              'Location: ${position.latitude.toStringAsFixed(4)}, ${position.longitude.toStringAsFixed(4)}';
-        }
+      } catch (e) {
+        debugPrint('Error getting placemark: $e');
       }
 
       final post = {
         'blood_group': selectedBloodGroup,
-        'location': currentAddress,
+        'location': selectedLocationAddress ?? 'Unknown location',
         'city': city,
         'sub_locality': subLocality,
         'donation_time': selectedDateTime,
         'timestamp': Timestamp.now(),
         'description': descriptionController.text.trim(),
         'status': 'active', // active, completed, expired
-        'latitude': position.latitude,
-        'longitude': position.longitude,
+        'latitude': selectedLatitude,
+        'longitude': selectedLongitude,
       };
 
       await FirebaseFirestore.instance
@@ -344,20 +398,55 @@ class DonationController extends ChangeNotifier {
     required String bloodGroup,
     required DateTime donationTime,
     required String description,
+    double? latitude,
+    double? longitude,
+    String? location,
   }) async {
     setLoading(true);
 
     try {
+      Map<String, dynamic> updateData = {
+        'blood_group': bloodGroup,
+        'donation_time': donationTime,
+        'description': description.trim(),
+      };
+
+      // Update location if provided
+      if (latitude != null && longitude != null && location != null) {
+        String city = '';
+        String subLocality = '';
+
+        try {
+          List<Placemark> placemarks = await placemarkFromCoordinates(
+            latitude,
+            longitude,
+          );
+
+          if (placemarks.isNotEmpty) {
+            final place = placemarks.first;
+            city = place.locality ??
+                place.subAdministrativeArea ??
+                place.administrativeArea ??
+                '';
+            subLocality = place.subLocality ?? place.thoroughfare ?? '';
+          }
+        } catch (e) {
+          debugPrint('Error getting placemark: $e');
+        }
+
+        updateData['latitude'] = latitude;
+        updateData['longitude'] = longitude;
+        updateData['location'] = location;
+        updateData['city'] = city;
+        updateData['sub_locality'] = subLocality;
+      }
+
       await FirebaseFirestore.instance
           .collection('users')
           .doc(userId)
           .collection('donation_posts')
           .doc(postId)
-          .update({
-        'blood_group': bloodGroup,
-        'donation_time': donationTime,
-        'description': description.trim(),
-      });
+          .update(updateData);
 
       return true;
     } catch (e) {
@@ -488,7 +577,7 @@ class DonationController extends ChangeNotifier {
   Future<bool> openMapDirections(String destination,
       {double? lat, double? lng}) async {
     try {
-      if (destination.isEmpty) {
+      if (destination.isEmpty && (lat == null || lng == null)) {
         throw Exception('Destination is empty');
       }
 
@@ -512,6 +601,8 @@ class DonationController extends ChangeNotifier {
         url = 'https://www.google.com/maps/dir/?api=1'
             '&origin=${current.latitude},${current.longitude}'
             '&destination=$dest&travelmode=driving';
+      } else if (lat != null && lng != null) {
+        url = 'https://www.google.com/maps/search/?api=1&query=$lat,$lng';
       } else {
         final dest = Uri.encodeComponent(destination);
         url = 'https://www.google.com/maps/search/$dest';
@@ -716,10 +807,18 @@ class DonationController extends ChangeNotifier {
     notifyListeners();
   }
 
+  // Set loading location state
+  void setLoadingLocation(bool loading) {
+    isLoadingLocation = loading;
+    notifyListeners();
+  }
+
   // Validate form
   bool validateForm() {
     return selectedDateTime != null &&
-        descriptionController.text.trim().isNotEmpty;
+        descriptionController.text.trim().isNotEmpty &&
+        selectedLatitude != null &&
+        selectedLongitude != null;
   }
 
   // Get current user

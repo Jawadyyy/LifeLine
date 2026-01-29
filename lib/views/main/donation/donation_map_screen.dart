@@ -10,14 +10,14 @@ import 'package:lifeline/constants/app_colors.dart';
 import 'package:lifeline/views/main/donation/controller/donation_controller.dart';
 import 'package:lifeline/views/main/donation/controller/donation_dialog_controller.dart';
 
-class DonationMapOnlyScreen extends StatefulWidget {
-  const DonationMapOnlyScreen({super.key});
+class DonationMapScreen extends StatefulWidget {
+  const DonationMapScreen({super.key});
 
   @override
-  State<DonationMapOnlyScreen> createState() => _DonationMapOnlyScreenState();
+  State<DonationMapScreen> createState() => _DonationMapOnlyScreenState();
 }
 
-class _DonationMapOnlyScreenState extends State<DonationMapOnlyScreen> {
+class _DonationMapOnlyScreenState extends State<DonationMapScreen> {
   late DonationController _donationController;
   late DonationDialogController _dialogController;
 
