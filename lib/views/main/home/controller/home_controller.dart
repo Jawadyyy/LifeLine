@@ -5,8 +5,9 @@ import 'package:flutter/material.dart';
 import 'package:lifeline/constants/app_colors.dart';
 import 'package:lifeline/services/firestore_service.dart';
 import 'package:lifeline/services/location_handler.dart';
+import 'package:lifeline/views/main/donation/donation_map_screen.dart';
+
 import 'package:url_launcher/url_launcher.dart';
-import '../../donation/donation_screen.dart';
 
 class HomeController {
   final State state;
@@ -384,7 +385,7 @@ class HomeController {
     return GestureDetector(
       onTap: () {
         Navigator.of(context).push(PageRouteBuilder(
-          pageBuilder: (_, __, ___) => const DonationScreen(),
+          pageBuilder: (_, __, ___) => const DonationMapScreen(),
           transitionsBuilder: (_, animation, __, child) {
             return FadeTransition(opacity: animation, child: child);
           },
