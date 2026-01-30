@@ -19,6 +19,7 @@ class DonationController extends ChangeNotifier {
   bool isLoading = false;
   String? currentUserCity;
   String? currentUserAddress;
+  Position? currentUserPosition;
 
   // Location picker state
   double? selectedLatitude;
@@ -28,7 +29,6 @@ class DonationController extends ChangeNotifier {
 
   // Filter state
   String selectedBloodFilter = 'All';
-  bool showOnlyCityDonations = true;
   String searchQuery = '';
 
   // Blood groups list
@@ -82,6 +82,12 @@ class DonationController extends ChangeNotifier {
   // Refresh user location
   Future<void> refreshUserLocation() async {
     try {
+      final position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+      );
+
+      currentUserPosition = position;
+
       final address = await getCurrentAddress();
       currentUserAddress = address;
       currentUserCity = extractCityFromAddress(address);
@@ -95,11 +101,6 @@ class DonationController extends ChangeNotifier {
   // Update filter settings
   void updateBloodFilter(String bloodGroup) {
     selectedBloodFilter = bloodGroup;
-    notifyListeners();
-  }
-
-  void toggleCityFilter() {
-    showOnlyCityDonations = !showOnlyCityDonations;
     notifyListeners();
   }
 
@@ -618,7 +619,7 @@ class DonationController extends ChangeNotifier {
     }
   }
 
-  // Get donation posts stream with filters
+  // Get donation posts stream with filters (for map - shows nearest requests)
   Stream<List<Map<String, dynamic>>> getFilteredDonationPostsStream() {
     return FirebaseFirestore.instance
         .collection('users')
@@ -639,13 +640,6 @@ class DonationController extends ChangeNotifier {
           final postData = postDoc.data();
 
           // Apply filters
-          bool matchesCity = true;
-          if (showOnlyCityDonations && currentUserCity != null) {
-            final postCity = postData['city'] ?? '';
-            matchesCity =
-                postCity.toLowerCase() == currentUserCity!.toLowerCase();
-          }
-
           bool matchesBlood = selectedBloodFilter == 'All' ||
               postData['blood_group'] == selectedBloodFilter;
 
@@ -669,15 +663,44 @@ class DonationController extends ChangeNotifier {
           bool isActive = donationTime
               .isAfter(DateTime.now().subtract(const Duration(hours: 24)));
 
-          if (matchesCity && matchesBlood && matchesSearch && isActive) {
+          if (matchesBlood && matchesSearch && isActive) {
+            // Calculate distance if user position is available
+            double? distance;
+            if (currentUserPosition != null &&
+                postData['latitude'] != null &&
+                postData['longitude'] != null) {
+              distance = Geolocator.distanceBetween(
+                    currentUserPosition!.latitude,
+                    currentUserPosition!.longitude,
+                    postData['latitude'],
+                    postData['longitude'],
+                  ) /
+                  1000; // Convert to km
+            }
+
             allPosts.add({
               'postId': postDoc.id,
               'ownerId': userDoc.id,
               'userData': userData,
               'postData': postData,
+              'distance': distance,
             });
           }
         }
+      }
+
+      // Sort by distance if available
+      if (currentUserPosition != null) {
+        allPosts.sort((a, b) {
+          final distA = a['distance'] as double?;
+          final distB = b['distance'] as double?;
+
+          if (distA == null && distB == null) return 0;
+          if (distA == null) return 1;
+          if (distB == null) return -1;
+
+          return distA.compareTo(distB);
+        });
       }
 
       return allPosts;
@@ -752,18 +775,7 @@ class DonationController extends ChangeNotifier {
     return address;
   }
 
-  // Check if donation is in user's city
-  bool isDonationInUserCity(String donationCity) {
-    if (donationCity.isEmpty ||
-        currentUserCity == null ||
-        currentUserCity!.isEmpty) {
-      return false;
-    }
-
-    return donationCity.toLowerCase() == currentUserCity!.toLowerCase();
-  }
-
-  // Calculate distance between two locations (simplified)
+  // Calculate distance between two locations
   double calculateDistance(double lat1, double lon1, double lat2, double lon2) {
     return Geolocator.distanceBetween(lat1, lon1, lat2, lon2) / 1000; // in km
   }

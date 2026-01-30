@@ -24,12 +24,16 @@ class LocationPickerWidget extends StatefulWidget {
 
 class _LocationPickerWidgetState extends State<LocationPickerWidget> {
   late MapController _mapController;
+  final TextEditingController _searchController = TextEditingController();
   LatLng? _selectedLocation;
   LatLng? _currentLocation;
   bool _isLoading = true;
   bool _isMoving = false;
   bool _isMapReady = false;
+  bool _isSearching = false;
   String _selectedAddress = 'Select a location';
+  List<Location> _searchResults = [];
+  bool _showSearchResults = false;
 
   // Default location (Rawalpindi coordinates)
   static const LatLng _defaultLocation = LatLng(33.6844, 73.0479);
@@ -39,6 +43,25 @@ class _LocationPickerWidgetState extends State<LocationPickerWidget> {
     super.initState();
     _mapController = MapController();
     _initializeLocation();
+
+    // Add listener to search controller
+    _searchController.addListener(_onSearchChanged);
+  }
+
+  void _onSearchChanged() {
+    if (_searchController.text.trim().isEmpty) {
+      setState(() {
+        _searchResults = [];
+        _showSearchResults = false;
+      });
+    } else {
+      // Debounce search
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (_searchController.text.trim().isNotEmpty) {
+          _searchLocation(_searchController.text);
+        }
+      });
+    }
   }
 
   Future<void> _initializeLocation() async {
@@ -137,6 +160,73 @@ class _LocationPickerWidgetState extends State<LocationPickerWidget> {
       setState(() {
         _selectedLocation = center;
         _isMoving = event is MapEventMove;
+      });
+    }
+  }
+
+  Future<void> _searchLocation(String query) async {
+    if (query.trim().isEmpty) {
+      setState(() {
+        _searchResults = [];
+        _showSearchResults = false;
+      });
+      return;
+    }
+
+    setState(() {
+      _isSearching = true;
+      _showSearchResults = true;
+    });
+
+    try {
+      final locations = await locationFromAddress(query);
+
+      setState(() {
+        _searchResults = locations;
+        _isSearching = false;
+      });
+    } catch (e) {
+      debugPrint('Error searching location: $e');
+      setState(() {
+        _searchResults = [];
+        _isSearching = false;
+      });
+    }
+  }
+
+  Future<void> _selectSearchResult(Location location) async {
+    setState(() {
+      _showSearchResults = false;
+      _isLoading = true;
+    });
+
+    try {
+      final latLng = LatLng(location.latitude, location.longitude);
+
+      // Move map to selected location
+      _mapController.move(latLng, 15);
+
+      setState(() {
+        _selectedLocation = latLng;
+        _isLoading = false;
+      });
+
+      // Get address for the location
+      final address = await _getAddressFromCoordinates(
+        location.latitude,
+        location.longitude,
+      );
+
+      setState(() {
+        _selectedAddress = address;
+      });
+
+      // Clear search
+      _searchController.clear();
+    } catch (e) {
+      debugPrint('Error selecting search result: $e');
+      setState(() {
+        _isLoading = false;
       });
     }
   }
@@ -257,6 +347,23 @@ class _LocationPickerWidgetState extends State<LocationPickerWidget> {
     }
   }
 
+  String _formatAddress(Placemark place) {
+    List<String> parts = [];
+
+    if (place.name != null && place.name!.isNotEmpty) {
+      parts.add(place.name!);
+    }
+    if (place.locality != null && place.locality!.isNotEmpty) {
+      parts.add(place.locality!);
+    }
+    if (place.administrativeArea != null &&
+        place.administrativeArea!.isNotEmpty) {
+      parts.add(place.administrativeArea!);
+    }
+
+    return parts.join(', ');
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -351,9 +458,173 @@ class _LocationPickerWidgetState extends State<LocationPickerWidget> {
                   ),
                 ),
 
-                // Top card showing selected location info
+                // Search bar with auto-suggestions
                 Positioned(
                   top: 16,
+                  left: 16,
+                  right: 16,
+                  child: Column(
+                    children: [
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.1),
+                              blurRadius: 10,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: TextField(
+                          controller: _searchController,
+                          decoration: InputDecoration(
+                            hintText: 'Search location...',
+                            hintStyle: const TextStyle(
+                              color: AppColors.textGrey,
+                              fontSize: 14,
+                            ),
+                            prefixIcon: const Icon(
+                              Icons.search,
+                              color: AppColors.primary,
+                            ),
+                            suffixIcon: _searchController.text.isNotEmpty
+                                ? IconButton(
+                                    icon: const Icon(
+                                      Icons.clear,
+                                      color: AppColors.textGrey,
+                                    ),
+                                    onPressed: () {
+                                      _searchController.clear();
+                                      setState(() {
+                                        _searchResults = [];
+                                        _showSearchResults = false;
+                                      });
+                                    },
+                                  )
+                                : null,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide.none,
+                            ),
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 14,
+                            ),
+                            filled: true,
+                            fillColor: Colors.white,
+                          ),
+                          onChanged: (value) {
+                            setState(() {});
+                          },
+                        ),
+                      ),
+
+                      // Search results with live suggestions
+                      if (_showSearchResults)
+                        Container(
+                          margin: const EdgeInsets.only(top: 8),
+                          constraints: const BoxConstraints(maxHeight: 250),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.1),
+                                blurRadius: 10,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: _isSearching
+                              ? const Padding(
+                                  padding: EdgeInsets.all(16),
+                                  child: Center(
+                                    child: CircularProgressIndicator(
+                                      color: AppColors.primary,
+                                    ),
+                                  ),
+                                )
+                              : _searchResults.isEmpty
+                                  ? const Padding(
+                                      padding: EdgeInsets.all(16),
+                                      child: Text(
+                                        'No results found',
+                                        style: TextStyle(
+                                          color: AppColors.textGrey,
+                                        ),
+                                        textAlign: TextAlign.center,
+                                      ),
+                                    )
+                                  : ListView.separated(
+                                      shrinkWrap: true,
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 8,
+                                      ),
+                                      itemCount: _searchResults.length,
+                                      separatorBuilder: (context, index) =>
+                                          Divider(
+                                        height: 1,
+                                        color:
+                                            AppColors.textGrey.withOpacity(0.2),
+                                      ),
+                                      itemBuilder: (context, index) {
+                                        final location = _searchResults[index];
+                                        return FutureBuilder<List<Placemark>>(
+                                          future: placemarkFromCoordinates(
+                                            location.latitude,
+                                            location.longitude,
+                                          ),
+                                          builder: (context, snapshot) {
+                                            String displayName =
+                                                'Location ${index + 1}';
+                                            String subtitle =
+                                                'Lat: ${location.latitude.toStringAsFixed(4)}, '
+                                                'Lng: ${location.longitude.toStringAsFixed(4)}';
+
+                                            if (snapshot.hasData &&
+                                                snapshot.data!.isNotEmpty) {
+                                              final place =
+                                                  snapshot.data!.first;
+                                              displayName =
+                                                  _formatAddress(place);
+                                            }
+
+                                            return ListTile(
+                                              leading: const Icon(
+                                                Icons.location_on,
+                                                color: AppColors.primary,
+                                              ),
+                                              title: Text(
+                                                displayName,
+                                                style: const TextStyle(
+                                                  fontSize: 14,
+                                                  fontWeight: FontWeight.w500,
+                                                ),
+                                              ),
+                                              subtitle: Text(
+                                                subtitle,
+                                                style: const TextStyle(
+                                                  fontSize: 12,
+                                                  color: AppColors.textGrey,
+                                                ),
+                                              ),
+                                              onTap: () =>
+                                                  _selectSearchResult(location),
+                                            );
+                                          },
+                                        );
+                                      },
+                                    ),
+                        ),
+                    ],
+                  ),
+                ),
+
+                // Location info card
+                Positioned(
+                  top: _showSearchResults ? 280 : 100,
                   left: 16,
                   right: 16,
                   child: Container(
@@ -479,7 +750,7 @@ class _LocationPickerWidgetState extends State<LocationPickerWidget> {
                               const SizedBox(width: 8),
                               const Expanded(
                                 child: Text(
-                                  'Drag the map to select your location',
+                                  'Search or drag the map to select your location',
                                   style: TextStyle(
                                     fontSize: 13,
                                     color: AppColors.textSecondary,
@@ -563,6 +834,8 @@ class _LocationPickerWidgetState extends State<LocationPickerWidget> {
   @override
   void dispose() {
     _mapController.dispose();
+    _searchController.removeListener(_onSearchChanged);
+    _searchController.dispose();
     super.dispose();
   }
 }
