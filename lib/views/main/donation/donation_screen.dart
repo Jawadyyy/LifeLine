@@ -29,9 +29,7 @@ class _DonationScreenState extends State<DonationScreen>
 
     _tabController.addListener(() {
       if (_tabController.indexIsChanging) {
-        setState(() {
-          _donationController.showOnlyCityDonations = _tabController.index == 0;
-        });
+        setState(() {});
       }
     });
   }

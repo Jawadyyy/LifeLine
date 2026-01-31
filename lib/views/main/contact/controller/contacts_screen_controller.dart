@@ -45,6 +45,34 @@ class ContactsScreenController {
     setStateFn(() => _setField('filteredContacts', filtered));
   }
 
+  /// Fetches all registered phone numbers from the 'users' collection in Firestore.
+  Future<Set<String>> _getRegisteredNumbers() async {
+    final usersSnapshot =
+        await FirebaseFirestore.instance.collection('users').get();
+
+    final registeredNumbers = <String>{};
+    for (final doc in usersSnapshot.docs) {
+      final phone = doc.data()['phone'] as String?;
+      if (phone != null && phone.isNotEmpty) {
+        // Normalize: strip all non-digit characters, then store last 10 digits
+        final digits = phone.replaceAll(RegExp(r'\D'), '');
+        if (digits.length >= 10) {
+          registeredNumbers.add(digits.substring(digits.length - 10));
+        }
+      }
+    }
+    return registeredNumbers;
+  }
+
+  /// Normalizes a phone number to its last 10 digits for comparison.
+  String _normalizeTo10Digits(String phone) {
+    final digits = phone.replaceAll(RegExp(r'\D'), '');
+    if (digits.length >= 10) {
+      return digits.substring(digits.length - 10);
+    }
+    return digits; // return as-is if shorter than 10 digits
+  }
+
   Future<void> showContactsDialog() async {
     try {
       final permissionGranted = await FlutterContacts.requestPermission();
@@ -53,9 +81,33 @@ class ContactsScreenController {
         return;
       }
 
-      final phoneContacts = await FlutterContacts.getContacts(
-        withProperties: true,
-      );
+      // Show loading indicator while fetching data
+      _showLoadingSnackbar('Finding registered contacts...');
+
+      // Fetch both in parallel for speed
+      final results = await Future.wait([
+        FlutterContacts.getContacts(withProperties: true),
+        _getRegisteredNumbers(),
+      ]);
+
+      final List<Contact> phoneContacts = results[0] as List<Contact>;
+      final Set<String> registeredNumbers = results[1] as Set<String>;
+
+      // Filter: keep only contacts that have at least one number registered in Firebase
+      final filteredContacts = <Map<String, dynamic>>[];
+
+      for (final contact in phoneContacts) {
+        for (final phone in contact.phones) {
+          final normalized = _normalizeTo10Digits(phone.number);
+          if (registeredNumbers.contains(normalized)) {
+            filteredContacts.add({
+              'contact': contact,
+              'matchedPhone': phone.number,
+            });
+            break; // one match per contact is enough
+          }
+        }
+      }
 
       // ignore: use_build_context_synchronously
       await showModalBottomSheet(
@@ -103,35 +155,50 @@ class ContactsScreenController {
                 ),
               ),
               Expanded(
-                child: phoneContacts.isNotEmpty
+                child: filteredContacts.isNotEmpty
                     ? ListView.separated(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
-                        itemCount: phoneContacts.length,
+                        itemCount: filteredContacts.length,
                         separatorBuilder: (context, index) => Divider(
                           height: 1,
                           color: AppColors.textGrey.withOpacity(0.1),
                         ),
                         itemBuilder: (context, index) {
-                          final contact = phoneContacts[index];
+                          final item = filteredContacts[index];
+                          final Contact contact = item['contact'] as Contact;
+                          final String matchedPhone =
+                              item['matchedPhone'] as String;
+
                           return buildContactListItem(
                             contact.displayName,
-                            contact.phones.isNotEmpty
-                                ? contact.phones[0].number
-                                : 'No phone number',
+                            matchedPhone,
                             onTap: () {
-                              addContactToFirestore(contact);
+                              // Build a temporary Contact-like object with the matched phone
+                              addContactToFirestore(contact, matchedPhone);
                               Navigator.pop(context);
                             },
                           );
                         },
                       )
-                    : const Center(
-                        child: Text(
-                          'No contacts found',
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: AppColors.textGrey,
-                          ),
+                    : Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.person_search,
+                              size: 64,
+                              color: AppColors.textGrey,
+                            ),
+                            const SizedBox(height: 16),
+                            const Text(
+                              'No registered users found\nin your contacts',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: AppColors.textGrey,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
               ),
@@ -140,19 +207,20 @@ class ContactsScreenController {
         ),
       );
     } catch (e) {
+      // ignore: avoid_print
+      print('Error in showContactsDialog: $e');
       _showErrorSnackbar('Error accessing contacts');
     }
   }
 
-  Future<void> addContactToFirestore(Contact selectedContact) async {
+  Future<void> addContactToFirestore(
+      Contact selectedContact, String matchedPhone) async {
     if (_currentUser != null) {
       setStateFn(() => _setField('_isLoading', true));
       try {
         final newContact = {
           'name': selectedContact.displayName,
-          'phone': selectedContact.phones.isNotEmpty
-              ? selectedContact.phones[0].number
-              : 'No Phone Number',
+          'phone': matchedPhone,
           'createdAt': FieldValue.serverTimestamp(),
         };
 
@@ -448,6 +516,20 @@ class ContactsScreenController {
         content: Text(message),
         backgroundColor: AppColors.error,
         behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
+      ),
+    );
+  }
+
+  void _showLoadingSnackbar(String message) {
+    ScaffoldMessenger.of(_context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: AppColors.primary,
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 5),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8),
         ),
