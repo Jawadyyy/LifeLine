@@ -45,32 +45,30 @@ class ContactsScreenController {
     setStateFn(() => _setField('filteredContacts', filtered));
   }
 
-  /// Fetches all registered phone numbers from the 'users' collection in Firestore.
-  Future<Set<String>> _getRegisteredNumbers() async {
+  Future<Map<String, Map<String, dynamic>>> _getRegisteredUsersMap() async {
     final usersSnapshot =
         await FirebaseFirestore.instance.collection('users').get();
 
-    final registeredNumbers = <String>{};
+    final map = <String, Map<String, dynamic>>{};
     for (final doc in usersSnapshot.docs) {
-      final phone = doc.data()['phone'] as String?;
+      final data = doc.data();
+      final phone = data['phone'] as String?;
       if (phone != null && phone.isNotEmpty) {
-        // Normalize: strip all non-digit characters, then store last 10 digits
-        final digits = phone.replaceAll(RegExp(r'\D'), '');
-        if (digits.length >= 10) {
-          registeredNumbers.add(digits.substring(digits.length - 10));
+        final normalized = _normalizeTo10Digits(phone);
+        if (normalized.length == 10) {
+          map[normalized] = data;
         }
       }
     }
-    return registeredNumbers;
+    return map;
   }
 
-  /// Normalizes a phone number to its last 10 digits for comparison.
   String _normalizeTo10Digits(String phone) {
     final digits = phone.replaceAll(RegExp(r'\D'), '');
     if (digits.length >= 10) {
       return digits.substring(digits.length - 10);
     }
-    return digits; // return as-is if shorter than 10 digits
+    return digits;
   }
 
   Future<void> showContactsDialog() async {
@@ -81,30 +79,29 @@ class ContactsScreenController {
         return;
       }
 
-      // Show loading indicator while fetching data
       _showLoadingSnackbar('Finding registered contacts...');
 
-      // Fetch both in parallel for speed
       final results = await Future.wait([
         FlutterContacts.getContacts(withProperties: true),
-        _getRegisteredNumbers(),
+        _getRegisteredUsersMap(),
       ]);
 
       final List<Contact> phoneContacts = results[0] as List<Contact>;
-      final Set<String> registeredNumbers = results[1] as Set<String>;
+      final Map<String, Map<String, dynamic>> registeredUsers =
+          results[1] as Map<String, Map<String, dynamic>>;
 
-      // Filter: keep only contacts that have at least one number registered in Firebase
       final filteredContacts = <Map<String, dynamic>>[];
 
       for (final contact in phoneContacts) {
         for (final phone in contact.phones) {
           final normalized = _normalizeTo10Digits(phone.number);
-          if (registeredNumbers.contains(normalized)) {
+          if (registeredUsers.containsKey(normalized)) {
             filteredContacts.add({
               'contact': contact,
               'matchedPhone': phone.number,
+              'userData': registeredUsers[normalized]!,
             });
-            break; // one match per contact is enough
+            break;
           }
         }
       }
@@ -168,13 +165,18 @@ class ContactsScreenController {
                           final Contact contact = item['contact'] as Contact;
                           final String matchedPhone =
                               item['matchedPhone'] as String;
+                          final Map<String, dynamic> userData =
+                              item['userData'] as Map<String, dynamic>;
+                          final String? profileImageUrl =
+                              userData['profileImageUrl'] as String?;
 
                           return buildContactListItem(
                             contact.displayName,
                             matchedPhone,
+                            profileImageUrl: profileImageUrl,
                             onTap: () {
-                              // Build a temporary Contact-like object with the matched phone
-                              addContactToFirestore(contact, matchedPhone);
+                              addContactToFirestore(
+                                  contact, matchedPhone, userData);
                               Navigator.pop(context);
                             },
                           );
@@ -213,20 +215,20 @@ class ContactsScreenController {
     }
   }
 
-  Future<void> addContactToFirestore(
-      Contact selectedContact, String matchedPhone) async {
+  Future<void> addContactToFirestore(Contact selectedContact,
+      String matchedPhone, Map<String, dynamic> userData) async {
     if (_currentUser != null) {
       setStateFn(() => _setField('_isLoading', true));
       try {
         final newContact = {
           'name': selectedContact.displayName,
           'phone': matchedPhone,
+          'profileImageUrl': userData['profileImageUrl'] ?? '',
           'createdAt': FieldValue.serverTimestamp(),
         };
 
         await _contactsRef.add(newContact);
 
-        // Reload contacts through GlobalDataService
         await _globalDataService.loadContactsData(forceReload: true);
 
         _showSuccessSnackbar('Contact added successfully');
@@ -246,7 +248,6 @@ class ContactsScreenController {
       try {
         await _contactsRef.doc(contactId).delete();
 
-        // Reload contacts through GlobalDataService
         await _globalDataService.loadContactsData(forceReload: true);
 
         _showSuccessSnackbar('Contact deleted');
@@ -340,27 +341,70 @@ class ContactsScreenController {
     return false;
   }
 
-  Widget buildContactListItem(String name, String phone,
-      {VoidCallback? onTap}) {
-    return ListTile(
-      contentPadding: EdgeInsets.zero,
-      leading: Container(
-        width: 48,
-        height: 48,
-        decoration: BoxDecoration(
-          color: AppColors.primary.withOpacity(0.1),
-          shape: BoxShape.circle,
-        ),
-        child: Center(
-          child: Text(
-            name.isNotEmpty ? name[0].toUpperCase() : '?',
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: AppColors.primary,
-            ),
+  // ─── Avatar Helper ──────────────────────────────────────────────────────────
+  Widget _buildAvatar(
+      {required double size,
+      String? profileImageUrl,
+      required String name,
+      double fontSize = 18}) {
+    final hasImage = profileImageUrl != null && profileImageUrl.isNotEmpty;
+
+    if (hasImage) {
+      return ClipOval(
+        child: SizedBox(
+          width: size,
+          height: size,
+          child: Image.network(
+            profileImageUrl,
+            fit: BoxFit.cover,
+            errorBuilder: (_, __, ___) =>
+                _letterAvatar(size: size, name: name, fontSize: fontSize),
           ),
         ),
+      );
+    }
+
+    return _letterAvatar(size: size, name: name, fontSize: fontSize);
+  }
+
+  Widget _letterAvatar(
+      {required double size, required String name, required double fontSize}) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            AppColors.primary.withOpacity(0.2),
+            AppColors.primary.withOpacity(0.4),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        shape: BoxShape.circle,
+      ),
+      child: Center(
+        child: Text(
+          name.isNotEmpty ? name[0].toUpperCase() : '?',
+          style: TextStyle(
+            fontSize: fontSize,
+            fontWeight: FontWeight.bold,
+            color: AppColors.primary,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget buildContactListItem(String name, String phone,
+      {VoidCallback? onTap, String? profileImageUrl}) {
+    return ListTile(
+      contentPadding: EdgeInsets.zero,
+      leading: _buildAvatar(
+        size: 48,
+        profileImageUrl: profileImageUrl,
+        name: name,
+        fontSize: 18,
       ),
       title: Text(
         name,
@@ -396,7 +440,12 @@ class ContactsScreenController {
     );
   }
 
-  Widget buildContactCard(Map<String, dynamic> contact) {
+  /// [onTap] is now a required callback — the page passes navigation here.
+  /// The InkWell uses this directly, so no outer GestureDetector is needed.
+  Widget buildContactCard(Map<String, dynamic> contact,
+      {required VoidCallback onTap}) {
+    final String? profileImageUrl = contact['profileImageUrl'] as String?;
+
     return Container(
       decoration: BoxDecoration(
         color: AppColors.background,
@@ -414,38 +463,17 @@ class ContactsScreenController {
         color: AppColors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
-          onTap: () {},
+          onTap: onTap, // ← directly uses the passed callback
           onLongPress: () => showDeleteDialog(contact['id'], contact['name']),
           child: Padding(
             padding: const EdgeInsets.all(12),
             child: Row(
               children: [
-                Container(
-                  width: 56,
-                  height: 56,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        AppColors.primary.withOpacity(0.2),
-                        AppColors.primary.withOpacity(0.4),
-                      ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Center(
-                    child: Text(
-                      (contact['name'] as String).isNotEmpty
-                          ? (contact['name'] as String)[0].toUpperCase()
-                          : '?',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.primary,
-                      ),
-                    ),
-                  ),
+                _buildAvatar(
+                  size: 56,
+                  profileImageUrl: profileImageUrl,
+                  name: contact['name'] as String,
+                  fontSize: 20,
                 ),
                 const SizedBox(width: 16),
                 Expanded(

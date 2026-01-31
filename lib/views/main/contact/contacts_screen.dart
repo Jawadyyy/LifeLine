@@ -1,6 +1,9 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:lifeline/constants/app_colors.dart';
 import 'package:lifeline/views/main/contact/controller/contacts_screen_controller.dart';
+import 'package:lifeline/views/main/contact/chat/chat_screen.dart';
 import 'package:lifeline/services/global_data_service.dart';
 
 class ContactsPage extends StatefulWidget {
@@ -23,25 +26,55 @@ class _ContactsPageState extends State<ContactsPage> {
     super.initState();
     controller = ContactsScreenController(this, setState);
 
-    // Listen to global data service for contacts updates
     _globalDataService.addListener(_onGlobalDataChanged);
 
-    // Get contacts from global service (already loaded)
-    _updateContactsFromGlobal();
+    // Load directly from Firestore to guarantee profileImageUrl is included
+    _loadContacts();
   }
 
   void _onGlobalDataChanged() {
     if (mounted) {
-      _updateContactsFromGlobal();
+      // When global service notifies, reload from Firestore directly
+      _loadContacts();
     }
   }
 
-  void _updateContactsFromGlobal() {
-    setState(() {
-      contacts = _globalDataService.contacts;
-      filteredContacts = contacts;
-      _isLoading = _globalDataService.isLoadingContacts;
-    });
+  /// Loads contacts directly from Firestore so we always get ALL fields
+  /// including profileImageUrl, regardless of what GlobalDataService exposes.
+  Future<void> _loadContacts() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    setState(() => _isLoading = true);
+
+    try {
+      final snapshot = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .collection('contacts')
+          .orderBy('createdAt', descending: true)
+          .get();
+
+      final loaded = snapshot.docs.map((doc) {
+        final data = doc.data();
+        data['id'] = doc.id; // attach the doc ID
+        return data;
+      }).toList();
+
+      if (mounted) {
+        setState(() {
+          contacts = loaded;
+          filteredContacts = loaded;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      // ignore: avoid_print
+      print('Error loading contacts: $e');
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
   }
 
   @override
@@ -72,6 +105,20 @@ class _ContactsPageState extends State<ContactsPage> {
     }
   }
 
+  void _navigateToChat(Map<String, dynamic> contact) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ChatScreen(
+          contactName: contact['name'] as String,
+          contactPhone: contact['phone'] as String,
+          contactImageUrl: contact['profileImageUrl'] as String?,
+          contactId: contact['id'] as String,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -96,7 +143,11 @@ class _ContactsPageState extends State<ContactsPage> {
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: controller?.showContactsDialog,
+        onPressed: () async {
+          await controller?.showContactsDialog();
+          // Reload after dialog closes in case a contact was added
+          _loadContacts();
+        },
         backgroundColor: AppColors.primary,
         child: const Icon(Icons.add, color: AppColors.textTertiary),
       ),
@@ -167,7 +218,10 @@ class _ContactsPageState extends State<ContactsPage> {
                         if (_searchController.text.isEmpty) ...[
                           const SizedBox(height: 8),
                           TextButton(
-                            onPressed: controller?.showContactsDialog,
+                            onPressed: () async {
+                              await controller?.showContactsDialog();
+                              _loadContacts();
+                            },
                             style: TextButton.styleFrom(
                               foregroundColor: AppColors.primary,
                             ),
@@ -201,10 +255,17 @@ class _ContactsPageState extends State<ContactsPage> {
                         ),
                         confirmDismiss: (direction) async {
                           if (controller == null) return false;
-                          return await controller!
+                          final deleted = await controller!
                               .showDeleteDialog(contact['id'], contact['name']);
+                          if (deleted) _loadContacts();
+                          return deleted;
                         },
-                        child: controller?.buildContactCard(contact) ??
+                        // No GestureDetector wrapper here.
+                        // onTap is passed directly into buildContactCard.
+                        child: controller?.buildContactCard(
+                              contact,
+                              onTap: () => _navigateToChat(contact),
+                            ) ??
                             ListTile(
                               title: Text(contact['name'] ?? ''),
                               subtitle: Text(contact['phone'] ?? ''),
