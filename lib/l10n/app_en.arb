@@ -1,0 +1,64 @@
+{
+  "@@locale": "en",
+  "appName": "LifeLine",
+  "navHome": "Home",
+  "navContacts": "Contacts",
+  "navMap": "Map",
+  "navProfile": "Profile",
+
+  "emergencyAssistance": "Emergency Assistance",
+  "emergencyPrompt": "Press the emergency button below to get immediate help",
+  "emergency": "EMERGENCY",
+  "selectEmergencyType": "Select Emergency Type",
+  "callAmbulance": "Call Ambulance / {number}",
+  "@callAmbulance": {
+    "placeholders": { "number": { "type": "String" } }
+  },
+  "dialDirectly": "Dial emergency services directly",
+  "donateBloodTitle": "Donate Blood, Save Lives",
+  "donateBloodSubtitle": "Tap to view donation opportunities near you",
+
+  "sharingLiveLocation": "Sharing your live location with contacts",
+  "stop": "STOP",
+  "followLiveLocation": "Follow live location",
+  "sharingLive": "Sharing live",
+  "sharingEnded": "Sharing ended",
+  "imSafeBanner": "Emergency active — let your contacts know you are safe",
+  "imSafe": "I'M SAFE",
+
+  "medicalId": "Medical ID",
+  "medicalIdSubtitle": "Blood type, allergies & emergency contact",
+  "bloodType": "Blood type",
+  "allergies": "Allergies",
+  "medicalConditions": "Medical conditions",
+  "emergencyContact": "Emergency contact",
+  "emergencyNote": "Emergency note",
+  "age": "Age",
+  "height": "Height",
+  "weight": "Weight",
+  "notSet": "Not set",
+
+  "medicalAssistant": "Medical Assistant",
+  "aiHealthCompanion": "AI health companion",
+  "assistantDisclaimer": "Not a substitute for professional medical advice. In an emergency call 1122.",
+  "clearChat": "Clear chat",
+  "askAboutHealth": "Ask about your health…",
+
+  "compatible": "Compatible",
+  "illDonate": "I'll donate",
+  "acceptedBy": "Accepted by {name}",
+  "@acceptedBy": {
+    "placeholders": { "name": { "type": "String" } }
+  },
+  "requestAcceptedNotice": "{name} accepted your blood donation request",
+  "@requestAcceptedNotice": {
+    "placeholders": { "name": { "type": "String" } }
+  },
+
+  "language": "Language",
+  "languageSubtitle": "Choose your preferred language",
+  "english": "English",
+  "urdu": "اردو",
+  "cancel": "Cancel",
+  "save": "Save"
+}

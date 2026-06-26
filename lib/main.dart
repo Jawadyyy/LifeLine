@@ -4,10 +4,14 @@ import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:lifeline/firebase/firebase_options.dart';
 import 'package:lifeline/constants/app_colors.dart';
+import 'package:lifeline/services/locale_controller.dart';
 import 'package:lifeline/views/entry/splash_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -34,7 +38,15 @@ Future<void> main() async {
     cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
   );
 
-  runApp(const MyApp());
+  final localeController = LocaleController();
+  await localeController.load();
+
+  runApp(
+    ChangeNotifierProvider.value(
+      value: localeController,
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
@@ -42,9 +54,18 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final localeController = context.watch<LocaleController>();
     return MaterialApp(
       title: 'LifeLine',
       debugShowCheckedModeBanner: false,
+      locale: localeController.locale,
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: AppLocalizations.supportedLocales,
       theme: ThemeData(
         brightness: Brightness.light,
         scaffoldBackgroundColor: AppColors.background,

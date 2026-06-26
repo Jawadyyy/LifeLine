@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lifeline/constants/app_colors.dart';
 import 'package:lifeline/services/live_location_service.dart';
 import 'package:lifeline/services/sos_followup.dart';
@@ -41,6 +42,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l = AppLocalizations.of(context);
 
     return Scaffold(
       backgroundColor: AppColors.surface,
@@ -65,7 +67,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         centerTitle: true,
         actions: [
           IconButton(
-            tooltip: 'Medical ID',
+            tooltip: l.medicalId,
             icon: const Icon(Icons.medical_information_outlined,
                 color: AppColors.primary),
             onPressed: () => Navigator.push(
@@ -84,7 +86,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
           Text(
-            'Emergency Assistance',
+            l.emergencyAssistance,
             style: theme.textTheme.headlineSmall
                 ?.copyWith(fontWeight: FontWeight.bold),
           ),
@@ -92,7 +94,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 40),
             child: Text(
-              'Press the emergency button below to get immediate help',
+              l.emergencyPrompt,
               textAlign: TextAlign.center,
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: theme.colorScheme.onSurface.withOpacity(0.7),

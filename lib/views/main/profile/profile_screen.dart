@@ -1,6 +1,9 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
+import 'package:lifeline/services/locale_controller.dart';
 import 'package:lifeline/views/auth/change_password.dart';
 import 'package:lifeline/views/auth/login_screen.dart';
 import 'package:lifeline/views/main/profile/profile_setting_screen.dart';
@@ -255,6 +258,14 @@ class _ProfilePageState extends State<ProfilePage> {
                   ),
                   const SizedBox(height: 15),
                   ProfileWidgets.buildMenuCard(
+                    icon: Icons.language,
+                    title: 'Language',
+                    subtitle: 'Choose your preferred language',
+                    onTap: () => _showLanguageDialog(context),
+                    colors: colors,
+                  ),
+                  const SizedBox(height: 15),
+                  ProfileWidgets.buildMenuCard(
                     icon: Icons.help_outline,
                     title: 'Help & FAQs',
                     subtitle: 'Get answers to common questions',
@@ -399,6 +410,46 @@ class _ProfilePageState extends State<ProfilePage> {
           ),
         );
       },
+    );
+  }
+
+  void _showLanguageDialog(BuildContext context) {
+    final controller = context.read<LocaleController>();
+    final l = AppLocalizations.of(context);
+    final current = controller.locale.languageCode;
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(l.language),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            RadioListTile<String>(
+              value: 'en',
+              groupValue: current,
+              title: Text(l.english),
+              activeColor: AppColors.primary,
+              onChanged: (v) {
+                controller.setLocale(const Locale('en'));
+                Navigator.pop(dialogContext);
+              },
+            ),
+            RadioListTile<String>(
+              value: 'ur',
+              groupValue: current,
+              title: Text(l.urdu),
+              activeColor: AppColors.primary,
+              onChanged: (v) {
+                controller.setLocale(const Locale('ur'));
+                Navigator.pop(dialogContext);
+              },
+            ),
+          ],
+        ),
+      ),
     );
   }
 
