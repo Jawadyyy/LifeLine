@@ -6,6 +6,7 @@ import 'package:geocoding/geocoding.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:lifeline/constants/app_colors.dart';
+import 'package:lifeline/services/blood_compatibility.dart';
 import 'package:lifeline/services/global_data_service.dart';
 
 class DonationController extends ChangeNotifier {
@@ -30,6 +31,28 @@ class DonationController extends ChangeNotifier {
   // Filter state
   String selectedBloodFilter = 'All';
   String searchQuery = '';
+
+  /// When on, [selectedBloodFilter] is treated as the donor's own blood group
+  /// and posts are matched by donation compatibility (e.g. O- sees everyone),
+  /// instead of an exact blood-group match.
+  bool compatibilityMode = false;
+
+  void toggleCompatibilityMode() {
+    compatibilityMode = !compatibilityMode;
+    notifyListeners();
+  }
+
+  /// Whether a post needing [postBloodGroup] passes the current blood filter.
+  bool postMatchesBloodFilter(String postBloodGroup) {
+    if (selectedBloodFilter == 'All') return true;
+    if (compatibilityMode) {
+      return BloodCompatibility.canDonate(
+        donor: selectedBloodFilter,
+        recipient: postBloodGroup,
+      );
+    }
+    return postBloodGroup == selectedBloodFilter;
+  }
 
   // Blood groups list
   final List<String> bloodGroups = [
@@ -639,9 +662,9 @@ class DonationController extends ChangeNotifier {
         for (var postDoc in postsSnapshot.docs) {
           final postData = postDoc.data();
 
-          // Apply filters
-          bool matchesBlood = selectedBloodFilter == 'All' ||
-              postData['blood_group'] == selectedBloodFilter;
+          // Apply filters (compatibility-aware when enabled)
+          bool matchesBlood =
+              postMatchesBloodFilter(postData['blood_group'] as String);
 
           bool matchesSearch = searchQuery.isEmpty ||
               postData['blood_group']

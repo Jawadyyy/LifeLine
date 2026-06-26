@@ -19,10 +19,24 @@ service cloud.firestore {
         allow read, write: if isSignedIn() && request.auth.uid == uid;
       }
 
-      // donation_posts: any signed-in user can read; only owner writes
+      // donation_posts: any signed-in user can read; only the owner creates/
+      // deletes. A donor may accept an open post by writing ONLY the accept
+      // fields, setting acceptedBy to themselves, once.
       match /donation_posts/{postId} {
         allow read: if isSignedIn();
-        allow write: if isSignedIn() && request.auth.uid == uid;
+        allow create, delete: if isSignedIn() && request.auth.uid == uid;
+        allow update: if isSignedIn() && (
+          request.auth.uid == uid ||
+          (
+            request.resource.data.diff(resource.data).affectedKeys()
+              .hasOnly(['acceptedBy', 'acceptedByName', 'acceptedAt', 'status'])
+            && request.resource.data.acceptedBy == request.auth.uid
+            && request.resource.data.status == 'accepted'
+            && !(resource.data.keys().hasAny(['acceptedBy'])
+                 && resource.data.acceptedBy != null
+                 && resource.data.acceptedBy != '')
+          )
+        );
       }
     }
 

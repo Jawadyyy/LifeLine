@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
@@ -7,6 +8,8 @@ import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:provider/provider.dart';
 import 'package:lifeline/constants/app_colors.dart';
+import 'package:lifeline/models/user_model.dart';
+import 'package:lifeline/services/donation_service.dart';
 import 'package:lifeline/views/main/donation/controller/donation_controller.dart';
 import 'package:lifeline/views/main/donation/controller/donation_dialog_controller.dart';
 
@@ -359,6 +362,40 @@ class _DonationMapScreenState extends State<DonationMapScreen>
       LatLng(lat1, lon1),
       LatLng(lat2, lon2),
     );
+  }
+
+  /// Donor accepts an open request: writes the acceptance (notifying the
+  /// requester in-app via their Firestore listener) and reveals contact.
+  Future<void> _acceptDonation(String ownerId, String postId) async {
+    final me = FirebaseAuth.instance.currentUser;
+    if (me == null) return;
+    final donorName =
+        currentUser.name.isNotEmpty && currentUser.name != 'Loading...'
+            ? currentUser.name
+            : (me.displayName ?? 'A donor');
+
+    final ok = await DonationService().acceptPost(
+      ownerUid: ownerId,
+      postId: postId,
+      donorUid: me.uid,
+      donorName: donorName,
+    );
+    if (!mounted) return;
+    if (ok) {
+      setState(() {
+        if (_selectedDonation != null) {
+          final pd =
+              _selectedDonation!['postData'] as Map<String, dynamic>;
+          pd['acceptedBy'] = me.uid;
+          pd['acceptedByName'] = donorName;
+          pd['status'] = 'accepted';
+        }
+      });
+      _showSnackBar('Thanks! The requester has been notified.');
+    } else {
+      _showSnackBar('This request was just accepted by someone else.',
+          isError: true);
+    }
   }
 
   void _showSnackBar(String message, {bool isError = false}) {
@@ -746,6 +783,30 @@ class _DonationMapScreenState extends State<DonationMapScreen>
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
             child: Row(
               children: [
+                Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: FilterChip(
+                    avatar: Icon(
+                      controller.compatibilityMode
+                          ? Icons.check_circle
+                          : Icons.bloodtype_outlined,
+                      size: 18,
+                      color: controller.compatibilityMode
+                          ? Colors.white
+                          : AppColors.primary,
+                    ),
+                    label: const Text('Compatible'),
+                    selected: controller.compatibilityMode,
+                    selectedColor: AppColors.primary,
+                    labelStyle: TextStyle(
+                      color: controller.compatibilityMode
+                          ? Colors.white
+                          : AppColors.textPrimary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    onSelected: (_) => controller.toggleCompatibilityMode(),
+                  ),
+                ),
                 _buildFilterChip(
                     'All', controller.selectedBloodFilter == 'All'),
                 ...controller.bloodGroups.map(
@@ -1432,8 +1493,57 @@ class _DonationMapScreenState extends State<DonationMapScreen>
       );
     }
 
+    final acceptedBy = (postData['acceptedBy'] as String?) ?? '';
+    final accepted = acceptedBy.isNotEmpty;
+
     return Column(
       children: [
+        if (accepted)
+          Container(
+            width: double.infinity,
+            margin: const EdgeInsets.only(bottom: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            decoration: BoxDecoration(
+              color: AppColors.success.withOpacity(0.12),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.success.withOpacity(0.5)),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.verified, color: AppColors.success, size: 20),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Accepted by ${postData['acceptedByName'] ?? 'a donor'}',
+                    style: const TextStyle(
+                        color: AppColors.success,
+                        fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ],
+            ),
+          )
+        else
+          Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                icon: const Icon(Icons.volunteer_activism, size: 20),
+                label: const Text("I'll donate"),
+                style: ElevatedButton.styleFrom(
+                  foregroundColor: Colors.white,
+                  backgroundColor: AppColors.success,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  elevation: 2,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                onPressed: () => _acceptDonation(ownerId, postId),
+              ),
+            ),
+          ),
         Row(
           children: [
             Expanded(

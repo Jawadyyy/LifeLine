@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:lifeline/components/custom_bottom_navbar.dart';
+import 'package:lifeline/services/donation_service.dart';
 import 'package:lifeline/views/main/contact/contacts_screen.dart';
 import 'package:lifeline/views/main/home/home_screen.dart';
 import 'package:lifeline/views/main/map/map_screen.dart';
@@ -20,6 +23,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   final GlobalDataService _globalDataService = GlobalDataService();
   String? _currentUserId; // Track current user
 
+  // In-app notification for donation requests accepted by a donor (no FCM).
+  StreamSubscription<List<Map<String, dynamic>>>? _acceptedSub;
+  final Set<String> _knownAccepted = {};
+  bool _acceptedSeeded = false;
+
   final List<Widget> _screens = const [
     HomeScreen(key: ValueKey("Home")),
     ContactsPage(key: ValueKey("Contacts")),
@@ -33,8 +41,42 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     _currentUserId = FirebaseAuth.instance.currentUser?.uid;
     debugPrint('🏠 MainNavigationScreen initialized for user: $_currentUserId');
     _initializeGlobalData();
+    _listenForAcceptedDonations();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) PermissionPrimingScreen.showIfFirstRun(context);
+    });
+  }
+
+  /// Notifies the requester in-app when one of their donation posts is accepted.
+  void _listenForAcceptedDonations() {
+    final uid = _currentUserId;
+    if (uid == null) return;
+    _acceptedSub?.cancel();
+    _acceptedSeeded = false;
+    _knownAccepted.clear();
+    _acceptedSub =
+        DonationService().watchAcceptedRequests(uid).listen((accepted) {
+      // Seed on first emission so existing acceptances don't re-notify.
+      if (!_acceptedSeeded) {
+        _acceptedSeeded = true;
+        _knownAccepted
+          ..clear()
+          ..addAll(accepted.map((p) => p['postId'] as String));
+        return;
+      }
+      for (final post in accepted) {
+        final id = post['postId'] as String;
+        if (_knownAccepted.add(id) && mounted) {
+          final donor = post['acceptedByName'] ?? 'A donor';
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('$donor accepted your blood donation request 🩸'),
+              behavior: SnackBarBehavior.floating,
+              duration: const Duration(seconds: 5),
+            ),
+          );
+        }
+      }
     });
   }
 
@@ -50,6 +92,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
       // Clear old data and reinitialize for new user
       _clearAndReinitialize();
+      _listenForAcceptedDonations();
     }
   }
 
@@ -82,6 +125,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
   @override
   void dispose() {
+    _acceptedSub?.cancel();
     // Clear data when disposing
     _globalDataService.clearAllData();
     super.dispose();
