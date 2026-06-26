@@ -52,7 +52,7 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyDSSMkMCoP9yy_FzJp_cKoK8g75okaOJeg',
-    appId: '1:670366419389:android:6608d3d4140e397a5fead4',
+    appId: '1:670366419389:android:2cf08dd81e2cc2b95fead4',
     messagingSenderId: '670366419389',
     projectId: 'lifelinev2-7cad5',
     storageBucket: 'lifelinev2-7cad5.firebasestorage.app',

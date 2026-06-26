@@ -1,36 +1,55 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:lifeline/services/emergency_service.dart';
 import 'package:lifeline/services/location_handler.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+/// Typed contract the map screen exposes to its controller, replacing the old
+/// `(state as dynamic).getField/setField` string reflection.
+abstract class MapScreenView {
+  BuildContext get context;
+  bool get mounted;
+
+  bool get isMapReady;
+  MapController get mapController;
+  LatLng? get currentPosition;
+  EmergencyType get emergencyType;
+
+  set isLoading(bool value);
+  set showRoute(bool value);
+  set selectedLocation(Map<String, dynamic>? value);
+  set routePoints(List<LatLng> value);
+  set currentPosition(LatLng? value);
+  set currentAddress(String? value);
+  set emergencyLocations(List<Map<String, dynamic>> value);
+  set isOnline(bool value);
+  set emergencyType(EmergencyType value);
+}
+
 class MapScreenController {
-  final State state;
+  final MapScreenView view;
   final void Function(void Function()) setStateFn;
 
-  MapScreenController(this.state, this.setStateFn);
+  MapScreenController(this.view, this.setStateFn);
 
-  BuildContext get context => state.context;
-  bool get mounted => state.mounted;
-
-  T _getField<T>(String name) => (state as dynamic).getField(name) as T;
-  void _setField(String name, dynamic value) =>
-      (state as dynamic).setField(name, value);
+  BuildContext get context => view.context;
+  bool get mounted => view.mounted;
 
   Future<void> checkLocationServiceAndLoadLocation() async {
     if (!mounted) return;
     setStateFn(() {
-      _setField('_isLoading', true);
-      _setField('_showRoute', false);
-      _setField('_selectedLocation', null);
-      _setField('_routePoints', <LatLng>[]);
+      view.isLoading = true;
+      view.showRoute = false;
+      view.selectedLocation = null;
+      view.routePoints = <LatLng>[];
     });
 
     final serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
       if (!mounted) return;
-      setStateFn(() => _setField('_isLoading', false));
+      setStateFn(() => view.isLoading = false);
       await _showLocationServiceDialog();
       return;
     }
@@ -38,7 +57,7 @@ class MapScreenController {
     await _loadCurrentLocation();
 
     if (!mounted) return;
-    setStateFn(() => _setField('_isLoading', false));
+    setStateFn(() => view.isLoading = false);
   }
 
   Future<void> _showLocationServiceDialog() async {
@@ -105,21 +124,19 @@ class MapScreenController {
 
       if (position != null) {
         setStateFn(() {
-          _setField('_currentPosition',
-              LatLng(position.latitude, position.longitude));
+          view.currentPosition =
+              LatLng(position.latitude, position.longitude);
         });
 
         final address = await LocationHandler.getAddressFromLatLng(position);
         if (!mounted) return;
         if (address != null) {
-          setStateFn(() => _setField('_currentAddress', address));
+          setStateFn(() => view.currentAddress = address);
         }
 
-        final isMapReady = _getField<bool>('_isMapReady');
-        final current = _getField<LatLng?>('_currentPosition');
-        if (isMapReady && current != null) {
-          final mapController = _getField<dynamic>('_mapController');
-          mapController.move(current, 15.0);
+        final current = view.currentPosition;
+        if (view.isMapReady && current != null) {
+          view.mapController.move(current, 15.0);
         }
 
         // Load emergency locations based on selected type
@@ -140,10 +157,10 @@ class MapScreenController {
   }
 
   Future<void> loadEmergencyLocations() async {
-    final currentPosition = _getField<LatLng?>('_currentPosition');
+    final currentPosition = view.currentPosition;
     if (currentPosition == null) return;
 
-    final emergencyType = _getField<EmergencyType>('_emergencyType');
+    final emergencyType = view.emergencyType;
     final isOnline = await EmergencyService.isOnline();
 
     if (!mounted) return;
@@ -157,8 +174,8 @@ class MapScreenController {
       if (!mounted) return;
 
       setStateFn(() {
-        _setField('_emergencyLocations', locations);
-        _setField('_isOnline', isOnline);
+        view.emergencyLocations = locations;
+        view.isOnline = isOnline;
       });
 
       // Show offline indicator if using cached data
@@ -200,17 +217,17 @@ class MapScreenController {
     if (!mounted) return;
 
     setStateFn(() {
-      _setField('_emergencyType', newType);
-      _setField('_isLoading', true);
-      _setField('_showRoute', false);
-      _setField('_selectedLocation', null);
-      _setField('_routePoints', <LatLng>[]);
+      view.emergencyType = newType;
+      view.isLoading = true;
+      view.showRoute = false;
+      view.selectedLocation = null;
+      view.routePoints = <LatLng>[];
     });
 
     await loadEmergencyLocations();
 
     if (!mounted) return;
-    setStateFn(() => _setField('_isLoading', false));
+    setStateFn(() => view.isLoading = false);
   }
 
   Future<void> launchMapsApp(LatLng destination) async {

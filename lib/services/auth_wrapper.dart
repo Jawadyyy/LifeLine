@@ -14,17 +14,17 @@ class AuthWrapper extends StatelessWidget {
     return StreamBuilder<User?>(
       stream: FirebaseAuth.instance.authStateChanges(),
       builder: (context, snapshot) {
-        print('═══════════════════════════════════════');
-        print('🔄 AuthWrapper rebuild');
-        print('Connection state: ${snapshot.connectionState}');
-        print('Has data: ${snapshot.hasData}');
-        print('User: ${snapshot.data?.email}');
-        print('User ID: ${snapshot.data?.uid}');
-        print('═══════════════════════════════════════');
+        debugPrint('═══════════════════════════════════════');
+        debugPrint('🔄 AuthWrapper rebuild');
+        debugPrint('Connection state: ${snapshot.connectionState}');
+        debugPrint('Has data: ${snapshot.hasData}');
+        debugPrint('User: ${snapshot.data?.email}');
+        debugPrint('User ID: ${snapshot.data?.uid}');
+        debugPrint('═══════════════════════════════════════');
 
         // Show loading while checking auth state
         if (snapshot.connectionState == ConnectionState.waiting) {
-          print('⏳ Waiting for auth state...');
+          debugPrint('⏳ Waiting for auth state...');
           return Scaffold(
             backgroundColor: AppColors.primary,
             body: Center(
@@ -37,13 +37,13 @@ class AuthWrapper extends StatelessWidget {
 
         // Not logged in - show welcome screen
         if (snapshot.data == null) {
-          print('➡️ No user - showing WelcomeScreen');
+          debugPrint('➡️ No user - showing WelcomeScreen');
           return const WelcomeScreen();
         }
 
         // Logged in - use StreamBuilder to listen to profile changes
         final userId = snapshot.data!.uid;
-        print('✅ User logged in: $userId');
+        debugPrint('✅ User logged in: $userId');
 
         return StreamBuilder<DocumentSnapshot>(
           stream: FirebaseFirestore.instance
@@ -51,15 +51,15 @@ class AuthWrapper extends StatelessWidget {
               .doc(userId)
               .snapshots(),
           builder: (context, profileSnapshot) {
-            print('───────────────────────────────────────');
-            print('📄 Profile StreamBuilder');
-            print('Connection state: ${profileSnapshot.connectionState}');
-            print('Has data: ${profileSnapshot.hasData}');
-            print('Doc exists: ${profileSnapshot.data?.exists}');
-            print('───────────────────────────────────────');
+            debugPrint('───────────────────────────────────────');
+            debugPrint('📄 Profile StreamBuilder');
+            debugPrint('Connection state: ${profileSnapshot.connectionState}');
+            debugPrint('Has data: ${profileSnapshot.hasData}');
+            debugPrint('Doc exists: ${profileSnapshot.data?.exists}');
+            debugPrint('───────────────────────────────────────');
 
             if (profileSnapshot.connectionState == ConnectionState.waiting) {
-              print('⏳ Waiting for profile data...');
+              debugPrint('⏳ Waiting for profile data...');
               return Scaffold(
                 backgroundColor: AppColors.primary,
                 body: Center(
@@ -72,8 +72,8 @@ class AuthWrapper extends StatelessWidget {
 
             // Handle case where document doesn't exist yet
             if (!profileSnapshot.hasData || !profileSnapshot.data!.exists) {
-              print('⚠️ User document does not exist');
-              print('➡️ Showing ProfileSetupScreen');
+              debugPrint('⚠️ User document does not exist');
+              debugPrint('➡️ Showing ProfileSetupScreen');
               return ProfileSetupScreen(
                 key: ValueKey(userId),
               );
@@ -83,18 +83,18 @@ class AuthWrapper extends StatelessWidget {
             final data = profileSnapshot.data!.data() as Map<String, dynamic>?;
             final isProfileComplete = data?['isProfileComplete'] == true;
 
-            print('📋 Profile data: $data');
-            print('📋 isProfileComplete: $isProfileComplete');
+            debugPrint('📋 Profile data: $data');
+            debugPrint('📋 isProfileComplete: $isProfileComplete');
 
             if (isProfileComplete) {
-              print('✅ Profile complete');
-              print('➡️ Showing MainNavigationScreen');
+              debugPrint('✅ Profile complete');
+              debugPrint('➡️ Showing MainNavigationScreen');
               return MainNavigationScreen(
                 key: ValueKey(userId),
               );
             } else {
-              print('❌ Profile incomplete');
-              print('➡️ Showing ProfileSetupScreen');
+              debugPrint('❌ Profile incomplete');
+              debugPrint('➡️ Showing ProfileSetupScreen');
               return ProfileSetupScreen(
                 key: ValueKey(userId),
               );

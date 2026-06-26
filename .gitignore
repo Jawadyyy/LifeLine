@@ -50,6 +50,12 @@ ios/Runner/GoogleService-Info.plist
 .env
 .env.*
 *.env
+!.env.example
+
+# Android signing / keystores
+android/key.properties
+**/*.jks
+**/*.keystore
 
 # API Keys and Secrets
 **/apiKeys.dart

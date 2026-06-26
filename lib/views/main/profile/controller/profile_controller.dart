@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:lifeline/models/user_model.dart';
@@ -207,7 +208,7 @@ class ProfileController extends ChangeNotifier {
 
   // Upload image to ImgBB
   Future<String?> uploadImageToImgBB(String filePath) async {
-    const apiKey = 'b876317f0442b8eec2f8c6ffd701b13d';
+    final apiKey = dotenv.env['IMGBB_KEY'] ?? '';
     final url = Uri.parse('https://api.imgbb.com/1/upload?key=$apiKey');
 
     try {
@@ -365,9 +366,4 @@ class ProfileController extends ChangeNotifier {
     }
   }
 
-  // Dispose resources
-  @override
-  void dispose() {
-    super.dispose();
-  }
 }

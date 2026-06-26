@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:lifeline/constants/app_colors.dart';
 import 'package:lifeline/models/chat_message.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 // ─── Header ───────────────────────────────────────────────────────────────────
 class ChatHeader extends StatelessWidget {
@@ -206,6 +207,9 @@ class MessageBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (message.isEmergency) {
+      return _EmergencyBubble(message: message);
+    }
     final isSent = message.isSent;
     final isFailed = message.status == MessageStatus.failed;
     final isSending = message.status == MessageStatus.sending;
@@ -343,6 +347,113 @@ class MessageBubble extends StatelessWidget {
       case MessageStatus.failed:
         return const SizedBox.shrink();
     }
+  }
+}
+
+// ─── Emergency Bubble ─────────────────────────────────────────────────────────
+/// Distinct red, pinned-looking bubble for `type == 'emergency'` SOS messages,
+/// with a tappable map link extracted from the message text.
+class _EmergencyBubble extends StatelessWidget {
+  final ChatMessage message;
+  const _EmergencyBubble({required this.message});
+
+  static final _urlRegExp = RegExp(r'https?://[^\s]+');
+
+  Future<void> _openMap() async {
+    final match = _urlRegExp.firstMatch(message.text);
+    if (match == null) return;
+    final uri = Uri.tryParse(match.group(0)!);
+    if (uri == null) return;
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final timeStr = DateFormat('h:mm a').format(message.time);
+    final hasMap = _urlRegExp.hasMatch(message.text);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Container(
+        width: double.infinity,
+        decoration: BoxDecoration(
+          color: Colors.red.shade50,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: Colors.red.shade300, width: 1.4),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.red.withOpacity(0.15),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: double.infinity,
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.red.shade600,
+                borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(13)),
+              ),
+              child: Row(
+                children: const [
+                  Icon(Icons.emergency_share_rounded,
+                      color: Colors.white, size: 18),
+                  SizedBox(width: 8),
+                  Text(
+                    'EMERGENCY ALERT',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(14, 12, 14, 6),
+              child: Text(
+                message.text,
+                style: TextStyle(
+                  color: Colors.red.shade900,
+                  fontSize: 14,
+                  height: 1.45,
+                ),
+              ),
+            ),
+            if (hasMap)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
+                child: TextButton.icon(
+                  onPressed: _openMap,
+                  icon: Icon(Icons.location_on, color: Colors.red.shade700),
+                  label: Text(
+                    'Open location in Maps',
+                    style: TextStyle(
+                      color: Colors.red.shade700,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(14, 0, 14, 8),
+              child: Text(
+                timeStr,
+                style: TextStyle(color: Colors.red.shade400, fontSize: 10.5),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 

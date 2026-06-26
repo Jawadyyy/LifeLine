@@ -12,11 +12,11 @@ class LocationPickerWidget extends StatefulWidget {
       onLocationSelected;
 
   const LocationPickerWidget({
-    Key? key,
+    super.key,
     this.initialLatitude,
     this.initialLongitude,
     required this.onLocationSelected,
-  }) : super(key: key);
+  });
 
   @override
   State<LocationPickerWidget> createState() => _LocationPickerWidgetState();
@@ -31,7 +31,6 @@ class _LocationPickerWidgetState extends State<LocationPickerWidget> {
   bool _isMoving = false;
   bool _isMapReady = false;
   bool _isSearching = false;
-  String _selectedAddress = 'Select a location';
   List<Location> _searchResults = [];
   bool _showSearchResults = false;
 
@@ -209,16 +208,6 @@ class _LocationPickerWidgetState extends State<LocationPickerWidget> {
       setState(() {
         _selectedLocation = latLng;
         _isLoading = false;
-      });
-
-      // Get address for the location
-      final address = await _getAddressFromCoordinates(
-        location.latitude,
-        location.longitude,
-      );
-
-      setState(() {
-        _selectedAddress = address;
       });
 
       // Clear search

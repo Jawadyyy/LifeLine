@@ -6,22 +6,23 @@ import 'package:lifeline/constants/app_colors.dart';
 import 'package:lifeline/services/global_data_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+/// Typed contract the contacts screen exposes to its controller, replacing the
+/// old `(state as dynamic).getField/setField` string reflection.
+abstract class ContactsScreenView {
+  BuildContext get context;
+  List<Map<String, dynamic>> get contacts;
+  set filteredContacts(List<Map<String, dynamic>> value);
+  set isLoading(bool value);
+}
+
 class ContactsScreenController {
-  final State state;
+  final ContactsScreenView view;
   final void Function(void Function()) setStateFn;
   final GlobalDataService _globalDataService = GlobalDataService();
 
-  ContactsScreenController(this.state, this.setStateFn);
+  ContactsScreenController(this.view, this.setStateFn);
 
-  BuildContext get _context => state.context;
-
-  T _getField<T>(String name) {
-    return (state as dynamic).getField(name) as T;
-  }
-
-  void _setField(String name, dynamic value) {
-    (state as dynamic).setField(name, value);
-  }
+  BuildContext get _context => view.context;
 
   User? get _currentUser => FirebaseAuth.instance.currentUser;
 
@@ -36,13 +37,13 @@ class ContactsScreenController {
   }
 
   void filterContacts(String query) {
-    final contacts = _getField<List<Map<String, dynamic>>>('contacts');
+    final contacts = view.contacts;
     final filtered = contacts
         .where((contact) => (contact['name'] as String)
             .toLowerCase()
             .contains(query.toLowerCase()))
         .toList();
-    setStateFn(() => _setField('filteredContacts', filtered));
+    setStateFn(() => view.filteredContacts = filtered);
   }
 
   Future<Map<String, Map<String, dynamic>>> _getRegisteredUsersMap() async {
@@ -52,6 +53,7 @@ class ContactsScreenController {
     final map = <String, Map<String, dynamic>>{};
     for (final doc in usersSnapshot.docs) {
       final data = doc.data();
+      data['uid'] = doc.id;
       final phone = data['phone'] as String?;
       if (phone != null && phone.isNotEmpty) {
         final normalized = _normalizeTo10Digits(phone);
@@ -209,8 +211,7 @@ class ContactsScreenController {
         ),
       );
     } catch (e) {
-      // ignore: avoid_print
-      print('Error in showContactsDialog: $e');
+      debugPrint('Error in showContactsDialog: $e');
       _showErrorSnackbar('Error accessing contacts');
     }
   }
@@ -218,12 +219,13 @@ class ContactsScreenController {
   Future<void> addContactToFirestore(Contact selectedContact,
       String matchedPhone, Map<String, dynamic> userData) async {
     if (_currentUser != null) {
-      setStateFn(() => _setField('_isLoading', true));
+      setStateFn(() => view.isLoading = true);
       try {
         final newContact = {
           'name': selectedContact.displayName,
           'phone': matchedPhone,
           'profileImageUrl': userData['profileImageUrl'] ?? '',
+          'uid': userData['uid'] ?? '',
           'createdAt': FieldValue.serverTimestamp(),
         };
 
@@ -234,17 +236,16 @@ class ContactsScreenController {
         _showSuccessSnackbar('Contact added successfully');
       } catch (e) {
         _showErrorSnackbar('Failed to add contact: ${e.toString()}');
-        // ignore: avoid_print
-        print('Error adding contact: $e');
+        debugPrint('Error adding contact: $e');
       } finally {
-        setStateFn(() => _setField('_isLoading', false));
+        setStateFn(() => view.isLoading = false);
       }
     }
   }
 
   Future<void> deleteContact(String contactId) async {
     if (_currentUser != null) {
-      setStateFn(() => _setField('_isLoading', true));
+      setStateFn(() => view.isLoading = true);
       try {
         await _contactsRef.doc(contactId).delete();
 
@@ -253,10 +254,9 @@ class ContactsScreenController {
         _showSuccessSnackbar('Contact deleted');
       } catch (e) {
         _showErrorSnackbar('Failed to delete contact: ${e.toString()}');
-        // ignore: avoid_print
-        print('Error deleting contact: $e');
+        debugPrint('Error deleting contact: $e');
       } finally {
-        setStateFn(() => _setField('_isLoading', false));
+        setStateFn(() => view.isLoading = false);
       }
     }
   }
@@ -512,8 +512,7 @@ class ContactsScreenController {
                         Uri(scheme: 'tel', path: contact['phone']);
                     if (!await launchUrl(phoneUri,
                         mode: LaunchMode.externalApplication)) {
-                      // ignore: avoid_print
-                      print('Could not launch $phoneUri');
+                      debugPrint('Could not launch $phoneUri');
                     }
                   },
                 ),

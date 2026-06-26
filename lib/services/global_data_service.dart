@@ -1,7 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_contacts/flutter_contacts.dart';
 import 'package:lifeline/models/user_model.dart';
 import 'package:lifeline/services/user_service.dart';
 import 'package:lifeline/services/location_handler.dart';

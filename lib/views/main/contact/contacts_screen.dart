@@ -13,7 +13,9 @@ class ContactsPage extends StatefulWidget {
   _ContactsPageState createState() => _ContactsPageState();
 }
 
-class _ContactsPageState extends State<ContactsPage> {
+class _ContactsPageState extends State<ContactsPage>
+    implements ContactsScreenView {
+  @override
   List<Map<String, dynamic>> contacts = [];
   List<Map<String, dynamic>> filteredContacts = [];
   bool _isLoading = false;
@@ -69,8 +71,7 @@ class _ContactsPageState extends State<ContactsPage> {
         });
       }
     } catch (e) {
-      // ignore: avoid_print
-      print('Error loading contacts: $e');
+      debugPrint('Error loading contacts: $e');
       if (mounted) {
         setState(() => _isLoading = false);
       }
@@ -84,26 +85,9 @@ class _ContactsPageState extends State<ContactsPage> {
     super.dispose();
   }
 
-  // Expose fields for controller access
-  dynamic getField(String name) => {
-        'contacts': contacts,
-        'filteredContacts': filteredContacts,
-        '_isLoading': _isLoading,
-      }[name];
-
-  void setField(String name, dynamic value) {
-    switch (name) {
-      case 'contacts':
-        contacts = value as List<Map<String, dynamic>>;
-        break;
-      case 'filteredContacts':
-        filteredContacts = value as List<Map<String, dynamic>>;
-        break;
-      case '_isLoading':
-        _isLoading = value as bool;
-        break;
-    }
-  }
+  // ─── ContactsScreenView (typed contract for the controller) ─────────────────
+  @override
+  set isLoading(bool value) => _isLoading = value;
 
   void _navigateToChat(Map<String, dynamic> contact) {
     Navigator.push(
@@ -114,6 +98,7 @@ class _ContactsPageState extends State<ContactsPage> {
           contactPhone: contact['phone'] as String,
           contactImageUrl: contact['profileImageUrl'] as String?,
           contactId: contact['id'] as String,
+          contactUid: contact['uid'] as String?,
         ),
       ),
     );

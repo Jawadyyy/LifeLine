@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:latlong2/latlong.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -9,7 +10,7 @@ enum EmergencyType {
 }
 
 class EmergencyService {
-  static const _apiKey = 'c670b608bd2c4c859fae0e4e8a854ecb';
+  static String get _apiKey => dotenv.env['GEOAPIFY_KEY'] ?? '';
   static const _cacheKeyPrefix = 'emergency_locations_';
   static const _cacheTimestampPrefix = 'emergency_timestamp_';
   static const _cacheDuration = Duration(hours: 24); // Cache for 24 hours

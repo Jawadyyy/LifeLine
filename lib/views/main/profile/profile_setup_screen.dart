@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:image_picker/image_picker.dart';
@@ -20,7 +19,6 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
   final _formKey = GlobalKey<FormState>();
   final Color _primaryColor = const Color(0xFFFF6F61);
   final Color _secondaryColor = const Color(0xFFF8F9FA);
-  final Color _textColor = Colors.black87;
   final Color _cardColor = Colors.white;
 
   final _phoneController = TextEditingController();
@@ -161,7 +159,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
 
       if (!mounted) return;
 
-      print('✅ Profile setup complete for user: $uid');
+      debugPrint('✅ Profile setup complete for user: $uid');
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

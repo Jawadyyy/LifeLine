@@ -25,7 +25,9 @@ class AppColors {
   static const Color navBarShadow = Colors.black26;
 }
 
-// Now create a **dynamic accessor** that depends on current theme mode
+// Resolves theme-aware colors for a given brightness. The app currently ships
+// light-only, so [isDarkMode] is false in practice; the dark values are kept
+// so the profile/stat widgets that accept a [DynamicColors] keep compiling.
 class DynamicColors {
   final bool isDarkMode;
 
@@ -39,23 +41,26 @@ class DynamicColors {
   Color get error => AppColors.error;
 
   // Dynamic colors: flip or use dark variants
-  Color get tertiary => isDarkMode ? Color(0xFF303030) : AppColors.tertiary;
-  Color get background => isDarkMode ? Color(0xFF121212) : AppColors.background;
-  Color get surface => isDarkMode ? Color(0xFF1E1E1E) : AppColors.surface;
+  Color get tertiary => isDarkMode ? const Color(0xFF303030) : AppColors.tertiary;
+  Color get background =>
+      isDarkMode ? const Color(0xFF121212) : AppColors.background;
+  Color get surface => isDarkMode ? const Color(0xFF1E1E1E) : AppColors.surface;
   Color get textPrimary => isDarkMode ? Colors.white70 : AppColors.textPrimary;
   Color get textSecondary =>
       isDarkMode ? Colors.white54 : AppColors.textSecondary;
   Color get textTertiary =>
       isDarkMode ? Colors.black87 : AppColors.textTertiary;
-  Color get textGrey => isDarkMode ? Color(0xFFB0B0B0) : AppColors.textGrey;
-  Color get textMedium => isDarkMode ? Color(0xFFCCCCCC) : AppColors.textMedium;
-  Color get textLight => isDarkMode ? Color(0xFFE0E0E0) : AppColors.textLight;
+  Color get textGrey => isDarkMode ? const Color(0xFFB0B0B0) : AppColors.textGrey;
+  Color get textMedium =>
+      isDarkMode ? const Color(0xFFCCCCCC) : AppColors.textMedium;
+  Color get textLight =>
+      isDarkMode ? const Color(0xFFE0E0E0) : AppColors.textLight;
   Color get success => isDarkMode ? Colors.greenAccent : AppColors.success;
 
   Color get navBarBackground =>
-      isDarkMode ? Color(0xFF1E1E1E) : AppColors.navBarBackground;
+      isDarkMode ? const Color(0xFF1E1E1E) : AppColors.navBarBackground;
   Color get navBarUnselected =>
-      isDarkMode ? Color(0xFFB0B0B0) : AppColors.navBarUnselected;
+      isDarkMode ? const Color(0xFFB0B0B0) : AppColors.navBarUnselected;
   Color get navBarShadow =>
       isDarkMode ? Colors.black87 : AppColors.navBarShadow;
 }

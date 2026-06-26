@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:lifeline/services/auth_result.dart';
 
@@ -86,24 +87,24 @@ class AuthService {
 
   Future<AuthResult<User>> signInWithGoogle() async {
     try {
-      print('🔍 Starting Google Sign-In...');
+      debugPrint('🔍 Starting Google Sign-In...');
 
       final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
 
-      print('✅ Google User: $googleUser');
+      debugPrint('✅ Google User: $googleUser');
 
       if (googleUser == null) {
-        print('❌ User cancelled sign-in');
+        debugPrint('❌ User cancelled sign-in');
         return AuthResult.failure('Sign-in cancelled');
       }
 
-      print('🔑 Getting authentication...');
+      debugPrint('🔑 Getting authentication...');
       final GoogleSignInAuthentication googleAuth =
           await googleUser.authentication;
 
-      print(
+      debugPrint(
           '🎫 Access Token: ${googleAuth.accessToken != null ? "✅ Present" : "❌ Missing"}');
-      print(
+      debugPrint(
           '🎫 ID Token: ${googleAuth.idToken != null ? "✅ Present" : "❌ Missing"}');
 
       final credential = GoogleAuthProvider.credential(
@@ -111,22 +112,22 @@ class AuthService {
         idToken: googleAuth.idToken,
       );
 
-      print('🔐 Signing in with credential...');
+      debugPrint('🔐 Signing in with credential...');
       final UserCredential userCredential =
           await FirebaseAuth.instance.signInWithCredential(credential);
 
       User? user = userCredential.user;
-      print('👤 User: ${user?.email ?? "No user"}');
+      debugPrint('👤 User: ${user?.email ?? "No user"}');
 
       if (user != null) {
-        print('💾 Checking/Creating Firestore document...');
+        debugPrint('💾 Checking/Creating Firestore document...');
         final doc = await FirebaseFirestore.instance
             .collection('users')
             .doc(user.uid)
             .get();
 
         if (!doc.exists) {
-          print('📝 Creating new user document');
+          debugPrint('📝 Creating new user document');
           await FirebaseFirestore.instance
               .collection('users')
               .doc(user.uid)
@@ -138,27 +139,27 @@ class AuthService {
             'isProfileComplete': false,
           });
         } else {
-          print('✅ User document already exists');
+          debugPrint('✅ User document already exists');
         }
       }
 
-      print('🎉 Google Sign-In successful!');
+      debugPrint('🎉 Google Sign-In successful!');
       return AuthResult.success(user, 'Login successful');
     } catch (e) {
-      print('💥 Google Sign-In Error: $e');
-      print('💥 Error Type: ${e.runtimeType}');
+      debugPrint('💥 Google Sign-In Error: $e');
+      debugPrint('💥 Error Type: ${e.runtimeType}');
       return AuthResult.failure('Google sign-in failed: ${e.toString()}');
     }
   }
 
   Future<void> signOut() async {
     try {
-      print('🚪 Signing out...');
+      debugPrint('🚪 Signing out...');
       await _auth.signOut();
       await _googleSignIn.signOut();
-      print('✅ Sign out complete');
+      debugPrint('✅ Sign out complete');
     } catch (e) {
-      print('Error during sign out: $e');
+      debugPrint('Error during sign out: $e');
     }
   }
 }

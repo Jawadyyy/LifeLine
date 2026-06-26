@@ -11,7 +11,7 @@ class MapScreen extends StatefulWidget {
   State<MapScreen> createState() => _MapScreenState();
 }
 
-class _MapScreenState extends State<MapScreen> {
+class _MapScreenState extends State<MapScreen> implements MapScreenView {
   late final MapController _mapController;
   LatLng? _currentPosition;
   String? _currentAddress;
@@ -37,55 +37,35 @@ class _MapScreenState extends State<MapScreen> {
     screenController.checkLocationServiceAndLoadLocation();
   }
 
-  // Expose fields for controller
-  dynamic getField(String name) => {
-        '_isLoading': _isLoading,
-        '_showRoute': _showRoute,
-        '_selectedLocation': _selectedLocation,
-        '_routePoints': _routePoints,
-        '_currentPosition': _currentPosition,
-        '_currentAddress': _currentAddress,
-        '_isMapReady': _isMapReady,
-        '_mapController': _mapController,
-        '_emergencyLocations': _emergencyLocations,
-        '_emergencyType': _emergencyType,
-        '_isOnline': _isOnline,
-      }[name];
+  // ─── MapScreenView (typed contract for the controller) ──────────────────────
+  @override
+  MapController get mapController => _mapController;
+  @override
+  bool get isMapReady => _isMapReady;
+  @override
+  LatLng? get currentPosition => _currentPosition;
+  @override
+  EmergencyType get emergencyType => _emergencyType;
 
-  void setField(String name, dynamic value) {
-    switch (name) {
-      case '_isLoading':
-        _isLoading = value as bool;
-        break;
-      case '_showRoute':
-        _showRoute = value as bool;
-        break;
-      case '_selectedLocation':
-        _selectedLocation = value as Map<String, dynamic>?;
-        break;
-      case '_routePoints':
-        _routePoints = value as List<LatLng>;
-        break;
-      case '_currentPosition':
-        _currentPosition = value as LatLng?;
-        break;
-      case '_currentAddress':
-        _currentAddress = value as String?;
-        break;
-      case '_isMapReady':
-        _isMapReady = value as bool;
-        break;
-      case '_emergencyLocations':
-        _emergencyLocations = value as List<Map<String, dynamic>>;
-        break;
-      case '_emergencyType':
-        _emergencyType = value as EmergencyType;
-        break;
-      case '_isOnline':
-        _isOnline = value as bool;
-        break;
-    }
-  }
+  @override
+  set isLoading(bool value) => _isLoading = value;
+  @override
+  set showRoute(bool value) => _showRoute = value;
+  @override
+  set selectedLocation(Map<String, dynamic>? value) => _selectedLocation = value;
+  @override
+  set routePoints(List<LatLng> value) => _routePoints = value;
+  @override
+  set currentPosition(LatLng? value) => _currentPosition = value;
+  @override
+  set currentAddress(String? value) => _currentAddress = value;
+  @override
+  set emergencyLocations(List<Map<String, dynamic>> value) =>
+      _emergencyLocations = value;
+  @override
+  set isOnline(bool value) => _isOnline = value;
+  @override
+  set emergencyType(EmergencyType value) => _emergencyType = value;
 
   Color _getEmergencyColor() {
     return _emergencyType == EmergencyType.hospital
@@ -97,10 +77,6 @@ class _MapScreenState extends State<MapScreen> {
     return _emergencyType == EmergencyType.hospital
         ? Icons.local_hospital
         : Icons.local_police;
-  }
-
-  String _getEmergencyLabel() {
-    return _emergencyType == EmergencyType.hospital ? 'Hospitals' : 'Police';
   }
 
   @override

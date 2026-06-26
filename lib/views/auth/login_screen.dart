@@ -1,4 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -78,8 +77,8 @@ class _LoginScreenState extends State<LoginScreen> {
       }
 
       // ✅ Login successful - AuthWrapper will handle navigation automatically
-      print('✅ Email login successful: ${result.data?.email}');
-      print('✅ User ID: ${result.data?.uid}');
+      debugPrint('✅ Email login successful: ${result.data?.email}');
+      debugPrint('✅ User ID: ${result.data?.uid}');
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -128,8 +127,8 @@ class _LoginScreenState extends State<LoginScreen> {
       }
 
       // ✅ Google login successful - AuthWrapper will handle navigation automatically
-      print('✅ Google login successful: ${result.data?.email}');
-      print('✅ User ID: ${result.data?.uid}');
+      debugPrint('✅ Google login successful: ${result.data?.email}');
+      debugPrint('✅ User ID: ${result.data?.uid}');
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

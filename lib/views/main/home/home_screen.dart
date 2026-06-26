@@ -11,25 +11,9 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
-  bool _showEmergencyOptions = false;
-
   late AnimationController _animationController;
   late Animation<double> _scaleAnimation;
   late HomeController controller;
-
-  // Expose fields for controller via dynamic calls
-  dynamic getField(String name) => {
-        '_showEmergencyOptions': _showEmergencyOptions,
-        '_animationController': _animationController,
-      }[name];
-
-  void setField(String name, dynamic value) {
-    switch (name) {
-      case '_showEmergencyOptions':
-        _showEmergencyOptions = value as bool;
-        break;
-    }
-  }
 
   @override
   void initState() {
@@ -108,6 +92,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               ),
               const SizedBox(height: 30),
               controller.buildBloodDonationCard(context),
+              const SizedBox(height: 16),
+              controller.buildDirectCallButton(context),
             ],
           ),
         ],

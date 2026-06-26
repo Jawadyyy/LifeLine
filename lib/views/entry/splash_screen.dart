@@ -111,18 +111,18 @@ class AuthWrapper extends StatelessWidget {
         }
 
         // Debug prints
-        print('🔍 Auth State: ${snapshot.data?.email ?? "No user"}');
-        print('🔍 User ID: ${snapshot.data?.uid ?? "null"}');
+        debugPrint('🔍 Auth State: ${snapshot.data?.email ?? "No user"}');
+        debugPrint('🔍 User ID: ${snapshot.data?.uid ?? "null"}');
 
         // Not logged in - show welcome screen
         if (snapshot.data == null) {
-          print('➡️ Navigating to WelcomeScreen');
+          debugPrint('➡️ Navigating to WelcomeScreen');
           return const WelcomeScreen();
         }
 
         // Logged in - use StreamBuilder to listen to profile changes
         final userId = snapshot.data!.uid;
-        print('➡️ User logged in, listening to profile changes...');
+        debugPrint('➡️ User logged in, listening to profile changes...');
 
         return StreamBuilder<DocumentSnapshot>(
           stream: FirebaseFirestore.instance
@@ -143,7 +143,7 @@ class AuthWrapper extends StatelessWidget {
 
             // Handle case where document doesn't exist yet
             if (!profileSnapshot.hasData || !profileSnapshot.data!.exists) {
-              print(
+              debugPrint(
                   '⚠️ User document does not exist, showing ProfileSetupScreen');
               return ProfileSetupScreen(
                 key: ValueKey(userId),
@@ -154,16 +154,16 @@ class AuthWrapper extends StatelessWidget {
             final data = profileSnapshot.data!.data() as Map<String, dynamic>?;
             final isProfileComplete = data?['isProfileComplete'] == true;
 
-            print('📋 Profile complete: $isProfileComplete');
-            print('📋 User data: $data');
+            debugPrint('📋 Profile complete: $isProfileComplete');
+            debugPrint('📋 User data: $data');
 
             if (isProfileComplete) {
-              print('➡️ Navigating to MainNavigationScreen');
+              debugPrint('➡️ Navigating to MainNavigationScreen');
               return MainNavigationScreen(
                 key: ValueKey(userId),
               );
             } else {
-              print('➡️ Navigating to ProfileSetupScreen');
+              debugPrint('➡️ Navigating to ProfileSetupScreen');
               return ProfileSetupScreen(
                 key: ValueKey(userId),
               );

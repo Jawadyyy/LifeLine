@@ -1,10 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lifeline/constants/app_colors.dart';
 import 'package:lifeline/views/main/profile/controller/profile_controller.dart';
-import 'package:lifeline/views/main/profile/controller/profile_widgets.dart';
 
 class ProfileSettingScreen extends StatefulWidget {
   const ProfileSettingScreen({super.key});

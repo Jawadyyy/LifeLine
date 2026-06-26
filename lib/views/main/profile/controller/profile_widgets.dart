@@ -12,7 +12,6 @@ class ProfileWidgets {
     required DynamicColors colors,
     Color? bmiColor,
   }) {
-    final double bmi = isBmi ? double.tryParse(value) ?? 0.0 : 0.0;
     final Color cardColor =
         isBmi ? (bmiColor ?? Colors.green).withOpacity(0.2) : colors.surface;
 

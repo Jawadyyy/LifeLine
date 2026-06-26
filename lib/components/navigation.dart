@@ -6,6 +6,7 @@ import 'package:lifeline/views/main/home/home_screen.dart';
 import 'package:lifeline/views/main/map/map_screen.dart';
 import 'package:lifeline/views/main/profile/profile_screen.dart';
 import 'package:lifeline/services/global_data_service.dart';
+import 'package:lifeline/views/entry/permission_priming_screen.dart';
 
 class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({super.key});
@@ -30,8 +31,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   void initState() {
     super.initState();
     _currentUserId = FirebaseAuth.instance.currentUser?.uid;
-    print('🏠 MainNavigationScreen initialized for user: $_currentUserId');
+    debugPrint('🏠 MainNavigationScreen initialized for user: $_currentUserId');
     _initializeGlobalData();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) PermissionPrimingScreen.showIfFirstRun(context);
+    });
   }
 
   @override
@@ -41,7 +45,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     // Check if user has changed
     final newUserId = FirebaseAuth.instance.currentUser?.uid;
     if (_currentUserId != newUserId) {
-      print('👤 User changed from $_currentUserId to $newUserId');
+      debugPrint('👤 User changed from $_currentUserId to $newUserId');
       _currentUserId = newUserId;
 
       // Clear old data and reinitialize for new user
@@ -53,11 +57,11 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     try {
       // Clear cached data
       await _globalDataService.clearAllData();
-      print('🧹 Cleared old user data');
+      debugPrint('🧹 Cleared old user data');
 
       // Reinitialize for new user
       await _globalDataService.initializeAllData();
-      print('✅ Reinitialized data for new user: $_currentUserId');
+      debugPrint('✅ Reinitialized data for new user: $_currentUserId');
 
       if (mounted) {
         setState(() {}); // Trigger rebuild

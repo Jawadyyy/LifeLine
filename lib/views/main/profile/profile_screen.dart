@@ -96,8 +96,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
   @override
   Widget build(BuildContext context) {
-    final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    final DynamicColors colors = DynamicColors(isDarkMode);
+    final DynamicColors colors = DynamicColors(false);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -274,13 +273,6 @@ class _ProfilePageState extends State<ProfilePage> {
                     },
                     colors: colors,
                   ),
-                  const SizedBox(height: 15),
-                  ProfileWidgets.buildMenuCard(
-                      icon: Icons.dark_mode,
-                      title: 'Theme',
-                      subtitle: 'Change the theme of the app',
-                      onTap: () {},
-                      colors: colors),
                   const SizedBox(height: 15),
                   ProfileWidgets.buildMenuCard(
                     icon: Icons.logout,

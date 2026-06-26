@@ -1,30 +1,48 @@
-// This is a basic Flutter widget test.
+// Smoke tests for LifeLine.
 //
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
+// `MyApp`'s home is `SplashScreen`, which talks to Firebase, so it can't be
+// pumped without an initialized Firebase app. Instead we smoke-test
+// self-contained widgets that exercise the app's shared UI building blocks.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:lifeline/main.dart';
+import 'package:lifeline/components/chat_widgets.dart';
+import 'package:lifeline/models/chat_message.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  testWidgets('ChatEmptyState builds and shows the contact name',
+      (WidgetTester tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(
+          body: ChatEmptyState(contactName: 'Jane Doe', contactImageUrl: null),
+        ),
+      ),
+    );
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+    expect(find.text('Jane Doe'), findsOneWidget);
+    expect(find.textContaining('Start a conversation'), findsOneWidget);
+  });
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
+  testWidgets('MessageBubble renders sent message text',
+      (WidgetTester tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: MessageBubble(
+            message: ChatMessage(
+              id: '1',
+              text: 'Hello there',
+              isSent: true,
+              time: DateTime(2024, 1, 1, 9, 30),
+              status: MessageStatus.sent,
+            ),
+          ),
+        ),
+      ),
+    );
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    expect(find.text('Hello there'), findsOneWidget);
   });
 }

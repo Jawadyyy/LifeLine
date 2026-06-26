@@ -1,15 +1,19 @@
-import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:lifeline/constants/app_colors.dart';
+import 'package:lifeline/services/chat_service.dart';
 import 'package:lifeline/services/firestore_service.dart';
 import 'package:lifeline/services/location_handler.dart';
 import 'package:lifeline/views/main/donation/donation_map_screen.dart';
+import 'package:lifeline/views/main/home/widgets/sos_countdown_dialog.dart';
 
 import 'package:url_launcher/url_launcher.dart';
 
 class HomeController {
+  /// Default emergency services number (PK: Rescue 1122).
+  static const String emergencyDialNumber = '1122';
+
   final State state;
   final void Function(void Function()) setStateFn;
 
@@ -18,18 +22,20 @@ class HomeController {
   BuildContext get context => state.context;
   bool get mounted => state.mounted;
 
-  T _getField<T>(String name) => (state as dynamic).getField(name) as T;
-  void _setField(String name, dynamic value) =>
-      (state as dynamic).setField(name, value);
-
+  /// Fires an SOS: shows a cancellable countdown (I2), then posts the
+  /// location alert into each emergency contact's in-app chat (B2).
   Future<void> sendEmergencyMessage(String emergencyType) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
-    setStateFn(() {
-      _setField('_showEmergencyOptions', false);
-    });
+    final proceed = await SosCountdownDialog.show(context, emergencyType);
+    if (!proceed || !mounted) return;
 
+    await _dispatchEmergency(user, emergencyType);
+  }
+
+  /// Builds the alert text and writes it into each contact's Firestore chat.
+  Future<void> _dispatchEmergency(User user, String emergencyType) async {
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -46,9 +52,21 @@ class HomeController {
     );
 
     try {
-      final contacts = await FirestoreService().getEmergencyContacts(user.uid);
+      final contacts =
+          await FirestoreService().getEmergencyContactsDetailed(user.uid);
+      if (!mounted) return;
       if (contacts.isEmpty) {
         Navigator.pop(context);
+        _promptAddContacts();
+        return;
+      }
+
+      final position = await LocationHandler.getCurrentPosition();
+      if (!mounted) return;
+      if (position == null) {
+        Navigator.pop(context);
+        _showError(
+            'Location unavailable. Enable location services and permission, then try again.');
         return;
       }
 
@@ -56,63 +74,100 @@ class HomeController {
           .collection('users')
           .doc(user.uid)
           .get();
+      if (!mounted) return;
 
       final customMessage =
           userDoc.data()?['emergency_text']?.toString().trim();
       final username = userDoc.data()?['username'] ?? 'User';
 
-      final position = await LocationHandler.getCurrentPosition();
-      if (position == null) {
-        Navigator.pop(context);
-        return;
-      }
-
       final mapUrl =
           'https://www.google.com/maps/search/?api=1&query=${position.latitude},${position.longitude}';
-
-      final fallbackMessage = '🚨 EMERGENCY: $emergencyType\n'
-          '👤 Name: $username\n'
-          '🗺️ Location: $mapUrl\n'
-          '🕒 ${DateTime.now().toString().substring(0, 16)}';
+      final timestamp = DateTime.now().toString().substring(0, 16);
 
       final message = (customMessage == null || customMessage.isEmpty)
-          ? fallbackMessage
-          : '$customMessage\n🗺️ Location: $mapUrl\n🕒 ${DateTime.now().toString().substring(0, 16)}';
+          ? '🚨 EMERGENCY: $emergencyType\n'
+              '👤 Name: $username\n'
+              '🗺️ Location: $mapUrl\n'
+              '🕒 $timestamp'
+          : '$customMessage\n🗺️ Location: $mapUrl\n🕒 $timestamp';
 
-      for (String contact in contacts) {
-        final whatsappUrl =
-            'https://wa.me/$contact?text=${Uri.encodeComponent(message)}';
+      final chat = ChatService(user.uid);
+      final skipped = <String>[];
+      var sent = 0;
+
+      for (final contact in contacts) {
+        if (!contact.hasUid) {
+          skipped.add(contact.name);
+          continue;
+        }
+        final chatId = ChatService.chatIdFor(user.uid, contact.uid);
         try {
-          await launch(whatsappUrl);
-          await Future.delayed(const Duration(seconds: 2));
+          await chat.send(chatId, contact.uid, message, type: 'emergency');
+          sent++;
         } catch (e) {
-          debugPrint('Error sending to $contact: $e');
+          debugPrint('Error sending SOS to ${contact.name}: $e');
+          skipped.add(contact.name);
         }
       }
 
+      if (!mounted) return;
       Navigator.pop(context);
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Emergency alerts sent for $emergencyType'),
-          backgroundColor: AppColors.success,
-          behavior: SnackBarBehavior.floating,
-          duration: const Duration(seconds: 2),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
-        ),
-      );
+      if (sent > 0) {
+        final note = skipped.isEmpty
+            ? ''
+            : ' (${skipped.length} skipped — not registered LifeLine users)';
+        _showResult(
+          'Emergency alert sent to $sent contact${sent == 1 ? '' : 's'}$note',
+          AppColors.success,
+        );
+      } else {
+        _showError(
+            'No reachable contacts. Emergency contacts must be registered LifeLine users.');
+      }
     } catch (e) {
+      if (!mounted) return;
       Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Failed to send emergency alerts'),
-          backgroundColor: AppColors.error,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      _showError('Failed to send emergency alerts');
     }
+  }
+
+  /// One-tap direct dial to emergency services (I1).
+  Future<void> callEmergencyServices(
+      [String number = emergencyDialNumber]) async {
+    final uri = Uri(scheme: 'tel', path: number);
+    try {
+      if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+        if (mounted) _showError('Could not open the dialer');
+      }
+    } catch (e) {
+      debugPrint('Dial error: $e');
+      if (mounted) _showError('Could not open the dialer');
+    }
+  }
+
+  void _promptAddContacts() {
+    _showResult(
+      'Add at least one emergency contact first',
+      AppColors.error,
+    );
+  }
+
+  void _showError(String message) => _showResult(message, AppColors.error);
+
+  void _showResult(String message, Color color) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: color,
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 3),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
+      ),
+    );
   }
 
   void toggleEmergencyOptions() {
@@ -213,6 +268,11 @@ class HomeController {
                 ),
               ],
             ),
+          ),
+          // Direct dial to emergency services (I1)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+            child: _buildDirectCallTile(),
           ),
           // Emergency type tiles
           ListView.builder(
@@ -320,6 +380,92 @@ class HomeController {
           ),
           const SizedBox(height: 24),
         ],
+      ),
+    );
+  }
+
+  /// Prominent "call emergency services" tile inside the bottom sheet.
+  Widget _buildDirectCallTile() {
+    return Material(
+      color: AppColors.error,
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: () {
+          Navigator.pop(context);
+          callEmergencyServices();
+        },
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          child: Row(
+            children: [
+              const Icon(Icons.call, color: AppColors.textTertiary, size: 26),
+              const SizedBox(width: 14),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Call Ambulance / $emergencyDialNumber',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textTertiary,
+                      ),
+                    ),
+                    SizedBox(height: 2),
+                    Text(
+                      'Dial emergency services directly',
+                      style: TextStyle(
+                        fontSize: 12.5,
+                        color: AppColors.textTertiary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.arrow_forward_ios_rounded,
+                  size: 16, color: AppColors.textTertiary),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Direct-dial card shown on the home screen (I1).
+  Widget buildDirectCallButton(BuildContext context) {
+    return GestureDetector(
+      onTap: callEmergencyServices,
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 30),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+        decoration: BoxDecoration(
+          color: AppColors.error,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.error.withOpacity(0.3),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: const [
+            Icon(Icons.call, color: AppColors.textTertiary, size: 22),
+            SizedBox(width: 12),
+            Text(
+              'Call Ambulance / $emergencyDialNumber',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 15,
+                color: AppColors.textTertiary,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
