@@ -16,10 +16,11 @@ import 'package:lifeline/models/chat_message.dart';
 ///     time: Timestamp
 ///     status: 'sent' | 'delivered'
 class ChatService {
-  ChatService(this.currentUid);
+  ChatService(this.currentUid, {FirebaseFirestore? firestore})
+      : _db = firestore ?? FirebaseFirestore.instance;
 
   final String currentUid;
-  final FirebaseFirestore _db = FirebaseFirestore.instance;
+  final FirebaseFirestore _db;
 
   /// Deterministic chat id shared by both participants.
   static String chatIdFor(String a, String b) {
@@ -30,12 +31,14 @@ class ChatService {
   DocumentReference<Map<String, dynamic>> _chatRef(String chatId) =>
       _db.collection('chats').doc(chatId);
 
-  /// Stream of messages for [chatId], oldest first.
+  /// Stream of messages for [chatId], oldest first. Metadata changes are
+  /// included so pending (offline-queued) writes surface a "sending" state and
+  /// flip to "sent" once they reach the server.
   Stream<List<ChatMessage>> messages(String chatId) {
     return _chatRef(chatId)
         .collection('messages')
         .orderBy('time')
-        .snapshots()
+        .snapshots(includeMetadataChanges: true)
         .map((snap) => snap.docs.map(_fromDoc).toList());
   }
 
@@ -47,12 +50,17 @@ class ChatService {
     final time = rawTime is Timestamp ? rawTime.toDate() : DateTime.now();
     final isSent = data['senderId'] == currentUid;
 
+    // A local write not yet acknowledged by the server is still queued.
+    final status = doc.metadata.hasPendingWrites
+        ? MessageStatus.sending
+        : _statusFrom(data['status'] as String?);
+
     return ChatMessage(
       id: doc.id,
       text: (data['text'] as String?) ?? '',
       isSent: isSent,
       time: time,
-      status: _statusFrom(data['status'] as String?),
+      status: status,
       type: (data['type'] as String?) ?? 'text',
       liveSessionId: data['liveSessionId'] as String?,
     );

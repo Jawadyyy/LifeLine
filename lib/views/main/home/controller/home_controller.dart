@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -82,10 +84,12 @@ class HomeController {
       final username = userDoc.data()?['username'] ?? 'User';
 
       // Start a live location share so contacts can follow movement in-app.
+      // Bounded so an offline Firestore write can't stall the SOS flow.
       String? liveSessionId;
       try {
-        liveSessionId =
-            await LiveLocationService.instance.startBroadcast(ownerUid: user.uid);
+        liveSessionId = await LiveLocationService.instance
+            .startBroadcast(ownerUid: user.uid)
+            .timeout(const Duration(seconds: 8), onTimeout: () => null);
       } catch (e) {
         debugPrint('live share start failed: $e');
       }
@@ -107,6 +111,7 @@ class HomeController {
       final chat = ChatService(user.uid);
       final skipped = <String>[];
       var sent = 0;
+      var queued = 0;
 
       for (final contact in contacts) {
         if (!contact.hasUid) {
@@ -115,9 +120,14 @@ class HomeController {
         }
         final chatId = ChatService.chatIdFor(user.uid, contact.uid);
         try {
-          await chat.send(chatId, contact.uid, message,
-              type: 'emergency', liveSessionId: liveSessionId);
+          await chat
+              .send(chatId, contact.uid, message,
+                  type: 'emergency', liveSessionId: liveSessionId)
+              .timeout(const Duration(seconds: 6));
           sent++;
+        } on TimeoutException {
+          // Offline: the write is persisted locally and syncs on reconnect.
+          queued++;
         } catch (e) {
           debugPrint('Error sending SOS to ${contact.name}: $e');
           skipped.add(contact.name);
@@ -127,13 +137,16 @@ class HomeController {
       if (!mounted) return;
       Navigator.pop(context);
 
-      if (sent > 0) {
-        final note = skipped.isEmpty
+      if (sent > 0 || queued > 0) {
+        final skipNote = skipped.isEmpty
             ? ''
-            : ' (${skipped.length} skipped — not registered LifeLine users)';
+            : ' · ${skipped.length} skipped (not registered)';
+        final queuedNote =
+            queued > 0 ? ' · $queued queued offline (sends when online)' : '';
         _showResult(
-          'Emergency alert sent to $sent contact${sent == 1 ? '' : 's'}$note',
-          AppColors.success,
+          'Emergency alert sent to $sent contact${sent == 1 ? '' : 's'}'
+          '$queuedNote$skipNote',
+          queued > 0 ? AppColors.primary : AppColors.success,
         );
       } else {
         _showError(

@@ -26,9 +26,12 @@ Future<void> main() async {
     return true;
   };
 
-  // CRITICAL: Disable Firestore persistence to prevent caching issues
+  // Offline mode: persist Firestore locally so contacts, profile and chats are
+  // readable without a connection, and outgoing writes (SOS/chat) queue and
+  // auto-sync on reconnect.
   FirebaseFirestore.instance.settings = const Settings(
-    persistenceEnabled: false,
+    persistenceEnabled: true,
+    cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
   );
 
   runApp(const MyApp());
