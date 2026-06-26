@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:lifeline/constants/app_colors.dart';
 import 'package:lifeline/services/chat_service.dart';
 import 'package:lifeline/services/firestore_service.dart';
+import 'package:lifeline/services/live_location_service.dart';
 import 'package:lifeline/services/location_handler.dart';
 import 'package:lifeline/views/main/donation/donation_map_screen.dart';
 import 'package:lifeline/views/main/home/widgets/sos_countdown_dialog.dart';
@@ -80,16 +81,28 @@ class HomeController {
           userDoc.data()?['emergency_text']?.toString().trim();
       final username = userDoc.data()?['username'] ?? 'User';
 
+      // Start a live location share so contacts can follow movement in-app.
+      String? liveSessionId;
+      try {
+        liveSessionId =
+            await LiveLocationService.instance.startBroadcast(ownerUid: user.uid);
+      } catch (e) {
+        debugPrint('live share start failed: $e');
+      }
+      if (!mounted) return;
+
       final mapUrl =
           'https://www.google.com/maps/search/?api=1&query=${position.latitude},${position.longitude}';
       final timestamp = DateTime.now().toString().substring(0, 16);
+      final liveLine =
+          liveSessionId != null ? '\n📍 Live location sharing (open in app)' : '';
 
       final message = (customMessage == null || customMessage.isEmpty)
           ? '🚨 EMERGENCY: $emergencyType\n'
               '👤 Name: $username\n'
               '🗺️ Location: $mapUrl\n'
-              '🕒 $timestamp'
-          : '$customMessage\n🗺️ Location: $mapUrl\n🕒 $timestamp';
+              '🕒 $timestamp$liveLine'
+          : '$customMessage\n🗺️ Location: $mapUrl\n🕒 $timestamp$liveLine';
 
       final chat = ChatService(user.uid);
       final skipped = <String>[];
@@ -102,7 +115,8 @@ class HomeController {
         }
         final chatId = ChatService.chatIdFor(user.uid, contact.uid);
         try {
-          await chat.send(chatId, contact.uid, message, type: 'emergency');
+          await chat.send(chatId, contact.uid, message,
+              type: 'emergency', liveSessionId: liveSessionId);
           sent++;
         } catch (e) {
           debugPrint('Error sending SOS to ${contact.name}: $e');

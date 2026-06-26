@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:lifeline/constants/app_colors.dart';
 import 'package:lifeline/models/chat_message.dart';
+import 'package:lifeline/views/main/live/live_tracking_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 // ─── Header ───────────────────────────────────────────────────────────────────
@@ -436,6 +437,28 @@ class _EmergencyBubble extends StatelessWidget {
                   icon: Icon(Icons.location_on, color: Colors.red.shade700),
                   label: Text(
                     'Open location in Maps',
+                    style: TextStyle(
+                      color: Colors.red.shade700,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+            if (message.liveSessionId != null)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
+                child: TextButton.icon(
+                  onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => LiveTrackingScreen(
+                          sessionId: message.liveSessionId!),
+                    ),
+                  ),
+                  icon: Icon(Icons.share_location_rounded,
+                      color: Colors.red.shade700),
+                  label: Text(
+                    'Follow live location',
                     style: TextStyle(
                       color: Colors.red.shade700,
                       fontWeight: FontWeight.w600,

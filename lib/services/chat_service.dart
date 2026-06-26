@@ -52,11 +52,21 @@ class ChatService {
       text: (data['text'] as String?) ?? '',
       isSent: isSent,
       time: time,
-      status: data['status'] == 'delivered'
-          ? MessageStatus.delivered
-          : MessageStatus.sent,
+      status: _statusFrom(data['status'] as String?),
       type: (data['type'] as String?) ?? 'text',
+      liveSessionId: data['liveSessionId'] as String?,
     );
+  }
+
+  static MessageStatus _statusFrom(String? raw) {
+    switch (raw) {
+      case 'seen':
+        return MessageStatus.read;
+      case 'delivered':
+        return MessageStatus.delivered;
+      default:
+        return MessageStatus.sent;
+    }
   }
 
   /// Adds a message and updates the parent chat metadata atomically.
@@ -68,6 +78,7 @@ class ChatService {
     String contactUid,
     String text, {
     String type = 'text',
+    String? liveSessionId,
   }) async {
     final trimmed = text.trim();
     if (trimmed.isEmpty) return;
@@ -92,6 +103,7 @@ class ChatService {
       'time': FieldValue.serverTimestamp(),
       'status': 'sent',
       'type': type,
+      if (liveSessionId != null) 'liveSessionId': liveSessionId,
     });
     await batch.commit();
   }

@@ -46,5 +46,17 @@ service cloud.firestore {
         allow update, delete: if isParticipant();
       }
     }
+
+    // ---- live_locations ----
+    // Session ids are unguessable random doc ids handed to recipients via an
+    // emergency chat message. Any signed-in user may read (they need the id);
+    // only the owner may create/update/delete the session.
+    match /live_locations/{sessionId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn()
+        && request.resource.data.ownerUid == request.auth.uid;
+      allow update, delete: if isSignedIn()
+        && resource.data.ownerUid == request.auth.uid;
+    }
   }
 }

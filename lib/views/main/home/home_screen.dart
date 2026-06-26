@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lifeline/constants/app_colors.dart';
+import 'package:lifeline/services/live_location_service.dart';
 import 'package:lifeline/views/chatbot/screens/chat_home_screen.dart';
 import 'package:lifeline/views/main/home/controller/home_controller.dart';
 
@@ -61,8 +62,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         centerTitle: true,
       ),
       body: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
         children: [
+          const _LiveShareBanner(),
+          Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
           Text(
             'Emergency Assistance',
             style: theme.textTheme.headlineSmall
@@ -98,6 +103,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           ),
         ],
       ),
+          ),
+        ],
+      ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           Navigator.push(
@@ -109,6 +117,52 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         elevation: 4,
         child: Image.asset('assets/images/icons/brain.png', height: 28),
       ),
+    );
+  }
+}
+
+/// Persistent banner shown while a live location share is active, with a one-tap
+/// stop. Listens to the process-global [LiveLocationService.activeSession].
+class _LiveShareBanner extends StatelessWidget {
+  const _LiveShareBanner();
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<String?>(
+      valueListenable: LiveLocationService.activeSession,
+      builder: (context, sessionId, _) {
+        if (sessionId == null) return const SizedBox.shrink();
+        return Material(
+          color: AppColors.primary,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 10, 8, 10),
+            child: Row(
+              children: [
+                const Icon(Icons.share_location_rounded,
+                    color: Colors.white, size: 20),
+                const SizedBox(width: 10),
+                const Expanded(
+                  child: Text(
+                    'Sharing your live location with contacts',
+                    style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600),
+                  ),
+                ),
+                TextButton(
+                  onPressed: () => LiveLocationService.instance.stopBroadcast(),
+                  child: const Text('STOP',
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 0.5)),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }
