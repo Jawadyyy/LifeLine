@@ -37,6 +37,12 @@ class _ChatScreenState extends State<ChatScreen> {
   void initState() {
     super.initState();
     _peerUidFuture = _resolvePeerUid();
+    // Opening the chat marks the peer's incoming messages as seen.
+    _peerUidFuture.then((peerUid) {
+      final me = FirebaseAuth.instance.currentUser?.uid;
+      if (peerUid == null || peerUid.isEmpty || me == null) return;
+      ChatService(me).markSeen(ChatService.chatIdFor(me, peerUid));
+    });
   }
 
   @override

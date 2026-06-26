@@ -115,6 +115,39 @@ class ChatService {
     });
     await batch.commit();
   }
+
+  /// Recipient-side: advances the peer's incoming messages from `sent` to
+  /// `delivered` (call when the realtime listener first receives them).
+  Future<void> markDelivered(String chatId) =>
+      _advanceIncoming(chatId, from: const ['sent'], to: 'delivered');
+
+  /// Recipient-side: advances incoming messages to `seen` (call when the chat
+  /// screen is opened).
+  Future<void> markSeen(String chatId) =>
+      _advanceIncoming(chatId, from: const ['sent', 'delivered'], to: 'seen');
+
+  /// Updates the status of messages NOT sent by the current user. senderId is
+  /// filtered client-side so no composite index is required.
+  Future<void> _advanceIncoming(
+    String chatId, {
+    required List<String> from,
+    required String to,
+  }) async {
+    final snap = await _chatRef(chatId)
+        .collection('messages')
+        .where('status', whereIn: from)
+        .get();
+
+    final targets =
+        snap.docs.where((d) => d.data()['senderId'] != currentUid).toList();
+    if (targets.isEmpty) return;
+
+    final batch = _db.batch();
+    for (final doc in targets) {
+      batch.update(doc.reference, {'status': to});
+    }
+    await batch.commit();
+  }
 }
 
 /// Provider that exposes the Firestore message stream to the chat UI.
@@ -127,6 +160,8 @@ class ChatProvider extends ChangeNotifier {
         _messages = msgs;
         _errorMessage = null;
         notifyListeners();
+        // Receipt: incoming messages are now delivered to this device.
+        unawaited(_service.markDelivered(chatId));
       },
       onError: (Object error) {
         _errorMessage = 'Could not load messages';

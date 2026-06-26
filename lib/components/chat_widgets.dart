@@ -471,14 +471,63 @@ class _EmergencyBubble extends StatelessWidget {
               ),
             Padding(
               padding: const EdgeInsets.fromLTRB(14, 0, 14, 8),
-              child: Text(
-                timeStr,
-                style: TextStyle(color: Colors.red.shade400, fontSize: 10.5),
+              child: Row(
+                children: [
+                  Text(
+                    timeStr,
+                    style:
+                        TextStyle(color: Colors.red.shade400, fontSize: 10.5),
+                  ),
+                  if (message.isSent) ...[
+                    const Spacer(),
+                    _receiptLabel(message.status),
+                  ],
+                ],
               ),
             ),
           ],
         ),
       ),
+    );
+  }
+
+  /// Delivery receipt shown to the SOS sender so they know help received it.
+  Widget _receiptLabel(MessageStatus status) {
+    late final String text;
+    late final IconData icon;
+    switch (status) {
+      case MessageStatus.sending:
+        text = 'Sending…';
+        icon = Icons.schedule;
+        break;
+      case MessageStatus.delivered:
+        text = 'Delivered';
+        icon = Icons.done_all_rounded;
+        break;
+      case MessageStatus.read:
+        text = 'Seen';
+        icon = Icons.done_all_rounded;
+        break;
+      case MessageStatus.failed:
+        text = 'Failed';
+        icon = Icons.error_outline_rounded;
+        break;
+      case MessageStatus.sent:
+        text = 'Sent';
+        icon = Icons.done_rounded;
+        break;
+    }
+    final color =
+        status == MessageStatus.read ? Colors.green.shade700 : Colors.red.shade400;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 13, color: color),
+        const SizedBox(width: 3),
+        Text(text,
+            style: TextStyle(
+                color: color, fontSize: 10.5, fontWeight: FontWeight.w600)),
+      ],
     );
   }
 }
