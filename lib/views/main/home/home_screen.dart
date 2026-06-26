@@ -3,6 +3,7 @@ import 'package:lifeline/constants/app_colors.dart';
 import 'package:lifeline/services/live_location_service.dart';
 import 'package:lifeline/views/chatbot/screens/chat_home_screen.dart';
 import 'package:lifeline/views/main/home/controller/home_controller.dart';
+import 'package:lifeline/views/main/medical_id/medical_id_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -60,6 +61,17 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           ),
         ),
         centerTitle: true,
+        actions: [
+          IconButton(
+            tooltip: 'Medical ID',
+            icon: const Icon(Icons.medical_information_outlined,
+                color: AppColors.primary),
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const MedicalIdScreen()),
+            ),
+          ),
+        ],
       ),
       body: Column(
         children: [

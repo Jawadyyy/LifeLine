@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:lifeline/views/auth/change_password.dart';
 import 'package:lifeline/views/auth/login_screen.dart';
 import 'package:lifeline/views/main/profile/profile_setting_screen.dart';
+import 'package:lifeline/views/main/medical_id/medical_id_screen.dart';
 import 'package:lifeline/views/main/profile/controller/profile_controller.dart';
 import 'package:lifeline/views/main/profile/controller/profile_widgets.dart';
 import 'package:lifeline/constants/app_colors.dart';
@@ -238,6 +239,18 @@ class _ProfilePageState extends State<ProfilePage> {
                       // Refresh from global service after returning
                       _updateUserFromGlobal();
                     },
+                    colors: colors,
+                  ),
+                  const SizedBox(height: 15),
+                  ProfileWidgets.buildMenuCard(
+                    icon: Icons.medical_information_outlined,
+                    title: 'Medical ID',
+                    subtitle: 'Blood type, allergies & emergency contact',
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (_) => const MedicalIdScreen()),
+                    ),
                     colors: colors,
                   ),
                   const SizedBox(height: 15),
