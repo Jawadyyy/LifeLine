@@ -1,6 +1,8 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:lifeline/constants/app_colors.dart';
 import 'package:lifeline/services/live_location_service.dart';
+import 'package:lifeline/services/sos_followup.dart';
 import 'package:lifeline/views/chatbot/screens/chat_home_screen.dart';
 import 'package:lifeline/views/main/home/controller/home_controller.dart';
 import 'package:lifeline/views/main/medical_id/medical_id_screen.dart';
@@ -76,6 +78,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       body: Column(
         children: [
           const _LiveShareBanner(),
+          const _SafeFollowupBanner(),
           Expanded(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -165,6 +168,66 @@ class _LiveShareBanner extends StatelessWidget {
                 TextButton(
                   onPressed: () => LiveLocationService.instance.stopBroadcast(),
                   child: const Text('STOP',
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 0.5)),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// Contextual "I'm safe now" banner shown after an SOS, sending a `type:'safe'`
+/// follow-up to the same contacts. Driven by [SosFollowup.alertedContacts].
+class _SafeFollowupBanner extends StatelessWidget {
+  const _SafeFollowupBanner();
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<List<String>>(
+      valueListenable: SosFollowup.alertedContacts,
+      builder: (context, contacts, _) {
+        if (contacts.isEmpty) return const SizedBox.shrink();
+        return Material(
+          color: AppColors.success,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 10, 8, 10),
+            child: Row(
+              children: [
+                const Icon(Icons.verified_rounded,
+                    color: Colors.white, size: 20),
+                const SizedBox(width: 10),
+                const Expanded(
+                  child: Text(
+                    'Emergency active — let your contacts know you are safe',
+                    style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600),
+                  ),
+                ),
+                TextButton(
+                  onPressed: () async {
+                    final uid = FirebaseAuth.instance.currentUser?.uid;
+                    if (uid == null) return;
+                    final count = await SosFollowup.sendSafe(currentUid: uid);
+                    if (!context.mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(count > 0
+                            ? "Sent 'I'm safe' to $count contact${count == 1 ? '' : 's'}"
+                            : "Nothing to send"),
+                        backgroundColor: AppColors.success,
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                  },
+                  child: const Text("I'M SAFE",
                       style: TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,

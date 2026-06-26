@@ -211,6 +211,9 @@ class MessageBubble extends StatelessWidget {
     if (message.isEmergency) {
       return _EmergencyBubble(message: message);
     }
+    if (message.isSafe) {
+      return _SafeBubble(message: message);
+    }
     final isSent = message.isSent;
     final isFailed = message.status == MessageStatus.failed;
     final isSending = message.status == MessageStatus.sending;
@@ -471,6 +474,53 @@ class _EmergencyBubble extends StatelessWidget {
               child: Text(
                 timeStr,
                 style: TextStyle(color: Colors.red.shade400, fontSize: 10.5),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Safe Bubble ──────────────────────────────────────────────────────────────
+/// Distinct green bubble for the `type == 'safe'` "I'm safe now" follow-up.
+class _SafeBubble extends StatelessWidget {
+  final ChatMessage message;
+  const _SafeBubble({required this.message});
+
+  @override
+  Widget build(BuildContext context) {
+    final timeStr = DateFormat('h:mm a').format(message.time);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: Colors.green.shade50,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: Colors.green.shade300, width: 1.4),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.verified_rounded, color: Colors.green.shade600, size: 22),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(message.text,
+                      style: TextStyle(
+                          color: Colors.green.shade900,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          height: 1.4)),
+                  const SizedBox(height: 4),
+                  Text(timeStr,
+                      style: TextStyle(
+                          color: Colors.green.shade400, fontSize: 10.5)),
+                ],
               ),
             ),
           ],

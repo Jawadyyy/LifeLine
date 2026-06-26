@@ -8,6 +8,7 @@ import 'package:lifeline/services/chat_service.dart';
 import 'package:lifeline/services/firestore_service.dart';
 import 'package:lifeline/services/live_location_service.dart';
 import 'package:lifeline/services/location_handler.dart';
+import 'package:lifeline/services/sos_followup.dart';
 import 'package:lifeline/views/main/donation/donation_map_screen.dart';
 import 'package:lifeline/views/main/home/widgets/sos_countdown_dialog.dart';
 
@@ -110,6 +111,7 @@ class HomeController {
 
       final chat = ChatService(user.uid);
       final skipped = <String>[];
+      final alerted = <String>[];
       var sent = 0;
       var queued = 0;
 
@@ -125,13 +127,20 @@ class HomeController {
                   type: 'emergency', liveSessionId: liveSessionId)
               .timeout(const Duration(seconds: 6));
           sent++;
+          alerted.add(contact.uid);
         } on TimeoutException {
           // Offline: the write is persisted locally and syncs on reconnect.
           queued++;
+          alerted.add(contact.uid);
         } catch (e) {
           debugPrint('Error sending SOS to ${contact.name}: $e');
           skipped.add(contact.name);
         }
+      }
+
+      // Enable the contextual "I'm safe now" follow-up for these contacts.
+      if (alerted.isNotEmpty) {
+        SosFollowup.record(alerted, username.toString());
       }
 
       if (!mounted) return;
