@@ -84,7 +84,8 @@ firebase deploy --only firestore:rules --project lifelinev2-7cad5
 ```
 
 ## .env keys
-No new keys. Existing: `GEOAPIFY_KEY`, `IMGBB_KEY`, `GEMINI_KEY`.
+`PUSH_RELAY_URL` (Feature 8 — public relay base URL, no secret). Existing:
+`GEOAPIFY_KEY`, `IMGBB_KEY`, `GEMINI_KEY`.
 
 ## Manual / console actions (human)
 1. **Deploy `firestore.rules`** (command above) — accept flow + live locations
@@ -97,12 +98,43 @@ No new keys. Existing: `GEOAPIFY_KEY`, `IMGBB_KEY`, `GEMINI_KEY`.
 4. Medical ID lock-screen tile — needs native platform-channel work (deferred).
 5. Verify offline behaviour on a real device (airplane mode → SOS queues → sends
    on reconnect).
+6. **Push (Feature 8)** — see `relay/README.md`:
+   a. Create a free Vercel account (no card) and deploy `relay/`.
+   b. Firebase Console → Project settings → Service accounts → *Generate private
+      key* → set the JSON as Vercel env vars (`FIREBASE_SERVICE_ACCOUNT` or the
+      3 discrete fields). Never commit it.
+   c. Google Cloud Console → enable **Firebase Cloud Messaging API (V1)**.
+   d. Put the deployed relay base URL in `.env` as `PUSH_RELAY_URL` → rebuild.
+   e. Test Android 13+ notification permission + a real push on a device.
+
+## 8. FCM push notifications (no Blaze) — DONE
+Cross-user push for SOS, "I'm safe", and donation accept — without Cloud
+Functions or the Blaze plan.
+
+- **Relay** (`relay/`): a free **Vercel** serverless function (`POST /api/send`)
+  is the only thing holding the Firebase service-account credential. The app
+  never sees it. Flow: `sender app → relay → FCM HTTP v1 → recipient device`.
+  The relay verifies the caller's Firebase ID token (AuthN) and checks the
+  caller may ping the recipient (AuthZ: chat participant for `emergency`/`safe`,
+  donor/owner for `donation_accept`), looks up `users/{uid}.fcmTokens`, sends
+  via `sendEachForMulticast`, prunes dead tokens, basic per-uid rate limit.
+- **Client** (`lib/services/push_service.dart`): registers this device's FCM
+  token on app-start (`arrayUnion`, multi-device + `onTokenRefresh` safe),
+  removes it on logout (`arrayRemove`); foreground banner; background/terminated
+  tap routing (`getInitialMessage` + `onMessageOpenedApp`). `notify(...)` calls
+  the relay with the current user's ID token. Push is **best-effort** — the
+  existing Firestore in-app path is unaffected if the relay is down/unset.
+- **Triggers**: SOS fired (`emergency`), "I'm safe" (`safe`), donation accept
+  (`donation_accept`).
+- **Android**: default `lifeline_alerts` channel (created in `MainActivity`),
+  monochrome notification icon, `POST_NOTIFICATIONS` (13+) requested in the
+  priming flow.
+- **.env**: new key `PUSH_RELAY_URL` (public relay base URL only — no secrets).
+- **Setup**: deploy `relay/` to Vercel and set the service account as Vercel env
+  vars — see `relay/README.md`. No `firestore.rules` change required
+  (`users/{uid}.fcmTokens` is covered by the existing owner-write rule).
 
 ## Deferred
-- **FCM push notifications** (SOS alerts + donation-match notifications) — needs
-  the Blaze plan + Cloud Functions. Until then cross-user notification is
-  in-app only (Firestore realtime listeners). The data model already carries
-  everything FCM would need (`type`, `acceptedBy`, session ids).
 - Full string extraction for every screen (Feature 7) and full donation-screen
   refactor (Feature 6) — infrastructure is in place; remaining work is mechanical.
 
