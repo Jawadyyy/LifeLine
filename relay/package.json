@@ -1,0 +1,13 @@
+{
+  "name": "lifeline-push-relay",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Serverless FCM relay for LifeLine. Holds the Firebase service account server-side; the app never sees it.",
+  "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "firebase-admin": "^12.7.0"
+  }
+}
