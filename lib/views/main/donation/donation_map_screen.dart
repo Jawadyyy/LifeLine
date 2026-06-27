@@ -10,6 +10,7 @@ import 'package:provider/provider.dart';
 import 'package:lifeline/constants/app_colors.dart';
 import 'package:lifeline/models/user_model.dart';
 import 'package:lifeline/services/donation_service.dart';
+import 'package:lifeline/services/push_service.dart';
 import 'package:lifeline/views/main/donation/controller/donation_controller.dart';
 import 'package:lifeline/views/main/donation/controller/donation_dialog_controller.dart';
 
@@ -380,6 +381,14 @@ class _DonationMapScreenState extends State<DonationMapScreen>
       donorUid: me.uid,
       donorName: donorName,
     );
+    if (ok) {
+      // Best-effort push to the requester (post owner) that a donor accepted.
+      PushService().notify(
+        recipientUid: ownerId,
+        kind: 'donation_accept',
+        payload: {'senderUid': me.uid, 'senderName': donorName},
+      );
+    }
     if (!mounted) return;
     if (ok) {
       setState(() {

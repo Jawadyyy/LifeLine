@@ -8,6 +8,7 @@ import 'package:lifeline/services/chat_service.dart';
 import 'package:lifeline/services/firestore_service.dart';
 import 'package:lifeline/services/live_location_service.dart';
 import 'package:lifeline/services/location_handler.dart';
+import 'package:lifeline/services/push_service.dart';
 import 'package:lifeline/services/sos_followup.dart';
 import 'package:lifeline/views/main/donation/donation_map_screen.dart';
 import 'package:lifeline/views/main/home/widgets/sos_countdown_dialog.dart';
@@ -110,6 +111,7 @@ class HomeController {
           : '$customMessage\n🗺️ Location: $mapUrl\n🕒 $timestamp$liveLine';
 
       final chat = ChatService(user.uid);
+      final push = PushService();
       final skipped = <String>[];
       final alerted = <String>[];
       var sent = 0;
@@ -128,6 +130,17 @@ class HomeController {
               .timeout(const Duration(seconds: 6));
           sent++;
           alerted.add(contact.uid);
+          // Best-effort push so the alert surfaces even with the app closed.
+          unawaited(push.notify(
+            recipientUid: contact.uid,
+            kind: 'emergency',
+            chatId: chatId,
+            payload: {
+              'senderUid': user.uid,
+              'senderName': username.toString(),
+              if (liveSessionId != null) 'sessionId': liveSessionId,
+            },
+          ));
         } on TimeoutException {
           // Offline: the write is persisted locally and syncs on reconnect.
           queued++;

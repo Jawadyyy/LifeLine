@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:lifeline/services/auth_result.dart';
+import 'package:lifeline/services/push_service.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -155,6 +156,11 @@ class AuthService {
   Future<void> signOut() async {
     try {
       debugPrint('🚪 Signing out...');
+      // Drop this device's push token before we lose the uid (best-effort).
+      final uid = _auth.currentUser?.uid;
+      if (uid != null) {
+        await PushService().clearForUser(uid);
+      }
       await _auth.signOut();
       await _googleSignIn.signOut();
       debugPrint('✅ Sign out complete');

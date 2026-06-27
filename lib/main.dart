@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -9,9 +10,19 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:lifeline/firebase/firebase_options.dart';
 import 'package:lifeline/constants/app_colors.dart';
 import 'package:lifeline/services/locale_controller.dart';
+import 'package:lifeline/services/push_service.dart';
 import 'package:lifeline/views/entry/splash_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+
+/// Handles pushes that arrive while the app is backgrounded/terminated. Must
+/// be a top-level entry point; Firebase needs its own init in this isolate.
+@pragma('vm:entry-point')
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  // System tray display is handled by FCM via the manifest default channel;
+  // tap routing is wired in PushService once the app resumes.
+}
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -19,6 +30,8 @@ Future<void> main() async {
   await dotenv.load(fileName: ".env");
 
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
   // Route uncaught Flutter + platform errors to Crashlytics (I3).
   // Disabled in debug so test/analysis runs don't report crashes.
@@ -58,6 +71,8 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'LifeLine',
       debugShowCheckedModeBanner: false,
+      navigatorKey: PushService.navigatorKey,
+      scaffoldMessengerKey: PushService.messengerKey,
       locale: localeController.locale,
       localizationsDelegates: const [
         AppLocalizations.delegate,

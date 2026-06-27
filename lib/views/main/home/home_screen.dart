@@ -2,7 +2,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lifeline/constants/app_colors.dart';
+import 'package:lifeline/services/chat_service.dart';
 import 'package:lifeline/services/live_location_service.dart';
+import 'package:lifeline/services/push_service.dart';
 import 'package:lifeline/services/sos_followup.dart';
 import 'package:lifeline/views/chatbot/screens/chat_home_screen.dart';
 import 'package:lifeline/views/main/home/controller/home_controller.dart';
@@ -215,9 +217,26 @@ class _SafeFollowupBanner extends StatelessWidget {
                 ),
                 TextButton(
                   onPressed: () async {
-                    final uid = FirebaseAuth.instance.currentUser?.uid;
+                    final user = FirebaseAuth.instance.currentUser;
+                    final uid = user?.uid;
                     if (uid == null) return;
+                    // Snapshot recipients before sendSafe clears them, so we can
+                    // fire best-effort pushes to the same contacts.
+                    final recipients =
+                        List<String>.from(SosFollowup.alertedContacts.value);
                     final count = await SosFollowup.sendSafe(currentUid: uid);
+                    final push = PushService();
+                    for (final r in recipients) {
+                      push.notify(
+                        recipientUid: r,
+                        kind: 'safe',
+                        chatId: ChatService.chatIdFor(uid, r),
+                        payload: {
+                          'senderUid': uid,
+                          'senderName': user?.displayName ?? 'Your contact',
+                        },
+                      );
+                    }
                     if (!context.mounted) return;
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(

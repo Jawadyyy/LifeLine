@@ -1,3 +1,4 @@
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_contacts/flutter_contacts.dart';
 import 'package:geolocator/geolocator.dart';
@@ -44,6 +45,8 @@ class _PermissionPrimingScreenState extends State<PermissionPrimingScreen> {
         await Geolocator.requestPermission();
       }
       await FlutterContacts.requestPermission(readonly: true);
+      // Android 13+ POST_NOTIFICATIONS / iOS alert permission for SOS pushes.
+      await FirebaseMessaging.instance.requestPermission();
     } catch (_) {
       // Permission flow errors are non-fatal — the user can grant later.
     }
@@ -90,6 +93,14 @@ class _PermissionPrimingScreenState extends State<PermissionPrimingScreen> {
                 body:
                     'So you can quickly pick the people who should be alerted '
                     'when you fire an SOS.',
+              ),
+              const SizedBox(height: 24),
+              _rationale(
+                icon: Icons.notifications_active_outlined,
+                title: 'Notifications',
+                body:
+                    'So you get instant alerts when a contact fires an SOS, '
+                    'marks themselves safe, or accepts your blood request.',
               ),
               const Spacer(),
               SizedBox(

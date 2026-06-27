@@ -9,6 +9,7 @@ import 'package:lifeline/views/main/home/home_screen.dart';
 import 'package:lifeline/views/main/map/map_screen.dart';
 import 'package:lifeline/views/main/profile/profile_screen.dart';
 import 'package:lifeline/services/global_data_service.dart';
+import 'package:lifeline/services/push_service.dart';
 import 'package:lifeline/views/entry/permission_priming_screen.dart';
 
 class MainNavigationScreen extends StatefulWidget {
@@ -21,6 +22,7 @@ class MainNavigationScreen extends StatefulWidget {
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
   int _currentIndex = 0;
   final GlobalDataService _globalDataService = GlobalDataService();
+  final PushService _pushService = PushService();
   String? _currentUserId; // Track current user
 
   // In-app notification for donation requests accepted by a donor (no FCM).
@@ -42,6 +44,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     debugPrint('🏠 MainNavigationScreen initialized for user: $_currentUserId');
     _initializeGlobalData();
     _listenForAcceptedDonations();
+    _initPush();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) PermissionPrimingScreen.showIfFirstRun(context);
     });
@@ -93,6 +96,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       // Clear old data and reinitialize for new user
       _clearAndReinitialize();
       _listenForAcceptedDonations();
+      _initPush();
     }
   }
 
@@ -112,6 +116,15 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     } catch (e) {
       debugPrint('Error clearing and reinitializing data: $e');
     }
+  }
+
+  /// Registers this device's FCM token and wires foreground/tap handling.
+  /// Best-effort — push failures never affect the app.
+  Future<void> _initPush() async {
+    final uid = _currentUserId;
+    if (uid == null) return;
+    await _pushService.initForUser(uid);
+    await _pushService.attachListeners();
   }
 
   Future<void> _initializeGlobalData() async {
