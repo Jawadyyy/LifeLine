@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_contacts/flutter_contacts.dart';
 import 'package:lifeline/constants/app_colors.dart';
+import 'package:lifeline/constants/app_design.dart';
 import 'package:lifeline/services/global_data_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -372,25 +373,15 @@ class ContactsScreenController {
     return Container(
       width: size,
       height: size,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            AppColors.primary.withOpacity(0.2),
-            AppColors.primary.withOpacity(0.4),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+      decoration: const BoxDecoration(
+        color: LL.soft,
         shape: BoxShape.circle,
       ),
       child: Center(
         child: Text(
           name.isNotEmpty ? name[0].toUpperCase() : '?',
-          style: TextStyle(
-            fontSize: fontSize,
-            fontWeight: FontWeight.bold,
-            color: AppColors.primary,
-          ),
+          style: LL.display(fontSize,
+              weight: FontWeight.w800, color: LL.orange),
         ),
       ),
     );
@@ -443,71 +434,84 @@ class ContactsScreenController {
   /// [onTap] is now a required callback — the page passes navigation here.
   /// The InkWell uses this directly, so no outer GestureDetector is needed.
   Widget buildContactCard(Map<String, dynamic> contact,
-      {required VoidCallback onTap}) {
+      {required VoidCallback onTap, bool isPrimary = false}) {
     final String? profileImageUrl = contact['profileImageUrl'] as String?;
 
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.background,
-        borderRadius: BorderRadius.circular(16),
+        color: LL.card,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: LL.border),
         boxShadow: [
           BoxShadow(
-            color: AppColors.textGrey.withOpacity(0.1),
-            blurRadius: 10,
-            spreadRadius: 2,
-            offset: const Offset(0, 4),
+            color: const Color(0xFF141828).withOpacity(0.05),
+            blurRadius: 18,
+            offset: const Offset(0, 6),
           ),
         ],
       ),
       child: Material(
         color: AppColors.transparent,
         child: InkWell(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(20),
           onTap: onTap, // ← directly uses the passed callback
           onLongPress: () => showDeleteDialog(contact['id'], contact['name']),
           child: Padding(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(16),
             child: Row(
               children: [
                 _buildAvatar(
-                  size: 56,
+                  size: 54,
                   profileImageUrl: profileImageUrl,
                   name: contact['name'] as String,
-                  fontSize: 20,
+                  fontSize: 22,
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: 14),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        contact['name'],
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.textPrimary,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                      Row(
+                        children: [
+                          Flexible(
+                            child: Text(
+                              contact['name'],
+                              style: LL.body(16.5, weight: FontWeight.w700),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          if (isPrimary) ...[
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 7, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: LL.soft,
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text('PRIMARY',
+                                  style: LL.body(9.5,
+                                      weight: FontWeight.w800,
+                                      color: LL.orange,
+                                      letterSpacing: 0.8)),
+                            ),
+                          ],
+                        ],
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 2),
                       Text(
                         contact['phone'],
-                        style: const TextStyle(
-                          fontSize: 14,
-                          color: AppColors.textGrey,
-                        ),
+                        style: LL.body(13, color: LL.muted),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ),
                 ),
-                IconButton(
-                  icon: Icon(
-                    Icons.phone_outlined,
-                    color: AppColors.primary,
-                    size: 24,
-                  ),
-                  onPressed: () async {
+                const SizedBox(width: 10),
+                GestureDetector(
+                  onTap: () async {
                     final Uri phoneUri =
                         Uri(scheme: 'tel', path: contact['phone']);
                     if (!await launchUrl(phoneUri,
@@ -515,6 +519,23 @@ class ContactsScreenController {
                       debugPrint('Could not launch $phoneUri');
                     }
                   },
+                  child: Container(
+                    width: 46,
+                    height: 46,
+                    decoration: BoxDecoration(
+                      color: LL.green,
+                      borderRadius: BorderRadius.circular(14),
+                      boxShadow: [
+                        BoxShadow(
+                          color: LL.green.withOpacity(0.32),
+                          blurRadius: 18,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
+                    ),
+                    child: const Icon(Icons.call,
+                        color: Colors.white, size: 21),
+                  ),
                 ),
               ],
             ),
