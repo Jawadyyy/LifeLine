@@ -24,7 +24,11 @@ UserModel _empty() => UserModel(
     );
 
 Future<void> _pump(WidgetTester tester, Widget child) {
-  return tester.pumpWidget(MaterialApp(home: Scaffold(body: child)));
+  // The card is always hosted in a scroll view in-app; mirror that here so the
+  // test surface's fixed height doesn't clip the (intentionally tall) card.
+  return tester.pumpWidget(
+    MaterialApp(home: Scaffold(body: SingleChildScrollView(child: child))),
+  );
 }
 
 void main() {
@@ -38,7 +42,7 @@ void main() {
       ),
     );
 
-    expect(find.text('MEDICAL ID'), findsOneWidget);
+    expect(find.text('EMERGENCY MEDICAL ID'), findsOneWidget);
     expect(find.text('Ayesha Khan'), findsOneWidget);
     expect(find.text('O-'), findsOneWidget);
     expect(find.text('Penicillin'), findsOneWidget);
@@ -54,7 +58,7 @@ void main() {
     await _pump(tester, MedicalIdCard(user: _empty()));
 
     // No crash; placeholders shown, blood type collapses to a dash.
-    expect(find.text('MEDICAL ID'), findsOneWidget);
+    expect(find.text('EMERGENCY MEDICAL ID'), findsOneWidget);
     expect(find.text('—'), findsOneWidget);
     expect(find.text('Not set'), findsWidgets);
     // No call action without a contact.

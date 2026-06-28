@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lifeline/constants/app_design.dart';
 import 'package:lifeline/models/user_model.dart';
 
 /// High-contrast, glanceable medical summary built from a [UserModel].
@@ -20,9 +21,6 @@ class MedicalIdCard extends StatelessWidget {
     this.onCallContact,
   });
 
-  static const _ink = Color(0xFF14213D);
-  static const _blood = Color(0xFFE63946);
-
   String _orNotSet(String? v) {
     final s = v?.trim();
     if (s == null || s.isEmpty || s.toUpperCase() == 'N/A') return 'Not set';
@@ -33,189 +31,237 @@ class MedicalIdCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: _ink,
-        borderRadius: BorderRadius.circular(20),
+        color: LL.card,
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(color: const Color(0xFFF0E1DA)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.25),
-            blurRadius: 16,
-            offset: const Offset(0, 8),
+            color: const Color(0xFF141828).withOpacity(0.10),
+            blurRadius: 44,
+            offset: const Offset(0, 20),
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          _header(),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                _bloodBlock(),
-                const SizedBox(height: 18),
-                _field('Allergies', _orNotSet(user.allergy),
-                    icon: Icons.warning_amber_rounded, highlight: true),
-                const SizedBox(height: 14),
-                _field('Medical conditions', _orNotSet(user.disease),
-                    icon: Icons.healing_rounded),
-                const SizedBox(height: 14),
-                Row(
-                  children: [
-                    Expanded(
-                        child: _vital('Age', _orNotSet(user.age))),
-                    Expanded(
-                        child: _vital('Height', _orNotSet(user.height))),
-                    Expanded(
-                        child: _vital('Weight', _orNotSet(user.weight))),
-                  ],
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(28),
+        child: Stack(
+          children: [
+            // Top accent bar.
+            Container(
+              height: 5,
+              decoration: const BoxDecoration(gradient: LL.grad),
+            ),
+            // Soft corner glow.
+            Positioned(
+              top: -40,
+              right: -40,
+              child: Container(
+                width: 160,
+                height: 160,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [LL.orange.withOpacity(0.12), Colors.transparent],
+                    stops: const [0.0, 0.7],
+                  ),
                 ),
-                if (_orNotSet(user.emergencyText) != 'Not set') ...[
-                  const SizedBox(height: 16),
-                  _field('Emergency note', _orNotSet(user.emergencyText),
-                      icon: Icons.notes_rounded),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 27, 20, 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _cardHead(),
+                  const SizedBox(height: 18),
+                  _nameAndBlood(),
+                  const SizedBox(height: 18),
+                  _allergyHighlight(),
+                  const SizedBox(height: 10),
+                  _grid(),
+                  const SizedBox(height: 10),
+                  _emergencyContact(),
+                  if (_orNotSet(user.emergencyText) != 'Not set') ...[
+                    const SizedBox(height: 10),
+                    _noteBlock(),
+                  ],
+                  const SizedBox(height: 18),
+                  _scanStrip(),
                 ],
-                const SizedBox(height: 18),
-                _emergencyContact(),
-              ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
-  Widget _header() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-      decoration: const BoxDecoration(
-        color: _blood,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.medical_information_rounded,
-              color: Colors.white, size: 26),
-          const SizedBox(width: 10),
-          const Text('MEDICAL ID',
-              style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 20,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 1.2)),
-          const Spacer(),
-          Flexible(
-            child: Text(
-              _orNotSet(user.name),
-              textAlign: TextAlign.right,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _bloodBlock() {
+  Widget _cardHead() {
     return Row(
       children: [
-        Container(
-          width: 88,
-          height: 88,
-          decoration: BoxDecoration(
-            color: _blood.withOpacity(0.18),
-            shape: BoxShape.circle,
-            border: Border.all(color: _blood, width: 3),
-          ),
-          alignment: Alignment.center,
-          child: Text(
-            _orNotSet(user.bloodType) == 'Not set'
-                ? '—'
-                : user.bloodType,
-            style: const TextStyle(
-                color: Colors.white,
-                fontSize: 30,
-                fontWeight: FontWeight.w900),
-          ),
+        const Icon(Icons.medical_information_outlined,
+            color: LL.orange, size: 18),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text('EMERGENCY MEDICAL ID',
+              style: LL.body(11,
+                  weight: FontWeight.w800,
+                  color: LL.orange,
+                  letterSpacing: 1.8)),
         ),
-        const SizedBox(width: 16),
-        const Expanded(
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+          decoration: BoxDecoration(
+            color: LL.soft,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Text('VERIFIED',
+              style: LL.body(10,
+                  weight: FontWeight.w700,
+                  color: LL.orange,
+                  letterSpacing: 1.4)),
+        ),
+      ],
+    );
+  }
+
+  Widget _nameAndBlood() {
+    final age = _orNotSet(user.age);
+    final sub = age == 'Not set' ? 'Age not set' : '$age years';
+    final blood = _orNotSet(user.bloodType) == 'Not set' ? '—' : user.bloodType;
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('BLOOD TYPE',
-                  style: TextStyle(
-                      color: Colors.white70,
-                      fontSize: 12,
-                      letterSpacing: 1,
-                      fontWeight: FontWeight.w600)),
-              SizedBox(height: 4),
-              Text('Show this screen to first responders',
-                  style: TextStyle(color: Colors.white54, fontSize: 12.5)),
+              Text(_orNotSet(user.name),
+                  style: LL.display(25, height: 1.1),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis),
+              const SizedBox(height: 3),
+              Text(sub, style: LL.body(13, color: LL.muted)),
             ],
           ),
+        ),
+        const SizedBox(width: 12),
+        Column(
+          children: [
+            Text(blood,
+                style: LL.display(40,
+                    weight: FontWeight.w800, color: LL.orange, height: 0.9)),
+            const SizedBox(height: 3),
+            Text('BLOOD TYPE',
+                style: LL.body(10,
+                    weight: FontWeight.w700,
+                    color: LL.orangeText,
+                    letterSpacing: 1.4)),
+          ],
         ),
       ],
     );
   }
 
-  Widget _field(String label, String value,
-      {required IconData icon, bool highlight = false}) {
+  Widget _allergyHighlight() {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 13),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(highlight ? 0.10 : 0.06),
-        borderRadius: BorderRadius.circular(12),
-        border: highlight
-            ? Border.all(color: _blood.withOpacity(0.6))
-            : null,
+        color: LL.soft,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: LL.orange.withOpacity(0.3)),
       ),
-      child: Row(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: highlight ? _blood : Colors.white70, size: 20),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(label.toUpperCase(),
-                    style: const TextStyle(
-                        color: Colors.white60,
-                        fontSize: 11,
-                        letterSpacing: 0.8,
-                        fontWeight: FontWeight.w600)),
-                const SizedBox(height: 3),
-                Text(value,
-                    style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 15.5,
-                        fontWeight: FontWeight.w600)),
-              ],
-            ),
+          Row(
+            children: [
+              const Icon(Icons.warning_amber_rounded,
+                  color: LL.orange, size: 15),
+              const SizedBox(width: 7),
+              Text('CRITICAL ALLERGY',
+                  style: LL.body(10.5,
+                      weight: FontWeight.w800,
+                      color: LL.orange,
+                      letterSpacing: 1.4)),
+            ],
           ),
+          const SizedBox(height: 5),
+          Text(_orNotSet(user.allergy),
+              style: LL.body(17, weight: FontWeight.w700)),
         ],
       ),
     );
   }
 
-  Widget _vital(String label, String value) {
+  Widget _grid() {
     return Column(
       children: [
-        Text(value,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-                color: Colors.white,
-                fontSize: 16,
-                fontWeight: FontWeight.bold)),
-        const SizedBox(height: 2),
-        Text(label,
-            style: const TextStyle(color: Colors.white60, fontSize: 12)),
+        Row(
+          children: [
+            Expanded(child: _cell('CONDITION', _orNotSet(user.disease))),
+            const SizedBox(width: 10),
+            Expanded(child: _cell('BMI', _orNotSet(user.bmi))),
+          ],
+        ),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            Expanded(child: _cell('HEIGHT', _orNotSet(user.height))),
+            const SizedBox(width: 10),
+            Expanded(child: _cell('WEIGHT', _orNotSet(user.weight))),
+          ],
+        ),
       ],
+    );
+  }
+
+  Widget _cell(String label, String value) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: LL.softTint,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label,
+              style: LL.body(10,
+                  weight: FontWeight.w700,
+                  color: LL.orangeText,
+                  letterSpacing: 1.2)),
+          const SizedBox(height: 4),
+          Text(value,
+              style: LL.body(15, weight: FontWeight.w700),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis),
+        ],
+      ),
+    );
+  }
+
+  Widget _noteBlock() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: LL.softTint,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('EMERGENCY NOTE',
+              style: LL.body(10,
+                  weight: FontWeight.w700,
+                  color: LL.orangeText,
+                  letterSpacing: 1.2)),
+          const SizedBox(height: 4),
+          Text(_orNotSet(user.emergencyText),
+              style: LL.body(14.5, weight: FontWeight.w600)),
+        ],
+      ),
     );
   }
 
@@ -224,44 +270,91 @@ class MedicalIdCard extends StatelessWidget {
     final hasContact =
         name != 'Not set' && (primaryContactPhone?.isNotEmpty ?? false);
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 13),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.06),
-        borderRadius: BorderRadius.circular(12),
+        color: LL.softTint,
+        borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
         children: [
-          const Icon(Icons.contact_emergency_rounded,
-              color: Colors.white70, size: 20),
-          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('EMERGENCY CONTACT',
-                    style: TextStyle(
-                        color: Colors.white60,
-                        fontSize: 11,
-                        letterSpacing: 0.8,
-                        fontWeight: FontWeight.w600)),
+                Text('EMERGENCY CONTACT',
+                    style: LL.body(10,
+                        weight: FontWeight.w700,
+                        color: LL.orangeText,
+                        letterSpacing: 1.2)),
                 const SizedBox(height: 3),
                 Text(hasContact ? name : 'Not set',
-                    style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 15.5,
-                        fontWeight: FontWeight.w600)),
+                    style: LL.body(16, weight: FontWeight.w700)),
                 if (hasContact)
                   Text(primaryContactPhone!,
-                      style: const TextStyle(
-                          color: Colors.white60, fontSize: 13)),
+                      style: LL.body(12.5, color: LL.muted)),
               ],
             ),
           ),
           if (hasContact)
-            IconButton(
-              onPressed: onCallContact,
-              icon: const Icon(Icons.call, color: Color(0xFF4ADE80)),
+            GestureDetector(
+              onTap: onCallContact,
+              child: Container(
+                width: 46,
+                height: 46,
+                decoration: BoxDecoration(
+                  color: LL.green,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: LL.green.withOpacity(0.4),
+                      blurRadius: 18,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
+                ),
+                child: const Icon(Icons.call, color: Colors.white, size: 22),
+              ),
             ),
+        ],
+      ),
+    );
+  }
+
+  Widget _scanStrip() {
+    // Decorative barcode — deterministic bar heights for a stable render.
+    const heights = [1.0, .7, 1.0, .55, 1.0, .8, 1.0, .6, 1.0, .75, 1.0, .5,
+        1.0, .85, 1.0];
+    const widths = [2.0, 3, 1.5, 4, 1.5, 2, 3, 1.5, 2, 4, 1.5, 2, 3, 1.5, 2];
+    return Container(
+      padding: const EdgeInsets.only(top: 16),
+      decoration: const BoxDecoration(
+        border: Border(top: BorderSide(color: Color(0xFFF0E1DA))),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          SizedBox(
+            height: 30,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                for (int i = 0; i < heights.length; i++) ...[
+                  Container(
+                    width: widths[i].toDouble(),
+                    height: 30 * heights[i],
+                    color: LL.ink,
+                  ),
+                  const SizedBox(width: 1.5),
+                ],
+              ],
+            ),
+          ),
+          Text('SCAN AT ER',
+              style: LL.body(10,
+                  weight: FontWeight.w700,
+                  color: LL.orange,
+                  letterSpacing: 1)),
         ],
       ),
     );

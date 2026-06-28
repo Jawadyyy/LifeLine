@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:lifeline/constants/app_colors.dart';
+import 'package:lifeline/constants/app_design.dart';
 import 'package:lifeline/views/main/contact/controller/contacts_screen_controller.dart';
 import 'package:lifeline/views/main/contact/chat/chat_screen.dart';
 import 'package:lifeline/services/global_data_service.dart';
@@ -133,8 +134,25 @@ class _ContactsPageState extends State<ContactsPage>
           // Reload after dialog closes in case a contact was added
           _loadContacts();
         },
-        backgroundColor: AppColors.primary,
-        child: const Icon(Icons.add, color: AppColors.textTertiary),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        highlightElevation: 0,
+        child: Container(
+          width: 58,
+          height: 58,
+          decoration: BoxDecoration(
+            gradient: LL.grad,
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: LL.orange.withOpacity(0.4),
+                blurRadius: 16,
+                offset: const Offset(0, 6),
+              ),
+            ],
+          ),
+          child: const Icon(Icons.add, color: Colors.white, size: 26),
+        ),
       ),
       body: Column(
         children: [

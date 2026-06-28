@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:lifeline/constants/app_colors.dart';
+import 'package:lifeline/constants/app_design.dart';
 import 'package:lifeline/models/chat_message.dart';
 import 'package:lifeline/services/gemini_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -181,73 +182,32 @@ class _ChatHomeScreenState extends State<ChatHomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        backgroundColor: AppColors.primary,
-        elevation: 0,
-        titleSpacing: 0,
-        title: Row(
+      backgroundColor: LL.canvas,
+      body: SafeArea(
+        child: Column(
           children: [
-            Container(
-              width: 38,
-              height: 38,
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.18),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(Icons.medical_services_rounded,
-                  color: Colors.white, size: 20),
+            _buildHeader(),
+            _buildDisclaimer(),
+            Expanded(
+              child: !_loaded
+                  ? const Center(
+                      child: CircularProgressIndicator(color: LL.orange))
+                  : ListView.builder(
+                      controller: _scrollController,
+                      padding: const EdgeInsets.fromLTRB(18, 6, 18, 12),
+                      itemCount: _messages.length + (_isTyping ? 1 : 0),
+                      itemBuilder: (context, i) {
+                        if (i < _messages.length) {
+                          return _Bubble(message: _messages[i]);
+                        }
+                        return const _TypingBubble();
+                      },
+                    ),
             ),
-            const SizedBox(width: 10),
-            const Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text('Medical Assistant',
-                    style: TextStyle(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 16,
-                        color: Colors.white)),
-                Text('AI health companion',
-                    style: TextStyle(fontSize: 11.5, color: Colors.white70)),
-              ],
-            ),
+            if (_showSuggestions) _Suggestions(onTap: _handleSend),
+            _buildInputBar(),
           ],
         ),
-        actions: [
-          IconButton(
-            tooltip: 'Clear chat',
-            icon: const Icon(Icons.delete_outline_rounded, color: Colors.white),
-            onPressed: _clearChat,
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          _buildDisclaimer(),
-          Expanded(
-            child: !_loaded
-                ? const Center(child: CircularProgressIndicator())
-                : ListView.builder(
-                    controller: _scrollController,
-                    padding:
-                        const EdgeInsets.fromLTRB(14, 18, 14, 12),
-                    itemCount: _messages.length +
-                        (_isTyping ? 1 : 0) +
-                        (_showSuggestions ? 1 : 0),
-                    itemBuilder: (context, i) {
-                      if (i < _messages.length) {
-                        return _Bubble(message: _messages[i]);
-                      }
-                      if (_isTyping && i == _messages.length) {
-                        return const _TypingBubble();
-                      }
-                      return _Suggestions(onTap: _handleSend);
-                    },
-                  ),
-          ),
-          _buildInputBar(),
-        ],
       ),
     );
   }
@@ -255,45 +215,121 @@ class _ChatHomeScreenState extends State<ChatHomeScreen> {
   bool get _showSuggestions =>
       _loaded && !_isTyping && _messages.length <= 1;
 
-  Widget _buildDisclaimer() {
+  Widget _buildHeader() {
     return Container(
-      width: double.infinity,
-      color: const Color(0xFFFFF4E5),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+      padding: const EdgeInsets.fromLTRB(12, 6, 18, 14),
+      decoration: const BoxDecoration(
+        color: LL.canvas,
+        border: Border(bottom: BorderSide(color: LL.border)),
+      ),
       child: Row(
         children: [
-          const Icon(Icons.info_outline_rounded,
-              size: 16, color: Color(0xFFB26A00)),
-          const SizedBox(width: 8),
-          const Expanded(
-            child: Text(
-              'Not a substitute for professional medical advice. In an '
-              'emergency call 1122.',
-              style: TextStyle(fontSize: 11.5, color: Color(0xFF8A5A00)),
+          IconButton(
+            onPressed: () => Navigator.maybePop(context),
+            icon: const Icon(Icons.arrow_back_ios_new_rounded,
+                color: LL.ink, size: 20),
+          ),
+          Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              gradient: LL.grad,
+              borderRadius: BorderRadius.circular(14),
+              boxShadow: [
+                BoxShadow(
+                  color: LL.orange.withOpacity(0.3),
+                  blurRadius: 14,
+                  offset: const Offset(0, 6),
+                ),
+              ],
             ),
+            child: const Icon(Icons.medical_services_rounded,
+                color: Colors.white, size: 22),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text('Medical Assistant',
+                    style: LL.display(18, weight: FontWeight.w700)),
+                const SizedBox(height: 2),
+                Row(
+                  children: [
+                    Container(
+                      width: 7,
+                      height: 7,
+                      decoration: const BoxDecoration(
+                          color: LL.green, shape: BoxShape.circle),
+                    ),
+                    const SizedBox(width: 6),
+                    Text('Online · AI companion',
+                        style: LL.body(12, color: LL.muted)),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          IconButton(
+            tooltip: 'Clear chat',
+            icon: const Icon(Icons.delete_outline_rounded,
+                color: Color(0xFFADB1BB)),
+            onPressed: _clearChat,
           ),
         ],
       ),
     );
   }
 
+  Widget _buildDisclaimer() {
+    return Container(
+      width: double.infinity,
+      color: LL.canvas,
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 6),
+      alignment: Alignment.center,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 6),
+        decoration: BoxDecoration(
+          color: const Color(0xFFFFF1E8),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: const Color(0xFFFAD9C6)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.info_outline_rounded,
+                size: 14, color: Color(0xFFE06A2E)),
+            const SizedBox(width: 6),
+            Flexible(
+              child: Text(
+                'Not a substitute for emergency care — call 1122',
+                style: LL.body(11.5,
+                    weight: FontWeight.w600, color: const Color(0xFFC2541F)),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildInputBar() {
     return Container(
-      color: AppColors.surface,
+      color: LL.canvas,
       child: SafeArea(
         top: false,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(12, 8, 12, 10),
+          padding: const EdgeInsets.fromLTRB(18, 4, 18, 10),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Expanded(
                 child: Container(
                   decoration: BoxDecoration(
-                    color: AppColors.background,
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(
-                        color: AppColors.textLight.withOpacity(0.3)),
+                    color: LL.card,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: const Color(0xFFE6E7EB)),
                   ),
                   child: TextField(
                     controller: _inputController,
@@ -301,41 +337,36 @@ class _ChatHomeScreenState extends State<ChatHomeScreen> {
                     maxLines: 5,
                     textInputAction: TextInputAction.send,
                     onSubmitted: _handleSend,
-                    style: const TextStyle(
-                        color: AppColors.textPrimary, fontSize: 14.5),
-                    decoration: const InputDecoration(
+                    style: LL.body(14, color: LL.ink),
+                    decoration: InputDecoration(
                       hintText: 'Ask about your health…',
-                      hintStyle:
-                          TextStyle(color: AppColors.textLight, fontSize: 14.5),
+                      hintStyle: LL.body(14, color: LL.faint),
                       border: InputBorder.none,
-                      contentPadding:
-                          EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 18, vertical: 14),
                     ),
                   ),
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 10),
               GestureDetector(
                 onTap: () => _handleSend(_inputController.text),
                 child: Container(
-                  width: 46,
-                  height: 46,
+                  width: 50,
+                  height: 50,
                   decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                        colors: [AppColors.primary, AppColors.accent],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight),
-                    shape: BoxShape.circle,
+                    gradient: LL.grad,
+                    borderRadius: BorderRadius.circular(16),
                     boxShadow: [
                       BoxShadow(
-                          color: AppColors.primary.withOpacity(0.35),
-                          blurRadius: 8,
-                          offset: const Offset(0, 3))
+                          color: LL.orange.withOpacity(0.32),
+                          blurRadius: 18,
+                          offset: const Offset(0, 8))
                     ],
                   ),
                   child: const Center(
                       child: Icon(Icons.send_rounded,
-                          color: AppColors.textTertiary, size: 20)),
+                          color: Colors.white, size: 22)),
                 ),
               ),
             ],
@@ -366,14 +397,10 @@ class _Bubble extends StatelessWidget {
       return Align(
         alignment: Alignment.centerRight,
         child: Container(
-          margin: const EdgeInsets.only(left: 50, bottom: 10),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
+          margin: const EdgeInsets.only(left: 50, bottom: 14),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [AppColors.primary, AppColors.accent],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
+            gradient: LL.grad,
             borderRadius: const BorderRadius.only(
               topLeft: Radius.circular(18),
               topRight: Radius.circular(18),
@@ -382,43 +409,34 @@ class _Bubble extends StatelessWidget {
             ),
             boxShadow: [
               BoxShadow(
-                color: AppColors.primary.withOpacity(0.25),
-                blurRadius: 6,
-                offset: const Offset(0, 2),
+                color: LL.orange.withOpacity(0.28),
+                blurRadius: 16,
+                offset: const Offset(0, 6),
               ),
             ],
           ),
           child: Text(
             message.text,
-            style: const TextStyle(
-                color: AppColors.textTertiary, fontSize: 14.5, height: 1.4),
+            style: LL.body(14, weight: FontWeight.w500, color: Colors.white,
+                height: 1.45),
           ),
         ),
       );
     }
 
     return Padding(
-      padding: const EdgeInsets.only(right: 40, bottom: 10),
+      padding: const EdgeInsets.only(right: 40, bottom: 14),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          Container(
-            width: 30,
-            height: 30,
-            margin: const EdgeInsets.only(top: 2),
-            decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.12),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(Icons.medical_services_rounded,
-                color: AppColors.primary, size: 16),
-          ),
-          const SizedBox(width: 8),
+          const _AssistantAvatar(),
+          const SizedBox(width: 9),
           Flexible(
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
               decoration: BoxDecoration(
-                color: AppColors.surface,
+                color: LL.card,
+                border: Border.all(color: LL.border),
                 borderRadius: const BorderRadius.only(
                   topLeft: Radius.circular(6),
                   topRight: Radius.circular(18),
@@ -427,9 +445,9 @@ class _Bubble extends StatelessWidget {
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.06),
-                    blurRadius: 6,
-                    offset: const Offset(0, 2),
+                    color: const Color(0xFF141828).withOpacity(0.05),
+                    blurRadius: 14,
+                    offset: const Offset(0, 4),
                   ),
                 ],
               ),
@@ -437,36 +455,43 @@ class _Bubble extends StatelessWidget {
                 data: message.text,
                 onTapLink: (text, href, title) => _openLink(href),
                 styleSheet: MarkdownStyleSheet(
-                  p: const TextStyle(
-                      color: AppColors.textPrimary,
-                      fontSize: 14.5,
-                      height: 1.45),
-                  strong: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary),
-                  listBullet: const TextStyle(
-                      color: AppColors.textPrimary, fontSize: 14.5),
-                  a: const TextStyle(
-                      color: AppColors.primary,
-                      decoration: TextDecoration.underline),
-                  h1: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary),
-                  h2: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary),
-                  h3: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary),
+                  p: LL.body(14, weight: FontWeight.w500, color: LL.ink2,
+                      height: 1.5),
+                  strong: LL.body(14, weight: FontWeight.w700, color: LL.ink2),
+                  listBullet:
+                      LL.body(14, weight: FontWeight.w500, color: LL.ink2),
+                  a: LL.body(14,
+                      weight: FontWeight.w600,
+                      color: LL.orange)
+                      .copyWith(decoration: TextDecoration.underline),
+                  h1: LL.display(18, weight: FontWeight.w700),
+                  h2: LL.display(16, weight: FontWeight.w700),
+                  h3: LL.display(15, weight: FontWeight.w700),
                 ),
               ),
             ),
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Small gradient app-mark used as the assistant avatar.
+class _AssistantAvatar extends StatelessWidget {
+  const _AssistantAvatar();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 30,
+      height: 30,
+      decoration: BoxDecoration(
+        gradient: LL.grad,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: const Icon(Icons.medical_services_rounded,
+          color: Colors.white, size: 16),
     );
   }
 }
@@ -500,24 +525,16 @@ class _TypingBubbleState extends State<_TypingBubble>
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.only(bottom: 14),
       child: Row(
         children: [
-          Container(
-            width: 30,
-            height: 30,
-            decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.12),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(Icons.medical_services_rounded,
-                color: AppColors.primary, size: 16),
-          ),
-          const SizedBox(width: 8),
+          const _AssistantAvatar(),
+          const SizedBox(width: 9),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             decoration: BoxDecoration(
-              color: AppColors.surface,
+              color: LL.card,
+              border: Border.all(color: LL.border),
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(6),
                 topRight: Radius.circular(18),
@@ -526,9 +543,9 @@ class _TypingBubbleState extends State<_TypingBubble>
               ),
               boxShadow: [
                 BoxShadow(
-                    color: Colors.black.withOpacity(0.06),
-                    blurRadius: 6,
-                    offset: const Offset(0, 2)),
+                    color: const Color(0xFF141828).withOpacity(0.05),
+                    blurRadius: 14,
+                    offset: const Offset(0, 4)),
               ],
             ),
             child: Row(
@@ -548,8 +565,7 @@ class _TypingBubbleState extends State<_TypingBubble>
                           width: 7,
                           height: 7,
                           decoration: BoxDecoration(
-                            color: AppColors.primary
-                                .withOpacity(0.3 + phase * 0.5),
+                            color: LL.orange.withOpacity(0.3 + phase * 0.5),
                             shape: BoxShape.circle,
                           ),
                         ),
@@ -573,42 +589,31 @@ class _Suggestions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(left: 38, top: 4, bottom: 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text('Try asking',
-              style: TextStyle(
-                  color: AppColors.textGrey,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600)),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: _ChatHomeScreenStateSuggestions.items
-                .map((s) => GestureDetector(
-                      onTap: () => onTap(s),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 14, vertical: 9),
-                        decoration: BoxDecoration(
-                          color: AppColors.primary.withOpacity(0.08),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                              color: AppColors.primary.withOpacity(0.25)),
-                        ),
-                        child: Text(s,
-                            style: const TextStyle(
-                                color: AppColors.primary,
-                                fontSize: 13,
-                                fontWeight: FontWeight.w500)),
-                      ),
-                    ))
-                .toList(),
-          ),
-        ],
+    return SizedBox(
+      height: 42,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.fromLTRB(18, 0, 18, 6),
+        itemCount: _ChatHomeScreenStateSuggestions.items.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 9),
+        itemBuilder: (context, i) {
+          final s = _ChatHomeScreenStateSuggestions.items[i];
+          return GestureDetector(
+            onTap: () => onTap(s),
+            child: Container(
+              alignment: Alignment.center,
+              padding: const EdgeInsets.symmetric(horizontal: 15),
+              decoration: BoxDecoration(
+                color: LL.card,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: LL.border),
+              ),
+              child: Text(s,
+                  style: LL.body(13,
+                      weight: FontWeight.w600, color: const Color(0xFF5C616C))),
+            ),
+          );
+        },
       ),
     );
   }

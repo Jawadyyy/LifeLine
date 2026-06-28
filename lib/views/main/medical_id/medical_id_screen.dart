@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:lifeline/constants/app_colors.dart';
+import 'package:lifeline/constants/app_design.dart';
 import 'package:lifeline/models/user_model.dart';
 import 'package:lifeline/views/main/medical_id/widgets/medical_id_card.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -46,47 +46,86 @@ class _MedicalIdScreenState extends State<MedicalIdScreen> {
     final uid = FirebaseAuth.instance.currentUser?.uid;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        backgroundColor: AppColors.primary,
-        iconTheme: const IconThemeData(color: Colors.white),
-        title: const Text('Medical ID',
-            style: TextStyle(
-                color: Colors.white, fontWeight: FontWeight.w600)),
-      ),
-      body: uid == null
-          ? const Center(child: Text('You are not signed in.'))
-          : StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-              stream: FirebaseFirestore.instance
-                  .collection('users')
-                  .doc(uid)
-                  .snapshots(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                final data = snapshot.data?.data() ?? <String, dynamic>{};
-                final user = UserModel.fromMap(data);
+      backgroundColor: LL.canvas,
+      body: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _header(context),
+            Expanded(
+              child: uid == null
+                  ? Center(
+                      child: Text('You are not signed in.',
+                          style: LL.body(14, color: LL.muted)))
+                  : StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+                      stream: FirebaseFirestore.instance
+                          .collection('users')
+                          .doc(uid)
+                          .snapshots(),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return const Center(
+                              child: CircularProgressIndicator(
+                                  color: LL.orange));
+                        }
+                        final data =
+                            snapshot.data?.data() ?? <String, dynamic>{};
+                        final user = UserModel.fromMap(data);
 
-                return FutureBuilder<Map<String, String>?>(
-                  future: _primaryContact,
-                  builder: (context, contactSnap) {
-                    final contact = contactSnap.data;
-                    return SingleChildScrollView(
-                      padding: const EdgeInsets.all(16),
-                      child: MedicalIdCard(
-                        user: user,
-                        primaryContactName: contact?['name'],
-                        primaryContactPhone: contact?['phone'],
-                        onCallContact: contact?['phone'] == null
-                            ? null
-                            : () => _call(contact!['phone']!),
-                      ),
-                    );
-                  },
-                );
-              },
+                        return FutureBuilder<Map<String, String>?>(
+                          future: _primaryContact,
+                          builder: (context, contactSnap) {
+                            final contact = contactSnap.data;
+                            return SingleChildScrollView(
+                              physics: const BouncingScrollPhysics(),
+                              padding: const EdgeInsets.fromLTRB(22, 18, 22, 28),
+                              child: Column(
+                                children: [
+                                  MedicalIdCard(
+                                    user: user,
+                                    primaryContactName: contact?['name'],
+                                    primaryContactPhone: contact?['phone'],
+                                    onCallContact: contact?['phone'] == null
+                                        ? null
+                                        : () => _call(contact!['phone']!),
+                                  ),
+                                  const SizedBox(height: 18),
+                                  Text(
+                                    'Show this screen to first responders.\n'
+                                    'Accessible from the lock screen.',
+                                    textAlign: TextAlign.center,
+                                    style: LL.body(12.5,
+                                        color: LL.muted, height: 1.5),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        );
+                      },
+                    ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _header(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 10, 24, 6),
+      child: Row(
+        children: [
+          IconButton(
+            onPressed: () => Navigator.maybePop(context),
+            icon: const Icon(Icons.arrow_back_ios_new_rounded,
+                color: LL.ink, size: 20),
+          ),
+          const SizedBox(width: 6),
+          Text('Medical ID', style: LL.display(22, weight: FontWeight.w700)),
+        ],
+      ),
     );
   }
 }

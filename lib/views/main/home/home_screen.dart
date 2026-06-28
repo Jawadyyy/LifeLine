@@ -1,12 +1,16 @@
+import 'dart:math' as math;
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lifeline/constants/app_colors.dart';
+import 'package:lifeline/constants/app_design.dart';
 import 'package:lifeline/services/chat_service.dart';
 import 'package:lifeline/services/live_location_service.dart';
 import 'package:lifeline/services/push_service.dart';
 import 'package:lifeline/services/sos_followup.dart';
 import 'package:lifeline/views/chatbot/screens/chat_home_screen.dart';
+import 'package:lifeline/views/main/donation/donation_map_screen.dart';
 import 'package:lifeline/views/main/home/controller/home_controller.dart';
 import 'package:lifeline/views/main/medical_id/medical_id_screen.dart';
 
@@ -17,127 +21,425 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
-  late AnimationController _animationController;
-  late Animation<double> _scaleAnimation;
+class _HomeScreenState extends State<HomeScreen> {
   late HomeController controller;
 
   @override
   void initState() {
     super.initState();
-    _animationController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 300),
-    );
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 1.1).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
-    );
     controller = HomeController(this, setState);
   }
 
+  String get _firstName {
+    final name = FirebaseAuth.instance.currentUser?.displayName?.trim();
+    if (name == null || name.isEmpty) return '';
+    return name.split(' ').first;
+  }
+
+  String get _initial {
+    final n = _firstName;
+    return n.isEmpty ? '?' : n[0].toUpperCase();
+  }
+
+  String get _greeting {
+    final h = DateTime.now().hour;
+    if (h < 12) return 'Good morning';
+    if (h < 17) return 'Good afternoon';
+    return 'Good evening';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: LL.canvas,
+      body: SafeArea(
+        bottom: false,
+        child: Column(
+          children: [
+            const _LiveShareBanner(),
+            const _SafeFollowupBanner(),
+            Expanded(
+              child: SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
+                padding: const EdgeInsets.only(bottom: 28),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _header(),
+                    _greetingBlock(),
+                    const SizedBox(height: 22),
+                    Center(
+                      child: _SosDial(
+                        onTap: controller.toggleEmergencyOptions,
+                        onLongPress: controller.callEmergencyServices,
+                      ),
+                    ),
+                    const SizedBox(height: 22),
+                    _quickActions(),
+                    const SizedBox(height: 12),
+                    _donateBanner(),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const ChatHomeScreen()),
+        ),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        highlightElevation: 0,
+        child: Container(
+          width: 58,
+          height: 58,
+          decoration: BoxDecoration(
+            gradient: LL.grad,
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: LL.orange.withOpacity(0.4),
+                blurRadius: 16,
+                offset: const Offset(0, 6),
+              ),
+            ],
+          ),
+          child: const Icon(Icons.auto_awesome, color: Colors.white, size: 24),
+        ),
+      ),
+    );
+  }
+
+  // ── Header: logo + wordmark + avatar ──────────────────────────────────────
+  Widget _header() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 12, 24, 0),
+      child: Row(
+        children: [
+          Image.asset('assets/images/logos/logo1.png', height: 26, width: 26),
+          const SizedBox(width: 9),
+          Text('LifeLine',
+              style: LL.display(20, weight: FontWeight.w800, letterSpacing: 0.2)),
+          const Spacer(),
+          Container(
+            width: 40,
+            height: 40,
+            alignment: Alignment.center,
+            decoration: const BoxDecoration(
+                color: LL.orange, shape: BoxShape.circle),
+            child: Text(_initial,
+                style: LL.display(15, weight: FontWeight.w800, color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _greetingBlock() {
+    final name = _firstName;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(26, 22, 26, 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(name.isEmpty ? _greeting : '$_greeting, $name',
+              style: LL.body(13.5, weight: FontWeight.w600, color: LL.muted)),
+          const SizedBox(height: 6),
+          Text('Help is one\ntap away.', style: LL.display(30)),
+        ],
+      ),
+    );
+  }
+
+  // ── Quick actions: Call 1122 + Medical ID ─────────────────────────────────
+  Widget _quickActions() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Row(
+        children: [
+          Expanded(
+            child: _QuickCard(
+              icon: Icons.call_rounded,
+              title: 'Call 1122',
+              subtitle: 'Ambulance',
+              onTap: () => controller.callEmergencyServices(),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: _QuickCard(
+              icon: Icons.medical_information_outlined,
+              title: AppLocalizations.of(context).medicalId,
+              subtitle: 'View card',
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const MedicalIdScreen()),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _donateBanner() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Material(
+        color: LL.card,
+        borderRadius: BorderRadius.circular(20),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(20),
+          onTap: () => Navigator.of(context).push(PageRouteBuilder(
+            pageBuilder: (_, __, ___) => const DonationMapScreen(),
+            transitionsBuilder: (_, anim, __, child) =>
+                FadeTransition(opacity: anim, child: child),
+          )),
+          child: Container(
+            padding: const EdgeInsets.all(15),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: LL.border),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF141828).withOpacity(0.05),
+                  blurRadius: 18,
+                  offset: const Offset(0, 6),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    color: LL.soft,
+                    borderRadius: BorderRadius.circular(13),
+                  ),
+                  child: const Icon(Icons.water_drop_outlined,
+                      color: LL.orange, size: 22),
+                ),
+                const SizedBox(width: 13),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Donate Blood, Save Lives',
+                          style: LL.body(14.5, weight: FontWeight.w700)),
+                      const SizedBox(height: 2),
+                      Text('Find donation camps near you',
+                          style: LL.body(12, color: LL.muted)),
+                    ],
+                  ),
+                ),
+                const Icon(Icons.chevron_right_rounded,
+                    color: Color(0xFFC2C6CE), size: 24),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Quick-action card ───────────────────────────────────────────────────────
+class _QuickCard extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  const _QuickCard({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: LL.card,
+      borderRadius: BorderRadius.circular(20),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(20),
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: LL.border),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF141828).withOpacity(0.05),
+                blurRadius: 18,
+                offset: const Offset(0, 6),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 38,
+                height: 38,
+                decoration: BoxDecoration(
+                  color: LL.soft,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon, color: LL.orange, size: 20),
+              ),
+              const SizedBox(height: 10),
+              Text(title, style: LL.body(14.5, weight: FontWeight.w700)),
+              const SizedBox(height: 1),
+              Text(subtitle, style: LL.body(12, color: LL.muted)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Animated SOS dial ───────────────────────────────────────────────────────
+/// Big circular emergency control. Two concentric rings pulse outward (scale
+/// 1 → 1.7, fading) on a staggered 2.8s loop, behind a static dashed ring and
+/// the gradient core. Tap opens the emergency-type sheet; long-press dials 1122.
+class _SosDial extends StatefulWidget {
+  final VoidCallback onTap;
+  final VoidCallback onLongPress;
+
+  const _SosDial({required this.onTap, required this.onLongPress});
+
+  @override
+  State<_SosDial> createState() => _SosDialState();
+}
+
+class _SosDialState extends State<_SosDial> with SingleTickerProviderStateMixin {
+  static const double _core = 196;
+  static const double _box = 236;
+
+  late final AnimationController _ctrl = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 2800),
+  )..repeat();
+
   @override
   void dispose() {
-    _animationController.dispose();
+    _ctrl.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final l = AppLocalizations.of(context);
-
-    return Scaffold(
-      backgroundColor: AppColors.surface,
-      appBar: AppBar(
-        backgroundColor: AppColors.surface,
-        elevation: 0,
-        leading: Padding(
-          padding: const EdgeInsets.only(left: 16),
-          child: Image.asset(
-            'assets/images/logos/logo1.png',
-            height: 40,
-            width: 40,
-          ),
-        ),
-        title: Text(
-          'L I F E L I N E',
-          style: theme.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: AppColors.textPrimary,
-          ),
-        ),
-        centerTitle: true,
-        actions: [
-          IconButton(
-            tooltip: l.medicalId,
-            icon: const Icon(Icons.medical_information_outlined,
-                color: AppColors.primary),
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const MedicalIdScreen()),
-            ),
-          ),
-        ],
-      ),
-      body: Column(
+    return SizedBox(
+      width: _box,
+      height: _box,
+      child: Stack(
+        alignment: Alignment.center,
         children: [
-          const _LiveShareBanner(),
-          const _SafeFollowupBanner(),
-          Expanded(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-          Text(
-            l.emergencyAssistance,
-            style: theme.textTheme.headlineSmall
-                ?.copyWith(fontWeight: FontWeight.bold),
+          // Pulsing rings (staggered by half a cycle).
+          _ring(0.0),
+          _ring(0.5),
+          // Static dashed ring.
+          CustomPaint(
+            size: const Size(_box, _box),
+            painter: _DashedRingPainter(),
           ),
-          const SizedBox(height: 8),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 40),
-            child: Text(
-              l.emergencyPrompt,
-              textAlign: TextAlign.center,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurface.withOpacity(0.7),
+          // Gradient core.
+          GestureDetector(
+            onTap: widget.onTap,
+            onLongPress: widget.onLongPress,
+            child: Container(
+              width: _core,
+              height: _core,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: LL.sosGrad,
+                boxShadow: [
+                  BoxShadow(
+                    color: LL.orangeDark.withOpacity(0.4),
+                    blurRadius: 48,
+                    offset: const Offset(0, 24),
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text('SOS',
+                      style: LL.display(46,
+                          weight: FontWeight.w800,
+                          color: Colors.white,
+                          letterSpacing: 2)),
+                  const SizedBox(height: 8),
+                  Text('HOLD TO CALL',
+                      style: LL.body(11,
+                          weight: FontWeight.w700,
+                          color: Colors.white.withOpacity(0.85),
+                          letterSpacing: 2.4)),
+                ],
               ),
             ),
           ),
-          const SizedBox(height: 40),
-          Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ScaleTransition(
-                scale: _scaleAnimation,
-                child: controller.buildMainEmergencyButton(
-                  context,
-                  onTap: controller.toggleEmergencyOptions,
-                ),
-              ),
-              const SizedBox(height: 30),
-              controller.buildBloodDonationCard(context),
-              const SizedBox(height: 16),
-              controller.buildDirectCallButton(context),
-            ],
-          ),
         ],
-      ),
-          ),
-        ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const ChatHomeScreen()),
-          );
-        },
-        backgroundColor: AppColors.surface,
-        elevation: 4,
-        child: Image.asset('assets/images/icons/brain.png', height: 28),
       ),
     );
   }
+
+  Widget _ring(double offset) {
+    return AnimatedBuilder(
+      animation: _ctrl,
+      builder: (context, _) {
+        final t = (_ctrl.value + offset) % 1.0;
+        final p = math.min(t / 0.7, 1.0); // expand over first 70%, then hold
+        final scale = 1.0 + 0.7 * p;
+        final opacity = 0.5 * (1 - p);
+        return Opacity(
+          opacity: opacity,
+          child: Transform.scale(
+            scale: scale,
+            child: Container(
+              width: _core,
+              height: _core,
+              decoration:
+                  const BoxDecoration(shape: BoxShape.circle, color: LL.orange),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _DashedRingPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = size.center(Offset.zero);
+    final radius = size.width / 2 - 2;
+    final paint = Paint()
+      ..color = LL.orange.withOpacity(0.4)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2;
+
+    const dashCount = 60;
+    const gapRatio = 0.72; // dash 28% / gap 72% → fine ticks
+    final sweep = (2 * math.pi / dashCount) * (1 - gapRatio);
+    final step = 2 * math.pi / dashCount;
+    final rect = Rect.fromCircle(center: center, radius: radius);
+    for (int i = 0; i < dashCount; i++) {
+      final start = i * step;
+      canvas.drawArc(rect, start, sweep, false, paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
 /// Persistent banner shown while a live location share is active, with a one-tap
