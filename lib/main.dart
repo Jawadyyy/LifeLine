@@ -85,6 +85,21 @@ class MyApp extends StatelessWidget {
         brightness: Brightness.light,
         scaffoldBackgroundColor: AppColors.background,
         primaryColor: AppColors.primary,
+        // Seed the whole Material colour system from the brand orange so
+        // defaults (buttons, switches, spinners, picker dialogs, text-field
+        // cursor/selection) stop falling back to Flutter's stock purple.
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: AppColors.primary,
+          primary: AppColors.primary,
+          brightness: Brightness.light,
+        ),
+        progressIndicatorTheme:
+            const ProgressIndicatorThemeData(color: AppColors.primary),
+        textSelectionTheme: TextSelectionThemeData(
+          cursorColor: AppColors.primary,
+          selectionColor: AppColors.primary.withOpacity(0.25),
+          selectionHandleColor: AppColors.primary,
+        ),
         textTheme: GoogleFonts.nunitoTextTheme().apply(
           bodyColor: AppColors.textPrimary,
           displayColor: AppColors.textPrimary,

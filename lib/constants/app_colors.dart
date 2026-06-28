@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 
 // Your original colors, unchanged
 class AppColors {
-  static const Color primary = Color(0xFFFF6F61);
-  static const Color accent = Color(0xFFFF8A80);
+  // Unified brand orange (matches the LifeLine Redesign / LL.orange).
+  static const Color primary = Color(0xFFEF5A2A);
+  static const Color accent = Color(0xFFFF7A45);
   static const Color secondary = Color(0xFF4CAF50);
   static const Color tertiary = Color(0xFFE0E0E0);
   static const Color transparent = Colors.transparent;

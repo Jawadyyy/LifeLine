@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:lifeline/constants/app_colors.dart';
 import 'package:lifeline/services/emergency_service.dart';
 import 'package:lifeline/services/location_handler.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -62,7 +63,7 @@ class MapScreenController {
 
   Future<void> _showLocationServiceDialog() async {
     final theme = Theme.of(context);
-    final Color mainColor = Color(0xFFFF6F61);
+    const Color mainColor = AppColors.primary;
 
     await showDialog(
       context: context,
