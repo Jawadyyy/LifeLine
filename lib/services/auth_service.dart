@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:lifeline/services/auth_result.dart';
+import 'package:lifeline/services/chat_service.dart';
 import 'package:lifeline/services/push_service.dart';
 
 class AuthService {
@@ -161,6 +162,8 @@ class AuthService {
       if (uid != null) {
         await PushService().clearForUser(uid);
       }
+      // Drop cached chat streams so the next user starts clean.
+      ChatProviderCache.instance.clear();
       await _auth.signOut();
       await _googleSignIn.signOut();
       debugPrint('✅ Sign out complete');

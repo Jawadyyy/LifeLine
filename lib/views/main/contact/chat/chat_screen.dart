@@ -30,7 +30,6 @@ class ChatScreen extends StatefulWidget {
 }
 
 class _ChatScreenState extends State<ChatScreen> {
-  final _scrollController = ScrollController();
   late final Future<String?> _peerUidFuture;
 
   @override
@@ -43,12 +42,6 @@ class _ChatScreenState extends State<ChatScreen> {
       if (peerUid == null || peerUid.isEmpty || me == null) return;
       ChatService(me).markSeen(ChatService.chatIdFor(me, peerUid));
     });
-  }
-
-  @override
-  void dispose() {
-    _scrollController.dispose();
-    super.dispose();
   }
 
   /// Resolves the chat peer's Firebase uid, preferring the value passed in and
@@ -74,18 +67,6 @@ class _ChatScreenState extends State<ChatScreen> {
   String _normalizeTo10Digits(String phone) {
     final digits = phone.replaceAll(RegExp(r'\D'), '');
     return digits.length >= 10 ? digits.substring(digits.length - 10) : digits;
-  }
-
-  void _scrollToBottom() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_scrollController.hasClients) {
-        _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
-        );
-      }
-    });
   }
 
   @override
@@ -122,8 +103,6 @@ class _ChatScreenState extends State<ChatScreen> {
                         peerUid: peerUid,
                         contactName: widget.contactName,
                         contactImageUrl: widget.contactImageUrl,
-                        scrollController: _scrollController,
-                        onMessagesChanged: _scrollToBottom,
                       );
                     },
                   ),
@@ -135,56 +114,128 @@ class _ChatScreenState extends State<ChatScreen> {
 }
 
 /// The live chat list + input bar once the peer uid is known.
-class _ChatBody extends StatelessWidget {
+class _ChatBody extends StatefulWidget {
   const _ChatBody({
     required this.currentUid,
     required this.peerUid,
     required this.contactName,
     required this.contactImageUrl,
-    required this.scrollController,
-    required this.onMessagesChanged,
   });
 
   final String currentUid;
   final String peerUid;
   final String contactName;
   final String? contactImageUrl;
-  final ScrollController scrollController;
-  final VoidCallback onMessagesChanged;
+
+  @override
+  State<_ChatBody> createState() => _ChatBodyState();
+}
+
+class _ChatBodyState extends State<_ChatBody> {
+  final _scrollController = ScrollController();
+
+  /// Id of the newest message last rendered. Used to auto-scroll to the bottom
+  /// only when a genuinely new message arrives — not when an older paginated
+  /// chunk is prepended (which leaves the newest id unchanged).
+  String? _lastNewestId;
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _scrollToBottom() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => ChatProvider(currentUid: currentUid, contactUid: peerUid),
+    // Reuse a cached provider so the Firestore stream persists across visits;
+    // reopening the chat renders instantly instead of reloading. `.value` does
+    // not dispose the instance, keeping it alive in the cache.
+    return ChangeNotifierProvider<ChatProvider>.value(
+      value: ChatProviderCache.instance.get(widget.currentUid, widget.peerUid),
       child: Column(
         children: [
           Expanded(
             child: Consumer<ChatProvider>(
               builder: (context, provider, _) {
                 final msgs = provider.messages;
-                if (msgs.isNotEmpty) onMessagesChanged();
+
+                // First load not finished yet: spinner, not a false empty state.
+                if (!provider.loaded) {
+                  return const Center(child: CircularProgressIndicator());
+                }
 
                 if (msgs.isEmpty) {
                   return ChatEmptyState(
-                    contactName: contactName,
-                    contactImageUrl: contactImageUrl,
+                    contactName: widget.contactName,
+                    contactImageUrl: widget.contactImageUrl,
                   );
                 }
 
-                return ListView.builder(
-                  controller: scrollController,
-                  padding:
-                      const EdgeInsets.symmetric(vertical: 18, horizontal: 12),
-                  itemCount: msgs.length,
-                  itemBuilder: (context, i) {
-                    final msg = msgs[i];
-                    final showDivider = i == 0 ||
-                        msgs[i].time.difference(msgs[i - 1].time).inMinutes > 5;
-                    return Column(children: [
-                      if (showDivider) TimeDivider(time: msg.time),
-                      MessageBubble(message: msg),
-                    ]);
+                final newestId = msgs.last.id;
+                if (newestId != _lastNewestId) {
+                  _lastNewestId = newestId;
+                  _scrollToBottom();
+                }
+
+                final showTopLoader = provider.loadingMore;
+
+                return NotificationListener<ScrollNotification>(
+                  onNotification: (notification) {
+                    // Near the top edge: pull the next older chunk.
+                    if (notification.metrics.pixels <= 80 &&
+                        provider.hasMore &&
+                        !provider.loadingMore) {
+                      provider.loadMore();
+                    }
+                    return false;
                   },
+                  child: ListView.builder(
+                    controller: _scrollController,
+                    padding: const EdgeInsets.symmetric(
+                        vertical: 18, horizontal: 12),
+                    itemCount: msgs.length + (showTopLoader ? 1 : 0),
+                    itemBuilder: (context, index) {
+                      if (showTopLoader) {
+                        if (index == 0) {
+                          return const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 12),
+                            child: Center(
+                              child: SizedBox(
+                                width: 22,
+                                height: 22,
+                                child:
+                                    CircularProgressIndicator(strokeWidth: 2),
+                              ),
+                            ),
+                          );
+                        }
+                        index -= 1;
+                      }
+                      final msg = msgs[index];
+                      final showDivider = index == 0 ||
+                          msgs[index]
+                                  .time
+                                  .difference(msgs[index - 1].time)
+                                  .inMinutes >
+                              5;
+                      return Column(children: [
+                        if (showDivider) TimeDivider(time: msg.time),
+                        MessageBubble(message: msg),
+                      ]);
+                    },
+                  ),
                 );
               },
             ),

@@ -56,6 +56,25 @@ void main() {
       expect(msgs, isEmpty);
     });
 
+    test('limit caps the window to a recent chunk', () async {
+      // NOTE: FakeFirestore resolves all serverTimestamps to the same value, so
+      // ordering between messages is unstable here; only the window *size* is
+      // asserted. Ordering is verified against real Firestore in production.
+      final db = FakeFirebaseFirestore();
+      final svc = ChatService('me', firestore: db);
+      final chatId = ChatService.chatIdFor('me', 'peer');
+
+      for (var i = 1; i <= 5; i++) {
+        await svc.send(chatId, 'peer', 'm$i');
+      }
+
+      final page = await svc.messages(chatId, limit: 2).first;
+      expect(page, hasLength(2));
+
+      final all = await svc.messages(chatId).first;
+      expect(all, hasLength(5));
+    });
+
     test("sender's own message round-trips as sent", () async {
       final db = FakeFirebaseFirestore();
       final chatId = ChatService.chatIdFor('me', 'peer');

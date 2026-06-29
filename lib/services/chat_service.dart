@@ -28,18 +28,28 @@ class ChatService {
     return ids.join('_');
   }
 
+  /// Number of messages fetched per pagination chunk.
+  static const int defaultPageSize = 30;
+
   DocumentReference<Map<String, dynamic>> _chatRef(String chatId) =>
       _db.collection('chats').doc(chatId);
 
   /// Stream of messages for [chatId], oldest first. Metadata changes are
   /// included so pending (offline-queued) writes surface a "sending" state and
   /// flip to "sent" once they reach the server.
-  Stream<List<ChatMessage>> messages(String chatId) {
-    return _chatRef(chatId)
+  ///
+  /// When [limit] is set, only the most recent [limit] messages are streamed
+  /// (a sliding window from the newest). Widening [limit] loads older chunks
+  /// while keeping new messages live. Newest are fetched first then reversed so
+  /// the UI still receives them oldest-first.
+  Stream<List<ChatMessage>> messages(String chatId, {int? limit}) {
+    Query<Map<String, dynamic>> query = _chatRef(chatId)
         .collection('messages')
-        .orderBy('time')
+        .orderBy('time', descending: true);
+    if (limit != null) query = query.limit(limit);
+    return query
         .snapshots(includeMetadataChanges: true)
-        .map((snap) => snap.docs.map(_fromDoc).toList());
+        .map((snap) => snap.docs.reversed.map(_fromDoc).toList());
   }
 
   ChatMessage _fromDoc(QueryDocumentSnapshot<Map<String, dynamic>> doc) {
@@ -155,32 +165,69 @@ class ChatProvider extends ChangeNotifier {
   ChatProvider({required String currentUid, required this.contactUid})
       : _service = ChatService(currentUid),
         chatId = ChatService.chatIdFor(currentUid, contactUid) {
-    _subscription = _service.messages(chatId).listen(
-      (msgs) {
-        _messages = msgs;
-        _errorMessage = null;
-        notifyListeners();
-        // Receipt: incoming messages are now delivered to this device.
-        unawaited(_service.markDelivered(chatId));
-      },
-      onError: (Object error) {
-        _errorMessage = 'Could not load messages';
-        debugPrint('ChatProvider stream error: $error');
-        notifyListeners();
-      },
-    );
+    _subscribe();
   }
 
   final ChatService _service;
   final String contactUid;
   final String chatId;
 
+  static const int _pageSize = ChatService.defaultPageSize;
+
   StreamSubscription<List<ChatMessage>>? _subscription;
   List<ChatMessage> _messages = const [];
   String? _errorMessage;
+  bool _loaded = false;
+  int _limit = _pageSize;
+  bool _hasMore = true;
+  bool _loadingMore = false;
 
   List<ChatMessage> get messages => List.unmodifiable(_messages);
   String? get errorMessage => _errorMessage;
+
+  /// True once the first snapshot (cached or server) has arrived. Lets the UI
+  /// distinguish "still loading" from "genuinely empty conversation".
+  bool get loaded => _loaded;
+
+  /// Whether older messages may exist beyond the current window.
+  bool get hasMore => _hasMore;
+
+  /// Whether an older chunk is currently being fetched.
+  bool get loadingMore => _loadingMore;
+
+  void _subscribe() {
+    _subscription?.cancel();
+    _subscription = _service.messages(chatId, limit: _limit).listen(
+      (msgs) {
+        _messages = msgs;
+        _errorMessage = null;
+        _loaded = true;
+        _loadingMore = false;
+        // Window filled exactly to the limit ⇒ older messages likely remain.
+        _hasMore = msgs.length >= _limit;
+        notifyListeners();
+        // Receipt: incoming messages are now delivered to this device.
+        unawaited(_service.markDelivered(chatId));
+      },
+      onError: (Object error) {
+        _errorMessage = 'Could not load messages';
+        _loaded = true;
+        _loadingMore = false;
+        debugPrint('ChatProvider stream error: $error');
+        notifyListeners();
+      },
+    );
+  }
+
+  /// Loads an older chunk by widening the live window by one page. New messages
+  /// keep arriving in realtime; already-loaded ones stay visible meanwhile.
+  void loadMore() {
+    if (!_hasMore || _loadingMore) return;
+    _loadingMore = true;
+    _limit += _pageSize;
+    notifyListeners();
+    _subscribe();
+  }
 
   Future<void> sendMessage(String text) async {
     try {
@@ -196,5 +243,29 @@ class ChatProvider extends ChangeNotifier {
   void dispose() {
     _subscription?.cancel();
     super.dispose();
+  }
+}
+
+/// Keeps [ChatProvider] instances alive across navigation so reopening a chat
+/// shows messages instantly instead of re-subscribing and flashing an empty
+/// state. Providers are cached by chatId; the Firestore listener stays live
+/// while cached. Call [clear] on sign-out to drop all subscriptions.
+class ChatProviderCache {
+  ChatProviderCache._();
+  static final ChatProviderCache instance = ChatProviderCache._();
+
+  final Map<String, ChatProvider> _providers = {};
+
+  ChatProvider get(String currentUid, String contactUid) {
+    final id = ChatService.chatIdFor(currentUid, contactUid);
+    return _providers[id] ??=
+        ChatProvider(currentUid: currentUid, contactUid: contactUid);
+  }
+
+  void clear() {
+    for (final provider in _providers.values) {
+      provider.dispose();
+    }
+    _providers.clear();
   }
 }
