@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_contacts/flutter_contacts.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:lifeline/constants/app_colors.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// First-run rationale shown before the OS asks for location & contacts.
@@ -17,6 +18,16 @@ class PermissionPrimingScreen extends StatefulWidget {
   static Future<void> showIfFirstRun(BuildContext context) async {
     final prefs = await SharedPreferences.getInstance();
     if (prefs.getBool(_prefKey) == true) return;
+
+    // A returning (already-registered) user who has already granted the
+    // permissions shouldn't be re-primed — e.g. after a reinstall or cleared
+    // app data, where the install-scoped flag is reset but the OS-level grants
+    // survive. Only prime when something still needs granting/denied.
+    if (await _permissionsSatisfied()) {
+      await prefs.setBool(_prefKey, true);
+      return;
+    }
+
     if (!context.mounted) return;
 
     await Navigator.of(context).push(
@@ -26,6 +37,22 @@ class PermissionPrimingScreen extends StatefulWidget {
       ),
     );
     await prefs.setBool(_prefKey, true);
+  }
+
+  /// True when location, contacts and notifications are all already granted, so
+  /// there is nothing to prime for. Uses status-only checks (no OS prompts).
+  static Future<bool> _permissionsSatisfied() async {
+    final loc = await Geolocator.checkPermission();
+    final locationOk = loc == LocationPermission.always ||
+        loc == LocationPermission.whileInUse;
+    if (!locationOk) return false;
+
+    // permission_handler reports true on platforms/versions where the
+    // permission is implicitly granted (e.g. notifications on Android < 13).
+    if (!await Permission.contacts.isGranted) return false;
+    if (!await Permission.notification.isGranted) return false;
+
+    return true;
   }
 
   @override

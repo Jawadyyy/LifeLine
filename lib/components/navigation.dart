@@ -30,12 +30,16 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   final Set<String> _knownAccepted = {};
   bool _acceptedSeeded = false;
 
-  final List<Widget> _screens = const [
-    HomeScreen(key: ValueKey("Home")),
-    ContactsPage(key: ValueKey("Contacts")),
-    MapScreen(key: ValueKey("Map")),
-    ProfilePage(key: ValueKey("Profile")),
-  ];
+  // Built in `build` (not a const field) so the Map tab can receive an
+  // `onExit` callback that routes back to Home instead of popping the root
+  // route — popping the root empties the Navigator and leaves a black screen
+  // on some Android devices.
+  List<Widget> get _screens => [
+        const HomeScreen(key: ValueKey("Home")),
+        const ContactsPage(key: ValueKey("Contacts")),
+        MapScreen(key: const ValueKey("Map"), onExit: () => _onTabTapped(0)),
+        const ProfilePage(key: ValueKey("Profile")),
+      ];
 
   @override
   void initState() {
@@ -154,25 +158,36 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 300),
-        switchInCurve: Curves.easeIn,
-        switchOutCurve: Curves.easeOut,
-        transitionBuilder: (child, animation) {
-          return FadeTransition(
-            opacity: animation,
-            child: child,
-          );
-        },
-        child: SizedBox.expand(
-          key: ValueKey(_currentIndex),
-          child: _screens[_currentIndex],
+    // On the root route there is nothing to pop to. Handle the system back
+    // button ourselves: from a sub-tab, return to Home; from Home, let the
+    // framework pop (which cleanly backgrounds the app). This prevents the
+    // black screen caused by popping the empty root Navigator stack.
+    return PopScope(
+      canPop: _currentIndex == 0,
+      onPopInvoked: (didPop) {
+        if (didPop) return;
+        _onTabTapped(0);
+      },
+      child: Scaffold(
+        body: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 300),
+          switchInCurve: Curves.easeIn,
+          switchOutCurve: Curves.easeOut,
+          transitionBuilder: (child, animation) {
+            return FadeTransition(
+              opacity: animation,
+              child: child,
+            );
+          },
+          child: SizedBox.expand(
+            key: ValueKey(_currentIndex),
+            child: _screens[_currentIndex],
+          ),
         ),
-      ),
-      bottomNavigationBar: CustomBottomNavigationBar(
-        currentIndex: _currentIndex,
-        onTap: _onTabTapped,
+        bottomNavigationBar: CustomBottomNavigationBar(
+          currentIndex: _currentIndex,
+          onTap: _onTabTapped,
+        ),
       ),
     );
   }

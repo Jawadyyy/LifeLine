@@ -1,0 +1,45 @@
+LIFELINE - PLAY STORE LAUNCH TODO
+(generated 2026-07-04)
+
+=== BLOCKERS ===
+1. Privacy Policy MISSING - Play Store requires a URL. App collects location,
+   contacts, health data, chat messages. No policy = instant rejection.
+   -> Write + host privacy policy, add link in Play Console listing + app settings.
+
+2. iOS bundle ID still "com.example.lifeline" (ios/Runner Info.plist / project config).
+   Fine for Android-only launch, must fix before iOS submission.
+
+3. Firebase SDKs multiple major versions behind:
+   - firebase_core: 3.15.2 -> 4.11.0
+   - firebase_auth: 5.7.0 -> 6.5.4
+   - cloud_firestore: 5.6.12 -> 6.6.0
+   - firebase_crashlytics: 4.3.10 -> 5.2.4
+   - firebase_messaging: 15.2.10 -> 16.4.1
+   - firebase_storage: 12.4.10 -> 13.4.3
+   -> Test upgrade path before shipping, or consciously accept staying on old majors.
+
+4. 132 debugPrint() calls left in production code.
+   -> Strip or gate behind kDebugMode.
+
+5. No Terms of Service. Recommended given health/location data collection.
+
+6. PUSH_RELAY_URL empty in .env - verify push notifications actually work end-to-end.
+
+=== SECONDARY / RECOMMENDED ===
+- Test coverage thin: 10 test files, ~775 lines total. No widget/integration tests.
+  No UI test on the SOS emergency critical path.
+- State management inconsistent: Provider used in only 5 files, rest of app uses
+  raw setState. Not blocking, but messy long-term.
+- Review empty-state UI/messaging for clarity across screens.
+- Add "About" screen with version info + privacy/terms links.
+- Minor: signup_screen.dart has one placeholder profile image URL
+  (via.placeholder.com) - fine as temp default, confirm intended.
+
+=== NOT AN ISSUE (checked, false alarm) ===
+- Firebase API keys hardcoded in firebase_options.dart (web/android/ios/macos/windows)
+  -> normal, these are public client keys, not secrets. No action needed.
+- Third-party keys (Geoapify, ImgBB, Gemini) properly loaded via .env, git-ignored.
+- Release signing config, proguard/minify, app icons, permissions - all properly set up.
+
+=== ESTIMATE ===
+2-3 days to close blockers (privacy policy + debug log cleanup + smoke test) before submission.

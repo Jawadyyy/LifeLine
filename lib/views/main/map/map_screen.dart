@@ -8,7 +8,15 @@ import 'package:lifeline/services/emergency_service.dart';
 import 'package:lifeline/views/main/map/controller/map_screen_controller.dart';
 
 class MapScreen extends StatefulWidget {
-  const MapScreen({super.key});
+  /// Called when the user taps the in-map back arrow while no route is shown.
+  ///
+  /// The map is a *tab* on the root route, so it has nothing to pop to — calling
+  /// `Navigator.pop` here empties the Navigator stack and leaves a black surface
+  /// on some Android devices. The host (bottom-nav) passes a callback that
+  /// switches back to the Home tab instead.
+  final VoidCallback? onExit;
+
+  const MapScreen({super.key, this.onExit});
 
   @override
   State<MapScreen> createState() => _MapScreenState();
@@ -164,7 +172,7 @@ class _MapScreenState extends State<MapScreen> implements MapScreenView {
                     child: Align(
                       alignment: Alignment.topLeft,
                       child: GestureDetector(
-                        onTap: () => Navigator.pop(context),
+                        onTap: _handleBack,
                         child: _glass(
                           child: const SizedBox(
                             width: 46,
@@ -696,7 +704,12 @@ class _MapScreenState extends State<MapScreen> implements MapScreenView {
       if (_currentPosition != null) {
         _mapController.move(_currentPosition!, 15.0);
       }
-    } else {
+    } else if (widget.onExit != null) {
+      // Tab usage: hand control back to the host instead of popping the root
+      // route (which blanks the screen on some devices).
+      widget.onExit!();
+    } else if (Navigator.of(context).canPop()) {
+      // Pushed-route usage: only pop when there is actually a route beneath.
       Navigator.pop(context);
     }
   }
