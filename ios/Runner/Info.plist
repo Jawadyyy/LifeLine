@@ -49,10 +49,17 @@
 <string>This app needs access to location when open.</string>
 <key>NSLocationAlwaysUsageDescription</key>
 <string>This app needs access to location when in the background.</string>
+<key>LSApplicationQueriesSchemes</key>
 <array>
     <string>whatsapp</string>
 </array>
 <key>NSContactsUsageDescription</key>
 <string>We need access to your contacts for adding emergency contacts.</string>
+<key>NSMicrophoneUsageDescription</key>
+<string>Microphone access is needed to record voice messages in chat.</string>
+<key>NSCameraUsageDescription</key>
+<string>Camera access is needed to take photos to send in chat.</string>
+<key>NSPhotoLibraryUsageDescription</key>
+<string>Photo library access is needed to attach images in chat.</string>
 </dict>
 </plist>

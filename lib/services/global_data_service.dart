@@ -147,6 +147,11 @@ class GlobalDataService extends ChangeNotifier {
           return data;
         }).toList();
 
+        // The profileImageUrl stored on a contact is only a snapshot from when
+        // the contact was added. If that app-user later sets/changes their
+        // picture, the snapshot goes stale. Refresh it live from users/{uid}.
+        await _refreshContactImages();
+
         _hasLoadedContacts = true;
         debugPrint(
             'GlobalDataService: Contacts data loaded successfully (${_contacts.length} contacts)');
@@ -164,6 +169,53 @@ class GlobalDataService extends ChangeNotifier {
       _isLoadingContacts = false;
       notifyListeners();
     }
+  }
+
+  // The profileImageUrl on a contact is only a snapshot from add-time and goes
+  // stale when that app-user later sets/changes their picture. Refresh it live
+  // from the users collection. Matches by uid when present, else by normalized
+  // phone (older contacts may not have a uid stored), so it's uid-independent.
+  Future<void> _refreshContactImages() async {
+    if (_contacts.isEmpty) return;
+
+    try {
+      final usersSnap =
+          await FirebaseFirestore.instance.collection('users').get();
+
+      final imageByUid = <String, String>{};
+      final imageByPhone = <String, String>{};
+      for (final doc in usersSnap.docs) {
+        final data = doc.data();
+        final img = (data['profileImageUrl'] as String?) ?? '';
+        imageByUid[doc.id] = img;
+        final phone = data['phone'] as String?;
+        if (phone != null && phone.isNotEmpty) {
+          imageByPhone[_normalizePhone(phone)] = img;
+        }
+      }
+
+      for (final c in _contacts) {
+        final uid = c['uid'] as String?;
+        if (uid != null && uid.isNotEmpty && imageByUid.containsKey(uid)) {
+          c['profileImageUrl'] = imageByUid[uid];
+          continue;
+        }
+        final phone = c['phone'] as String?;
+        if (phone != null && phone.isNotEmpty) {
+          final match = imageByPhone[_normalizePhone(phone)];
+          if (match != null) c['profileImageUrl'] = match;
+        }
+      }
+    } catch (e) {
+      debugPrint('GlobalDataService: Error refreshing contact images: $e');
+    }
+  }
+
+  String _normalizePhone(String phone) {
+    final digits = phone.replaceAll(RegExp(r'\D'), '');
+    return digits.length >= 10
+        ? digits.substring(digits.length - 10)
+        : digits;
   }
 
   // Load location data once

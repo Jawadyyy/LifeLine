@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:lifeline/models/chat_message.dart';
+import 'package:lifeline/services/media_upload_service.dart';
 
 /// Realtime one-to-one chat backed by Firestore.
 ///
@@ -30,6 +31,13 @@ class ChatService {
 
   /// Number of messages fetched per pagination chunk.
   static const int defaultPageSize = 30;
+
+  /// Upper bound on how many not-yet-advanced messages a single receipt pass
+  /// scans, so [_advanceIncoming] can't rescan an unbounded backlog. In steady
+  /// state only a handful of messages sit in `sent`/`delivered`, so this cap is
+  /// never hit; it only guards a large first-open backlog, which self-heals on
+  /// the next receipt pass.
+  static const int _receiptScanLimit = 100;
 
   DocumentReference<Map<String, dynamic>> _chatRef(String chatId) =>
       _db.collection('chats').doc(chatId);
@@ -73,6 +81,9 @@ class ChatService {
       status: status,
       type: (data['type'] as String?) ?? 'text',
       liveSessionId: data['liveSessionId'] as String?,
+      imageUrl: data['imageUrl'] as String?,
+      audioUrl: data['audioUrl'] as String?,
+      durationMs: (data['durationMs'] as num?)?.toInt(),
     );
   }
 
@@ -89,17 +100,33 @@ class ChatService {
 
   /// Adds a message and updates the parent chat metadata atomically.
   ///
-  /// [type] tags the message kind: `'text'` (default) or `'emergency'` for SOS
-  /// location alerts, which the chat UI renders distinctly.
+  /// [type] tags the message kind: `'text'` (default), `'emergency'` for SOS
+  /// location alerts, `'image'` for a photo ([imageUrl]), or `'voice'` for an
+  /// audio note ([audioUrl] + [durationMs]). The chat UI renders each
+  /// distinctly. Text may be empty for media messages; the chat-list preview
+  /// (`lastMessage`) falls back to a media label in that case.
   Future<void> send(
     String chatId,
     String contactUid,
     String text, {
     String type = 'text',
     String? liveSessionId,
+    String? imageUrl,
+    String? audioUrl,
+    int? durationMs,
   }) async {
     final trimmed = text.trim();
-    if (trimmed.isEmpty) return;
+    // A message needs either text or a media payload to be worth sending.
+    final hasMedia = imageUrl != null || audioUrl != null;
+    if (trimmed.isEmpty && !hasMedia) return;
+
+    final preview = trimmed.isNotEmpty
+        ? trimmed
+        : imageUrl != null
+            ? '📷 Photo'
+            : audioUrl != null
+                ? '🎤 Voice message'
+                : '';
 
     final chatRef = _chatRef(chatId);
     final messageRef = chatRef.collection('messages').doc();
@@ -110,7 +137,7 @@ class ChatService {
       chatRef,
       {
         'participants': participants,
-        'lastMessage': trimmed,
+        'lastMessage': preview,
         'lastTime': FieldValue.serverTimestamp(),
       },
       SetOptions(merge: true),
@@ -122,6 +149,9 @@ class ChatService {
       'status': 'sent',
       'type': type,
       if (liveSessionId != null) 'liveSessionId': liveSessionId,
+      if (imageUrl != null) 'imageUrl': imageUrl,
+      if (audioUrl != null) 'audioUrl': audioUrl,
+      if (durationMs != null) 'durationMs': durationMs,
     });
     await batch.commit();
   }
@@ -146,6 +176,7 @@ class ChatService {
     final snap = await _chatRef(chatId)
         .collection('messages')
         .where('status', whereIn: from)
+        .limit(_receiptScanLimit)
         .get();
 
     final targets =
@@ -162,13 +193,19 @@ class ChatService {
 
 /// Provider that exposes the Firestore message stream to the chat UI.
 class ChatProvider extends ChangeNotifier {
-  ChatProvider({required String currentUid, required this.contactUid})
-      : _service = ChatService(currentUid),
+  ChatProvider({
+    required String currentUid,
+    required this.contactUid,
+    ChatService? service,
+    MediaUploadService? uploads,
+  })  : _service = service ?? ChatService(currentUid),
+        _uploads = uploads ?? MediaUploadService(),
         chatId = ChatService.chatIdFor(currentUid, contactUid) {
     _subscribe();
   }
 
   final ChatService _service;
+  final MediaUploadService _uploads;
   final String contactUid;
   final String chatId;
 
@@ -181,6 +218,11 @@ class ChatProvider extends ChangeNotifier {
   int _limit = _pageSize;
   bool _hasMore = true;
   bool _loadingMore = false;
+
+  /// Ids of incoming messages we've already fired a delivery receipt for, so a
+  /// re-emitted snapshot (local write acks, metadata-only changes, unrelated
+  /// updates) doesn't re-run the delivery query when nothing new arrived.
+  final Set<String> _deliveredFor = <String>{};
 
   List<ChatMessage> get messages => List.unmodifiable(_messages);
   String? get errorMessage => _errorMessage;
@@ -206,8 +248,18 @@ class ChatProvider extends ChangeNotifier {
         // Window filled exactly to the limit ⇒ older messages likely remain.
         _hasMore = msgs.length >= _limit;
         notifyListeners();
-        // Receipt: incoming messages are now delivered to this device.
-        unawaited(_service.markDelivered(chatId));
+        // Receipt: only fire when this snapshot actually carries a new incoming
+        // message still in `sent` state. Re-emissions with nothing new (local
+        // ack flips, metadata-only changes) are skipped, so the delivery query
+        // no longer runs on every snapshot.
+        final newIncoming = msgs.where((m) =>
+            !m.isSent &&
+            m.status == MessageStatus.sent &&
+            !_deliveredFor.contains(m.id));
+        if (newIncoming.isNotEmpty) {
+          _deliveredFor.addAll(newIncoming.map((m) => m.id));
+          unawaited(_service.markDelivered(chatId));
+        }
       },
       onError: (Object error) {
         _errorMessage = 'Could not load messages';
@@ -235,6 +287,53 @@ class ChatProvider extends ChangeNotifier {
     } catch (error) {
       _errorMessage = 'Message failed to send';
       debugPrint('ChatProvider send error: $error');
+      notifyListeners();
+    }
+  }
+
+  /// True while a picked image / recorded clip is uploading, so the input bar
+  /// can show a spinner instead of letting the user fire duplicates.
+  bool _sendingMedia = false;
+  bool get sendingMedia => _sendingMedia;
+
+  /// Uploads a picked image then sends it as a `type: 'image'` message.
+  Future<void> sendImage(String localPath) async {
+    _sendingMedia = true;
+    notifyListeners();
+    try {
+      final url = await _uploads.uploadImage(localPath);
+      if (url == null) {
+        _errorMessage = 'Image upload failed';
+      } else {
+        await _service.send(chatId, contactUid, '',
+            type: 'image', imageUrl: url);
+      }
+    } catch (error) {
+      _errorMessage = 'Image failed to send';
+      debugPrint('ChatProvider sendImage error: $error');
+    } finally {
+      _sendingMedia = false;
+      notifyListeners();
+    }
+  }
+
+  /// Uploads a recorded voice clip then sends it as a `type: 'voice'` message.
+  Future<void> sendVoice(String localPath, int durationMs) async {
+    _sendingMedia = true;
+    notifyListeners();
+    try {
+      final url = await _uploads.uploadAudio(localPath, chatId: chatId);
+      if (url == null) {
+        _errorMessage = 'Voice upload failed';
+      } else {
+        await _service.send(chatId, contactUid, '',
+            type: 'voice', audioUrl: url, durationMs: durationMs);
+      }
+    } catch (error) {
+      _errorMessage = 'Voice note failed to send';
+      debugPrint('ChatProvider sendVoice error: $error');
+    } finally {
+      _sendingMedia = false;
       notifyListeners();
     }
   }

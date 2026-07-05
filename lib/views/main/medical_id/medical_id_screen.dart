@@ -9,7 +9,12 @@ import 'package:url_launcher/url_launcher.dart';
 /// Fast-access medical summary. Streams the user's profile so it stays current,
 /// and loads the primary (oldest) emergency contact alongside.
 class MedicalIdScreen extends StatefulWidget {
-  const MedicalIdScreen({super.key});
+  /// When null, shows the signed-in user's own Medical ID. Pass another user's
+  /// uid (e.g. an emergency contact) to view theirs read-only.
+  final String? uid;
+  final String? title;
+
+  const MedicalIdScreen({super.key, this.uid, this.title});
 
   @override
   State<MedicalIdScreen> createState() => _MedicalIdScreenState();
@@ -18,8 +23,13 @@ class MedicalIdScreen extends StatefulWidget {
 class _MedicalIdScreenState extends State<MedicalIdScreen> {
   late final Future<Map<String, String>?> _primaryContact = _loadPrimary();
 
+  String? get _uid => widget.uid ?? FirebaseAuth.instance.currentUser?.uid;
+
   Future<Map<String, String>?> _loadPrimary() async {
-    final uid = FirebaseAuth.instance.currentUser?.uid;
+    // Only load the viewer's own primary contact; another user's contacts
+    // subcollection is owner-only (would be permission-denied).
+    if (widget.uid != null) return null;
+    final uid = _uid;
     if (uid == null) return null;
     final snap = await FirebaseFirestore.instance
         .collection('users')
@@ -43,7 +53,7 @@ class _MedicalIdScreenState extends State<MedicalIdScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final uid = FirebaseAuth.instance.currentUser?.uid;
+    final uid = _uid;
 
     return Scaffold(
       backgroundColor: LL.canvas,
@@ -91,13 +101,14 @@ class _MedicalIdScreenState extends State<MedicalIdScreen> {
                                         : () => _call(contact!['phone']!),
                                   ),
                                   const SizedBox(height: 18),
-                                  Text(
-                                    'Show this screen to first responders.\n'
-                                    'Accessible from the lock screen.',
-                                    textAlign: TextAlign.center,
-                                    style: LL.body(12.5,
-                                        color: LL.muted, height: 1.5),
-                                  ),
+                                  if (widget.uid == null)
+                                    Text(
+                                      'Show this screen to first responders.\n'
+                                      'Accessible from the lock screen.',
+                                      textAlign: TextAlign.center,
+                                      style: LL.body(12.5,
+                                          color: LL.muted, height: 1.5),
+                                    ),
                                 ],
                               ),
                             );
@@ -123,7 +134,8 @@ class _MedicalIdScreenState extends State<MedicalIdScreen> {
                 color: LL.ink, size: 20),
           ),
           const SizedBox(width: 6),
-          Text('Medical ID', style: LL.display(22, weight: FontWeight.w700)),
+          Text(widget.title ?? 'Medical ID',
+              style: LL.display(22, weight: FontWeight.w700)),
         ],
       ),
     );

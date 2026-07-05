@@ -74,7 +74,7 @@ class _ChatScreenState extends State<ChatScreen> {
     final currentUid = FirebaseAuth.instance.currentUser?.uid;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: const Color(0xFFF6F4F1),
       resizeToAvoidBottomInset: true,
       body: Column(
         children: [
@@ -139,17 +139,32 @@ class _ChatBodyState extends State<_ChatBody> {
   /// chunk is prepended (which leaves the newest id unchanged).
   String? _lastNewestId;
 
+  /// The very first render jumps to the bottom (no animation) so opening a chat
+  /// lands on the latest messages; later new messages animate.
+  bool _didInitialScroll = false;
+
   @override
   void dispose() {
     _scrollController.dispose();
     super.dispose();
   }
 
-  void _scrollToBottom() {
+  void _scrollToBottom({bool jump = false}) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_scrollController.hasClients) {
+      if (!_scrollController.hasClients) return;
+      final target = _scrollController.position.maxScrollExtent;
+      if (jump) {
+        _scrollController.jumpTo(target);
+        // A second pass after layout settles (fonts/images can grow rows).
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (_scrollController.hasClients) {
+            _scrollController
+                .jumpTo(_scrollController.position.maxScrollExtent);
+          }
+        });
+      } else {
         _scrollController.animateTo(
-          _scrollController.position.maxScrollExtent,
+          target,
           duration: const Duration(milliseconds: 300),
           curve: Curves.easeOut,
         );
@@ -186,7 +201,8 @@ class _ChatBodyState extends State<_ChatBody> {
                 final newestId = msgs.last.id;
                 if (newestId != _lastNewestId) {
                   _lastNewestId = newestId;
-                  _scrollToBottom();
+                  _scrollToBottom(jump: !_didInitialScroll);
+                  _didInitialScroll = true;
                 }
 
                 final showTopLoader = provider.loadingMore;
@@ -243,6 +259,9 @@ class _ChatBodyState extends State<_ChatBody> {
           Consumer<ChatProvider>(
             builder: (context, provider, _) => ChatInputBar(
               onSend: provider.sendMessage,
+              onSendImage: provider.sendImage,
+              onSendVoice: provider.sendVoice,
+              sending: provider.sendingMedia,
             ),
           ),
         ],

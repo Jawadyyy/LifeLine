@@ -5,6 +5,7 @@ import 'package:flutter_contacts/flutter_contacts.dart';
 import 'package:lifeline/constants/app_colors.dart';
 import 'package:lifeline/constants/app_design.dart';
 import 'package:lifeline/services/global_data_service.dart';
+import 'package:lifeline/views/main/medical_id/medical_id_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 /// Typed contract the contacts screen exposes to its controller, replacing the
@@ -262,6 +263,78 @@ class ContactsScreenController {
     }
   }
 
+  /// Long-press menu: view the contact's Medical ID, or remove them.
+  Future<void> showContactOptions(Map<String, dynamic> contact) async {
+    final String name = (contact['name'] as String?) ?? '';
+    final String? uid = contact['uid'] as String?;
+
+    await showModalBottomSheet<void>(
+      context: _context,
+      backgroundColor: LL.card,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 8),
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: LL.border,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Text(name,
+                    style: LL.body(16, weight: FontWeight.w700)),
+              ),
+              const SizedBox(height: 8),
+              ListTile(
+                leading: const Icon(Icons.medical_information_outlined,
+                    color: LL.orange),
+                title: Text('View Medical ID',
+                    style: LL.body(15.5, weight: FontWeight.w600)),
+                onTap: () {
+                  Navigator.pop(sheetContext);
+                  if (uid == null || uid.isEmpty) {
+                    _showErrorSnackbar('Medical ID unavailable for this contact');
+                    return;
+                  }
+                  Navigator.push(
+                    _context,
+                    MaterialPageRoute(
+                      builder: (_) => MedicalIdScreen(
+                        uid: uid,
+                        title: '$name\'s Medical ID',
+                      ),
+                    ),
+                  );
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.delete_outline, color: AppColors.error),
+                title: Text('Delete Contact',
+                    style: LL.body(15.5,
+                        weight: FontWeight.w600, color: AppColors.error)),
+                onTap: () {
+                  Navigator.pop(sheetContext);
+                  showDeleteDialog(contact['id'], name);
+                },
+              ),
+              const SizedBox(height: 8),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   Future<bool> showDeleteDialog(String contactId, String contactName) async {
     final confirmed = await showDialog<bool>(
       context: _context,
@@ -455,7 +528,7 @@ class ContactsScreenController {
         child: InkWell(
           borderRadius: BorderRadius.circular(20),
           onTap: onTap, // ← directly uses the passed callback
-          onLongPress: () => showDeleteDialog(contact['id'], contact['name']),
+          onLongPress: () => showContactOptions(contact),
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Row(
