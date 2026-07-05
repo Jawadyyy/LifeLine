@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -10,6 +13,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:lifeline/firebase/firebase_options.dart';
 import 'package:lifeline/constants/app_colors.dart';
 import 'package:lifeline/services/locale_controller.dart';
+import 'package:lifeline/services/presence_service.dart';
 import 'package:lifeline/services/push_service.dart';
 import 'package:lifeline/views/entry/splash_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -62,8 +66,36 @@ Future<void> main() async {
   );
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  StreamSubscription<User?>? _authSub;
+
+  @override
+  void initState() {
+    super.initState();
+    // Drive presence off the auth state: start tracking when signed in (fires
+    // immediately with the current user), stop when signed out. Sign-out also
+    // marks the user offline explicitly in AuthService before the uid is gone.
+    _authSub = FirebaseAuth.instance.authStateChanges().listen((user) {
+      if (user != null) {
+        PresenceService.instance.start();
+      } else {
+        PresenceService.instance.stop();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _authSub?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {

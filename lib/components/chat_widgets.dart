@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:audioplayers/audioplayers.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:emoji_picker_flutter/emoji_picker_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -10,6 +11,7 @@ import 'package:intl/intl.dart';
 import 'package:lifeline/constants/app_colors.dart';
 import 'package:lifeline/constants/app_design.dart';
 import 'package:lifeline/models/chat_message.dart';
+import 'package:lifeline/services/presence_service.dart';
 import 'package:lifeline/views/main/live/live_tracking_screen.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:record/record.dart';
@@ -29,19 +31,71 @@ class ChatHeader extends StatelessWidget {
   final String contactName;
   final String? contactImageUrl;
 
-  /// Presence line under the name. Defaults to "Online" until real presence
-  /// (Phase 5) wires this to the peer's status.
-  final String status;
+  /// Firebase uid of the peer, used to stream their live presence. When null
+  /// (e.g. a legacy contact whose uid couldn't be resolved) no presence line or
+  /// dot is shown rather than a misleading "Online".
+  final String? peerUid;
 
   const ChatHeader({
     super.key,
     required this.contactName,
     this.contactImageUrl,
-    this.status = 'Online',
+    this.peerUid,
   });
+
+  /// Derives a truthful presence from a peer's user document: online only when
+  /// the `online` flag is set AND the last heartbeat is within the presence
+  /// window (guards against a crashed peer stuck "online").
+  static bool _isOnline(Map<String, dynamic>? data) {
+    if (data == null) return false;
+    if (data['online'] != true) return false;
+    final ts = data['lastActive'];
+    if (ts is! Timestamp) return false;
+    return DateTime.now().difference(ts.toDate()) < PresenceService.onlineWindow;
+  }
+
+  static String _statusText(Map<String, dynamic>? data) {
+    if (_isOnline(data)) return 'Online';
+    final ts = data?['lastActive'];
+    if (ts is! Timestamp) return 'Offline';
+    return _lastSeenText(ts.toDate());
+  }
+
+  static String _lastSeenText(DateTime t) {
+    final diff = DateTime.now().difference(t);
+    if (diff.inMinutes < 1) return 'last seen just now';
+    if (diff.inMinutes < 60) return 'last seen ${diff.inMinutes}m ago';
+    if (diff.inHours < 24) {
+      return 'last seen ${DateFormat('h:mm a').format(t)}';
+    }
+    if (diff.inDays == 1) return 'last seen yesterday';
+    return 'last seen ${DateFormat('MMM d').format(t)}';
+  }
 
   @override
   Widget build(BuildContext context) {
+    // Without a uid there's nothing to stream — render a presence-less header.
+    if (peerUid == null || peerUid!.isEmpty) {
+      return _build(context, online: false, statusText: '');
+    }
+    return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+      stream: FirebaseFirestore.instance
+          .collection('users')
+          .doc(peerUid)
+          .snapshots(),
+      builder: (context, snapshot) {
+        final data = snapshot.data?.data();
+        return _build(
+          context,
+          online: _isOnline(data),
+          statusText: _statusText(data),
+        );
+      },
+    );
+  }
+
+  Widget _build(BuildContext context,
+      {required bool online, required String statusText}) {
     return Container(
       decoration: BoxDecoration(
         color: _headerBg,
@@ -65,7 +119,7 @@ class ChatHeader extends StatelessWidget {
                     color: Color(0xFF554F49), size: 20),
                 onPressed: () => Navigator.pop(context),
               ),
-              _avatar(46),
+              _avatar(46, online: online),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -79,12 +133,14 @@ class ChatHeader extends StatelessWidget {
                               fontSize: 18,
                               fontWeight: FontWeight.w700,
                               letterSpacing: -0.2)),
-                      const SizedBox(height: 1),
-                      Text(status,
-                          style: const TextStyle(
-                              color: LL.green,
-                              fontSize: 12.5,
-                              fontWeight: FontWeight.w500)),
+                      if (statusText.isNotEmpty) ...[
+                        const SizedBox(height: 1),
+                        Text(statusText,
+                            style: TextStyle(
+                                color: online ? LL.green : _metaGray,
+                                fontSize: 12.5,
+                                fontWeight: FontWeight.w500)),
+                      ],
                     ]),
               ),
               IconButton(
@@ -107,7 +163,7 @@ class ChatHeader extends StatelessWidget {
     );
   }
 
-  Widget _avatar(double size) {
+  Widget _avatar(double size, {required bool online}) {
     final hasImage = contactImageUrl != null && contactImageUrl!.isNotEmpty;
     return SizedBox(
       width: size,
@@ -138,20 +194,21 @@ class ChatHeader extends StatelessWidget {
                     errorBuilder: (_, __, ___) => _initial(size))
                 : _initial(size),
           ),
-          // Online presence dot.
-          Positioned(
-            right: -1,
-            bottom: -1,
-            child: Container(
-              width: 13,
-              height: 13,
-              decoration: BoxDecoration(
-                color: LL.green,
-                shape: BoxShape.circle,
-                border: Border.all(color: _headerBg, width: 2.5),
+          // Presence dot — only rendered while the peer is truly online.
+          if (online)
+            Positioned(
+              right: -1,
+              bottom: -1,
+              child: Container(
+                width: 13,
+                height: 13,
+                decoration: BoxDecoration(
+                  color: LL.green,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: _headerBg, width: 2.5),
+                ),
               ),
             ),
-          ),
         ],
       ),
     );

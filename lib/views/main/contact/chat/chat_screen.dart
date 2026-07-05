@@ -81,18 +81,27 @@ class _ChatScreenState extends State<ChatScreen> {
           ChatHeader(
             contactName: widget.contactName,
             contactImageUrl: widget.contactImageUrl,
+            peerUid: widget.contactUid,
           ),
           Expanded(
             child: currentUid == null
                 ? const _ChatNotice(message: 'You are not signed in.')
                 : FutureBuilder<String?>(
                     future: _peerUidFuture,
+                    // When the uid was passed in (the common case) it's known
+                    // synchronously — seed it so the chat renders immediately
+                    // instead of flashing a spinner for a frame while the
+                    // future settles on a microtask.
+                    initialData: widget.contactUid,
                     builder: (context, snapshot) {
-                      if (snapshot.connectionState != ConnectionState.done) {
-                        return const Center(child: CircularProgressIndicator());
-                      }
                       final peerUid = snapshot.data;
                       if (peerUid == null || peerUid.isEmpty) {
+                        // No uid yet: keep waiting if the lookup is still
+                        // running, otherwise it's genuinely unregistered.
+                        if (snapshot.connectionState != ConnectionState.done) {
+                          return const Center(
+                              child: CircularProgressIndicator());
+                        }
                         return const _ChatNotice(
                           message:
                               'This contact is not a registered LifeLine user yet.',
@@ -136,12 +145,8 @@ class _ChatBodyState extends State<_ChatBody> {
 
   /// Id of the newest message last rendered. Used to auto-scroll to the bottom
   /// only when a genuinely new message arrives — not when an older paginated
-  /// chunk is prepended (which leaves the newest id unchanged).
+  /// chunk is loaded (which leaves the newest id unchanged).
   String? _lastNewestId;
-
-  /// The very first render jumps to the bottom (no animation) so opening a chat
-  /// lands on the latest messages; later new messages animate.
-  bool _didInitialScroll = false;
 
   @override
   void dispose() {
@@ -149,26 +154,19 @@ class _ChatBodyState extends State<_ChatBody> {
     super.dispose();
   }
 
-  void _scrollToBottom({bool jump = false}) {
+  /// With the list built `reverse: true` the newest message sits at offset 0,
+  /// so the chat opens on the latest messages with no post-layout jump. A new
+  /// message only animates the view down if the user is already near the
+  /// bottom — reading older history isn't yanked away.
+  void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!_scrollController.hasClients) return;
-      final target = _scrollController.position.maxScrollExtent;
-      if (jump) {
-        _scrollController.jumpTo(target);
-        // A second pass after layout settles (fonts/images can grow rows).
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (_scrollController.hasClients) {
-            _scrollController
-                .jumpTo(_scrollController.position.maxScrollExtent);
-          }
-        });
-      } else {
-        _scrollController.animateTo(
-          target,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
-        );
-      }
+      if (_scrollController.position.pixels > 150) return;
+      _scrollController.animateTo(
+        0,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
     });
   }
 
@@ -200,17 +198,21 @@ class _ChatBodyState extends State<_ChatBody> {
 
                 final newestId = msgs.last.id;
                 if (newestId != _lastNewestId) {
+                  // Skip the auto-scroll on the very first render: a reversed
+                  // list already opens pinned to the newest message.
+                  final isFirstRender = _lastNewestId == null;
                   _lastNewestId = newestId;
-                  _scrollToBottom(jump: !_didInitialScroll);
-                  _didInitialScroll = true;
+                  if (!isFirstRender) _scrollToBottom();
                 }
 
                 final showTopLoader = provider.loadingMore;
 
                 return NotificationListener<ScrollNotification>(
                   onNotification: (notification) {
-                    // Near the top edge: pull the next older chunk.
-                    if (notification.metrics.pixels <= 80 &&
+                    // In a reversed list older messages live at the far
+                    // (max) end, so pull the next chunk as it's approached.
+                    if (notification.metrics.pixels >=
+                            notification.metrics.maxScrollExtent - 80 &&
                         provider.hasMore &&
                         !provider.loadingMore) {
                       provider.loadMore();
@@ -219,31 +221,31 @@ class _ChatBodyState extends State<_ChatBody> {
                   },
                   child: ListView.builder(
                     controller: _scrollController,
+                    reverse: true,
                     padding: const EdgeInsets.symmetric(
                         vertical: 18, horizontal: 12),
                     itemCount: msgs.length + (showTopLoader ? 1 : 0),
                     itemBuilder: (context, index) {
-                      if (showTopLoader) {
-                        if (index == 0) {
-                          return const Padding(
-                            padding: EdgeInsets.symmetric(vertical: 12),
-                            child: Center(
-                              child: SizedBox(
-                                width: 22,
-                                height: 22,
-                                child:
-                                    CircularProgressIndicator(strokeWidth: 2),
-                              ),
+                      // Reversed: index 0 is the newest (bottom); the older-chunk
+                      // loader sits past the oldest message, at the visual top.
+                      if (showTopLoader && index == msgs.length) {
+                        return const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 12),
+                          child: Center(
+                            child: SizedBox(
+                              width: 22,
+                              height: 22,
+                              child: CircularProgressIndicator(strokeWidth: 2),
                             ),
-                          );
-                        }
-                        index -= 1;
+                          ),
+                        );
                       }
-                      final msg = msgs[index];
-                      final showDivider = index == 0 ||
-                          msgs[index]
+                      final msgIndex = msgs.length - 1 - index;
+                      final msg = msgs[msgIndex];
+                      final showDivider = msgIndex == 0 ||
+                          msgs[msgIndex]
                                   .time
-                                  .difference(msgs[index - 1].time)
+                                  .difference(msgs[msgIndex - 1].time)
                                   .inMinutes >
                               5;
                       return Column(children: [
