@@ -33,6 +33,18 @@ class _ContactsPageState extends State<ContactsPage>
 
     // Load directly from Firestore to guarantee profileImageUrl is included
     _loadContacts();
+    // Loads once and caches; drives the header avatar.
+    _globalDataService.loadUserData();
+  }
+
+  String get _profileImage =>
+      _globalDataService.currentUser?.profileImage ?? '';
+
+  String get _initial {
+    final name = FirebaseAuth.instance.currentUser?.displayName?.trim() ??
+        _globalDataService.currentUser?.name.trim() ??
+        '';
+    return name.isEmpty ? '?' : name[0].toUpperCase();
   }
 
   void _onGlobalDataChanged() {
@@ -215,16 +227,48 @@ class _ContactsPageState extends State<ContactsPage>
     final count = filteredContacts.length;
     return Padding(
       padding: const EdgeInsets.fromLTRB(26, 14, 26, 0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Text("People we'll alert in an emergency",
-              style: LL.body(13, weight: FontWeight.w600, color: LL.muted)),
-          const SizedBox(height: 5),
-          Text('Emergency Circle', style: LL.display(28)),
-          if (count > 0) const SizedBox(height: 2),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text("People we'll alert in an emergency",
+                    style: LL.body(13, weight: FontWeight.w600, color: LL.muted)),
+                const SizedBox(height: 5),
+                Text('Emergency Circle', style: LL.display(28)),
+                if (count > 0) const SizedBox(height: 2),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          _avatar(),
         ],
       ),
+    );
+  }
+
+  Widget _avatar() {
+    final url = _profileImage;
+    final fallback = Text(_initial,
+        style: LL.display(15, weight: FontWeight.w800, color: Colors.white));
+    return Container(
+      width: 44,
+      height: 44,
+      alignment: Alignment.center,
+      clipBehavior: Clip.antiAlias,
+      decoration: const BoxDecoration(
+          color: LL.orange, shape: BoxShape.circle),
+      child: url.isEmpty
+          ? fallback
+          : Image.network(
+              url,
+              width: 44,
+              height: 44,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => fallback,
+            ),
     );
   }
 

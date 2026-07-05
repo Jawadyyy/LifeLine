@@ -6,6 +6,7 @@ import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lifeline/constants/app_colors.dart';
 import 'package:lifeline/constants/app_design.dart';
 import 'package:lifeline/services/chat_service.dart';
+import 'package:lifeline/services/global_data_service.dart';
 import 'package:lifeline/services/live_location_service.dart';
 import 'package:lifeline/services/push_service.dart';
 import 'package:lifeline/services/sos_followup.dart';
@@ -23,12 +24,29 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   late HomeController controller;
+  final GlobalDataService _globalDataService = GlobalDataService();
 
   @override
   void initState() {
     super.initState();
     controller = HomeController(this, setState);
+    _globalDataService.addListener(_onGlobalDataChanged);
+    // Loads once and caches; no-op if already loaded.
+    _globalDataService.loadUserData();
   }
+
+  void _onGlobalDataChanged() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void dispose() {
+    _globalDataService.removeListener(_onGlobalDataChanged);
+    super.dispose();
+  }
+
+  String get _profileImage =>
+      _globalDataService.currentUser?.profileImage ?? '';
 
   String get _firstName {
     final name = FirebaseAuth.instance.currentUser?.displayName?.trim();
@@ -124,17 +142,32 @@ class _HomeScreenState extends State<HomeScreen> {
           Text('LifeLine',
               style: LL.display(20, weight: FontWeight.w800, letterSpacing: 0.2)),
           const Spacer(),
-          Container(
-            width: 40,
-            height: 40,
-            alignment: Alignment.center,
-            decoration: const BoxDecoration(
-                color: LL.orange, shape: BoxShape.circle),
-            child: Text(_initial,
-                style: LL.display(15, weight: FontWeight.w800, color: Colors.white)),
-          ),
+          _avatar(),
         ],
       ),
+    );
+  }
+
+  Widget _avatar() {
+    final url = _profileImage;
+    final fallback = Text(_initial,
+        style: LL.display(15, weight: FontWeight.w800, color: Colors.white));
+    return Container(
+      width: 40,
+      height: 40,
+      alignment: Alignment.center,
+      clipBehavior: Clip.antiAlias,
+      decoration: const BoxDecoration(
+          color: LL.orange, shape: BoxShape.circle),
+      child: url.isEmpty
+          ? fallback
+          : Image.network(
+              url,
+              width: 40,
+              height: 40,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => fallback,
+            ),
     );
   }
 
