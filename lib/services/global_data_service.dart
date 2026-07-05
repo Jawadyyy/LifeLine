@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:lifeline/models/user_model.dart';
 import 'package:lifeline/services/user_service.dart';
 import 'package:lifeline/services/location_handler.dart';
@@ -19,6 +20,7 @@ class GlobalDataService extends ChangeNotifier {
   String _currentAddress = 'Fetching location...';
   bool _isLocationFetched = false;
   DateTime? _locationLastUpdated;
+  Position? _lastPosition;
 
   // Loading states
   bool _isLoadingContacts = false;
@@ -36,6 +38,7 @@ class GlobalDataService extends ChangeNotifier {
   String get currentAddress => _currentAddress;
   bool get isLocationFetched => _isLocationFetched;
   DateTime? get locationLastUpdated => _locationLastUpdated;
+  Position? get lastPosition => _lastPosition;
   bool get isLoadingContacts => _isLoadingContacts;
   bool get isLoadingUser => _isLoadingUser;
   bool get isLoadingLocation => _isLoadingLocation;
@@ -178,6 +181,7 @@ class GlobalDataService extends ChangeNotifier {
     try {
       final position = await LocationHandler.getCurrentPosition();
       if (position != null) {
+        _lastPosition = position;
         final address = await LocationHandler.getAddressFromLatLng(position);
         final newAddress = address ?? 'Location unavailable';
 
@@ -230,6 +234,16 @@ class GlobalDataService extends ChangeNotifier {
     // Don't call notifyListeners() to avoid loops
   }
 
+  // Seed the cached position from a screen that fetched it directly
+  // (e.g. the donation map), so later navigations reuse it instead of
+  // re-running geolocation.
+  void cachePosition(Position position) {
+    _lastPosition = position;
+    _hasLoadedLocation = true;
+    _isLocationFetched = true;
+    _locationLastUpdated = DateTime.now();
+  }
+
   // Update location data
   Future<void> updateLocationData() async {
     // Only update if location data is stale or not available
@@ -268,6 +282,7 @@ class GlobalDataService extends ChangeNotifier {
     _currentAddress = 'Fetching location...';
     _isLocationFetched = false;
     _locationLastUpdated = null;
+    _lastPosition = null;
     _hasLoadedContacts = false;
     _hasLoadedUser = false;
     _hasLoadedLocation = false;

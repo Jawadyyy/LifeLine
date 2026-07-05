@@ -603,30 +603,21 @@ class _DonationScreenState extends State<DonationScreen>
                         child: Container(
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [
-                                AppColors.primary.withOpacity(0.1),
-                                AppColors.primary.withOpacity(0.05),
-                              ],
-                            ),
+                            color: AppColors.primary,
                             borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: AppColors.primary.withOpacity(0.3),
-                              width: 1.5,
-                            ),
                           ),
                           child: Column(
                             children: [
                               const Icon(
                                 Icons.bloodtype,
-                                color: AppColors.primary,
+                                color: AppColors.surface,
                                 size: 32,
                               ),
                               const SizedBox(height: 8),
                               Text(
                                 data['blood_group'],
                                 style: const TextStyle(
-                                  color: AppColors.primary,
+                                  color: AppColors.surface,
                                   fontWeight: FontWeight.bold,
                                   fontSize: 24,
                                 ),
@@ -635,7 +626,7 @@ class _DonationScreenState extends State<DonationScreen>
                               const Text(
                                 'Blood Group',
                                 style: TextStyle(
-                                  color: AppColors.textSecondary,
+                                  color: AppColors.surface,
                                   fontSize: 11,
                                 ),
                               ),
@@ -825,17 +816,10 @@ class _DonationScreenState extends State<DonationScreen>
   }
 
   Widget _buildFAB() {
-    return FloatingActionButton.extended(
+    return FloatingActionButton(
       onPressed: () => _dialogController.showCreatePostDialog(context),
       backgroundColor: AppColors.primary,
-      icon: const Icon(Icons.add, color: AppColors.surface),
-      label: const Text(
-        'Create Request',
-        style: TextStyle(
-          color: AppColors.surface,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
+      child: const Icon(Icons.add, color: AppColors.surface),
     );
   }
 

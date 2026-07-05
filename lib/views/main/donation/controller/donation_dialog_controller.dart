@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -977,7 +978,8 @@ class DonationDialogController {
                 ),
                 elevation: 0,
               ),
-              icon: const Icon(Icons.message_outlined, size: 18),
+              icon: const Icon(Icons.message_outlined,
+                  size: 18, color: AppColors.surface),
               label: const Text(
                 'Contact',
                 style: TextStyle(fontWeight: FontWeight.w500),
@@ -1009,15 +1011,27 @@ class DonationDialogController {
         const SizedBox(height: 12),
         Row(
           children: [
-            CircleAvatar(
-              radius: 30,
-              backgroundColor: AppColors.background,
-              backgroundImage: userData['profileImageUrl'] != null
-                  ? NetworkImage(userData['profileImageUrl'])
-                  : null,
-              child: userData['profileImageUrl'] == null
-                  ? const Icon(Icons.person, color: AppColors.primary, size: 30)
-                  : null,
+            Builder(
+              builder: (context) {
+                final imageUrl = userData['profileImageUrl'];
+                final hasImage = imageUrl != null && imageUrl.toString().isNotEmpty;
+                return CircleAvatar(
+                  radius: 30,
+                  backgroundColor: AppColors.background,
+                  backgroundImage: hasImage
+                      ? CachedNetworkImageProvider(imageUrl)
+                      : null,
+                  onBackgroundImageError: hasImage
+                      ? (exception, stackTrace) {
+                          debugPrint('Error loading donor image: $exception');
+                        }
+                      : null,
+                  // Person icon sits behind the image; if the network image
+                  // fails to load it stays visible as a clean fallback.
+                  child: const Icon(Icons.person,
+                      color: AppColors.primary, size: 30),
+                );
+              },
             ),
             const SizedBox(width: 16),
             Expanded(

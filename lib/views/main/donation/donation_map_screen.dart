@@ -10,6 +10,7 @@ import 'package:provider/provider.dart';
 import 'package:lifeline/constants/app_colors.dart';
 import 'package:lifeline/models/user_model.dart';
 import 'package:lifeline/services/donation_service.dart';
+import 'package:lifeline/services/global_data_service.dart';
 import 'package:lifeline/services/push_service.dart';
 import 'package:lifeline/views/main/donation/controller/donation_controller.dart';
 import 'package:lifeline/views/main/donation/controller/donation_dialog_controller.dart';
@@ -26,6 +27,7 @@ class _DonationMapScreenState extends State<DonationMapScreen>
   late DonationController _donationController;
   late DonationDialogController _dialogController;
   late MapController _mapController;
+  final GlobalDataService _globalData = GlobalDataService();
 
   Position? _currentPosition;
   bool _isLoadingLocation = false;
@@ -121,8 +123,29 @@ class _DonationMapScreenState extends State<DonationMapScreen>
     super.dispose();
   }
 
-  Future<void> _checkLocationAndLoad() async {
+  Future<void> _checkLocationAndLoad({bool forceRefresh = false}) async {
     if (!mounted) return;
+
+    // Reuse the position cached from a previous fetch (this session) so
+    // navigating back to the map doesn't re-run geolocation every time.
+    final cached = _globalData.lastPosition;
+    if (!forceRefresh && cached != null) {
+      setState(() {
+        _currentPosition = cached;
+        _currentAddress = _globalData.isLocationFetched
+            ? _globalData.currentAddress
+            : _currentAddress;
+        _isLoadingLocation = false;
+      });
+      _donationController.currentUserPosition = cached;
+      if (_isMapReady && mounted) {
+        _mapController.move(
+          LatLng(cached.latitude, cached.longitude),
+          _mapZoom,
+        );
+      }
+      return;
+    }
 
     setState(() => _isLoadingLocation = true);
 
@@ -231,7 +254,7 @@ class _DonationMapScreenState extends State<DonationMapScreen>
                       onPressed: () async {
                         Navigator.of(dialogContext).pop();
                         await Geolocator.openLocationSettings();
-                        await _checkLocationAndLoad();
+                        await _checkLocationAndLoad(forceRefresh: true);
                       },
                       child: const Text(
                         'Enable',
@@ -269,6 +292,8 @@ class _DonationMapScreenState extends State<DonationMapScreen>
 
       setState(() => _currentPosition = position);
       _donationController.currentUserPosition = position;
+      // Cache for later navigations so we only locate once per session.
+      _globalData.cachePosition(position);
 
       // Get address in background
       _getAddressFromCoordinates(position);
@@ -319,25 +344,8 @@ class _DonationMapScreenState extends State<DonationMapScreen>
   }
 
   Color _getBloodGroupColor(String bloodGroup) {
-    // Use cache to avoid repeated color calculations
-    return _bloodGroupColorCache.putIfAbsent(bloodGroup, () {
-      switch (bloodGroup) {
-        case 'O+':
-        case 'O-':
-          return const Color(0xFFE53935); // Material Red 600
-        case 'A+':
-        case 'A-':
-          return const Color(0xFFFB8C00); // Material Orange 600
-        case 'B+':
-        case 'B-':
-          return const Color(0xFFFDD835); // Material Yellow 600
-        case 'AB+':
-        case 'AB-':
-          return const Color(0xFF43A047); // Material Green 600
-        default:
-          return AppColors.primary;
-      }
-    });
+    // All badges use the app's brand color (no per-group color coding).
+    return _bloodGroupColorCache.putIfAbsent(bloodGroup, () => AppColors.primary);
   }
 
   void _onMarkerTapped(Map<String, dynamic> donation) {
@@ -500,7 +508,9 @@ class _DonationMapScreenState extends State<DonationMapScreen>
       actions: [
         _buildAppBarButton(
           icon: Icons.refresh,
-          onPressed: _isLoadingLocation ? null : _checkLocationAndLoad,
+          onPressed: _isLoadingLocation
+              ? null
+              : () => _checkLocationAndLoad(forceRefresh: true),
         ),
       ],
     );
@@ -1475,7 +1485,7 @@ class _DonationMapScreenState extends State<DonationMapScreen>
           const SizedBox(width: 12),
           Expanded(
             child: ElevatedButton.icon(
-              icon: const Icon(Icons.delete, size: 20),
+              icon: const Icon(Icons.delete, size: 20, color: Colors.white),
               label: const Text('Delete'),
               style: ElevatedButton.styleFrom(
                 foregroundColor: Colors.white,
@@ -1665,20 +1675,12 @@ class _DonationMapScreenState extends State<DonationMapScreen>
                 color: AppColors.primary, size: 22),
           ),
           const SizedBox(height: 12),
-          FloatingActionButton.extended(
+          FloatingActionButton(
             heroTag: 'create_request',
             onPressed: () => _dialogController.showCreatePostDialog(context),
             backgroundColor: AppColors.primary,
             elevation: 6,
-            icon: const Icon(Icons.add, color: Colors.white, size: 24),
-            label: const Text(
-              'Create Request',
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w700,
-                fontSize: 15,
-              ),
-            ),
+            child: const Icon(Icons.add, color: Colors.white, size: 24),
           ),
         ],
       ),

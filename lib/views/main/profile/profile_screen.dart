@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -337,7 +338,9 @@ class _ProfilePageState extends State<ProfilePage> {
     return CircleAvatar(
       radius: 48,
       backgroundColor: AppColors.background,
-      backgroundImage: NetworkImage(imageUrl),
+      // Cached provider keeps the image in memory + on disk, so revisiting
+      // the profile reuses it instead of re-downloading every time.
+      backgroundImage: CachedNetworkImageProvider(imageUrl),
       onBackgroundImageError: (exception, stackTrace) {
         debugPrint('Error loading profile image: $exception');
       },
