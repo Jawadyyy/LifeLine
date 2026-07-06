@@ -1,3 +1,4 @@
+import 'package:lifeline/utils/logger.dart';
 import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
@@ -265,7 +266,7 @@ class ChatProvider extends ChangeNotifier {
         _errorMessage = 'Could not load messages';
         _loaded = true;
         _loadingMore = false;
-        debugPrint('ChatProvider stream error: $error');
+        logDebug('ChatProvider stream error: $error');
         notifyListeners();
       },
     );
@@ -286,7 +287,7 @@ class ChatProvider extends ChangeNotifier {
       await _service.send(chatId, contactUid, text);
     } catch (error) {
       _errorMessage = 'Message failed to send';
-      debugPrint('ChatProvider send error: $error');
+      logDebug('ChatProvider send error: $error');
       notifyListeners();
     }
   }
@@ -310,7 +311,7 @@ class ChatProvider extends ChangeNotifier {
       }
     } catch (error) {
       _errorMessage = 'Image failed to send';
-      debugPrint('ChatProvider sendImage error: $error');
+      logDebug('ChatProvider sendImage error: $error');
     } finally {
       _sendingMedia = false;
       notifyListeners();
@@ -331,7 +332,7 @@ class ChatProvider extends ChangeNotifier {
       }
     } catch (error) {
       _errorMessage = 'Voice note failed to send';
-      debugPrint('ChatProvider sendVoice error: $error');
+      logDebug('ChatProvider sendVoice error: $error');
     } finally {
       _sendingMedia = false;
       notifyListeners();

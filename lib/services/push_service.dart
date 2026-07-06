@@ -1,3 +1,4 @@
+import 'package:lifeline/utils/logger.dart';
 import 'dart:convert';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -6,11 +7,12 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
+import 'package:lifeline/views/main/contact/chat/call_screen.dart';
 import 'package:lifeline/views/main/contact/chat/chat_screen.dart';
 import 'package:lifeline/views/main/donation/donation_map_screen.dart';
 
 /// Where a tapped push should take the user.
-enum PushDestinationType { chat, donation, unknown }
+enum PushDestinationType { chat, donation, call, unknown }
 
 /// Parsed routing target from a notification `data` payload.
 @immutable
@@ -21,6 +23,8 @@ class PushDestination {
     this.peerName,
     this.chatId,
     this.sessionId,
+    this.callId,
+    this.channelName,
   });
 
   final PushDestinationType type;
@@ -28,6 +32,11 @@ class PushDestination {
   final String? peerName;
   final String? chatId;
   final String? sessionId;
+
+  /// For [PushDestinationType.call]: the `calls/{callId}` doc id and Agora
+  /// channel name to rejoin.
+  final String? callId;
+  final String? channelName;
 }
 
 /// FCM push for cross-user alerts (SOS, "I'm safe", donation accept).
@@ -94,7 +103,7 @@ class PushService {
         SetOptions(merge: true),
       );
     } catch (e) {
-      debugPrint('removeToken failed: $e');
+      logDebug('removeToken failed: $e');
     }
   }
 
@@ -141,7 +150,7 @@ class PushService {
           .timeout(const Duration(seconds: 8));
 
       if (resp.statusCode != 200) {
-        debugPrint('push relay ${resp.statusCode}: ${resp.body}');
+        logDebug('push relay ${resp.statusCode}: ${resp.body}');
         return null;
       }
       final json = jsonDecode(resp.body) as Map<String, dynamic>;
@@ -150,7 +159,7 @@ class PushService {
         failed: (json['failed'] as num?)?.toInt() ?? 0,
       );
     } catch (e) {
-      debugPrint('push notify failed: $e');
+      logDebug('push notify failed: $e');
       return null;
     }
   }
@@ -172,6 +181,14 @@ class PushService {
         );
       case 'donation_accept':
         return const PushDestination(PushDestinationType.donation);
+      case 'incoming_call':
+        return PushDestination(
+          PushDestinationType.call,
+          peerUid: data['callerUid']?.toString(),
+          peerName: data['callerName']?.toString(),
+          callId: data['callId']?.toString(),
+          channelName: data['channelName']?.toString(),
+        );
       default:
         return const PushDestination(PushDestinationType.unknown);
     }
@@ -194,7 +211,7 @@ class PushService {
         saveToken(uid, t);
       });
     } catch (e) {
-      debugPrint('push initForUser failed: $e');
+      logDebug('push initForUser failed: $e');
     }
   }
 
@@ -256,6 +273,18 @@ class PushService {
       case PushDestinationType.donation:
         nav.push(MaterialPageRoute(
           builder: (_) => const DonationMapScreen(),
+        ));
+        break;
+      case PushDestinationType.call:
+        final callId = dest.callId;
+        final channelName = dest.channelName;
+        if (callId == null || channelName == null) return;
+        nav.push(MaterialPageRoute(
+          builder: (_) => CallScreen.incoming(
+            callId: callId,
+            channelName: channelName,
+            peerName: dest.peerName ?? 'Contact',
+          ),
         ));
         break;
       case PushDestinationType.unknown:

@@ -72,6 +72,7 @@ dependencies:
   emoji_picker_flutter: ^4.4.0
   record: ^6.2.1
   audioplayers: ^6.6.0
+  agora_rtc_engine: ^6.5.3
 
 dev_dependencies:
   flutter_test:

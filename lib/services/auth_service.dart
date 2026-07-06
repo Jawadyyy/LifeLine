@@ -1,8 +1,9 @@
+import 'package:lifeline/utils/logger.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:lifeline/services/auth_result.dart';
+import 'package:lifeline/services/call_service.dart';
 import 'package:lifeline/services/chat_service.dart';
 import 'package:lifeline/services/presence_service.dart';
 import 'package:lifeline/services/push_service.dart';
@@ -90,24 +91,24 @@ class AuthService {
 
   Future<AuthResult<User>> signInWithGoogle() async {
     try {
-      debugPrint('🔍 Starting Google Sign-In...');
+      logDebug('🔍 Starting Google Sign-In...');
 
       final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
 
-      debugPrint('✅ Google User: $googleUser');
+      logDebug('✅ Google User: ${googleUser != null ? "received" : "null"}');
 
       if (googleUser == null) {
-        debugPrint('❌ User cancelled sign-in');
+        logDebug('❌ User cancelled sign-in');
         return AuthResult.failure('Sign-in cancelled');
       }
 
-      debugPrint('🔑 Getting authentication...');
+      logDebug('🔑 Getting authentication...');
       final GoogleSignInAuthentication googleAuth =
           await googleUser.authentication;
 
-      debugPrint(
+      logDebug(
           '🎫 Access Token: ${googleAuth.accessToken != null ? "✅ Present" : "❌ Missing"}');
-      debugPrint(
+      logDebug(
           '🎫 ID Token: ${googleAuth.idToken != null ? "✅ Present" : "❌ Missing"}');
 
       final credential = GoogleAuthProvider.credential(
@@ -115,22 +116,22 @@ class AuthService {
         idToken: googleAuth.idToken,
       );
 
-      debugPrint('🔐 Signing in with credential...');
+      logDebug('🔐 Signing in with credential...');
       final UserCredential userCredential =
           await FirebaseAuth.instance.signInWithCredential(credential);
 
       User? user = userCredential.user;
-      debugPrint('👤 User: ${user?.email ?? "No user"}');
+      logDebug('👤 User: ${user != null ? "signed in" : "No user"}');
 
       if (user != null) {
-        debugPrint('💾 Checking/Creating Firestore document...');
+        logDebug('💾 Checking/Creating Firestore document...');
         final doc = await FirebaseFirestore.instance
             .collection('users')
             .doc(user.uid)
             .get();
 
         if (!doc.exists) {
-          debugPrint('📝 Creating new user document');
+          logDebug('📝 Creating new user document');
           await FirebaseFirestore.instance
               .collection('users')
               .doc(user.uid)
@@ -142,22 +143,22 @@ class AuthService {
             'isProfileComplete': false,
           });
         } else {
-          debugPrint('✅ User document already exists');
+          logDebug('✅ User document already exists');
         }
       }
 
-      debugPrint('🎉 Google Sign-In successful!');
+      logDebug('🎉 Google Sign-In successful!');
       return AuthResult.success(user, 'Login successful');
     } catch (e) {
-      debugPrint('💥 Google Sign-In Error: $e');
-      debugPrint('💥 Error Type: ${e.runtimeType}');
+      logDebug('💥 Google Sign-In Error: $e');
+      logDebug('💥 Error Type: ${e.runtimeType}');
       return AuthResult.failure('Google sign-in failed: ${e.toString()}');
     }
   }
 
   Future<void> signOut() async {
     try {
-      debugPrint('🚪 Signing out...');
+      logDebug('🚪 Signing out...');
       // Drop this device's push token before we lose the uid (best-effort).
       final uid = _auth.currentUser?.uid;
       if (uid != null) {
@@ -168,11 +169,13 @@ class AuthService {
       await PresenceService.instance.stop();
       // Drop cached chat streams so the next user starts clean.
       ChatProviderCache.instance.clear();
+      CallService.instance.stopListening();
+      await CallService.instance.releaseEngine();
       await _auth.signOut();
       await _googleSignIn.signOut();
-      debugPrint('✅ Sign out complete');
+      logDebug('✅ Sign out complete');
     } catch (e) {
-      debugPrint('Error during sign out: $e');
+      logDebug('Error during sign out: $e');
     }
   }
 }

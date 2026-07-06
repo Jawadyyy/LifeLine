@@ -1,3 +1,4 @@
+import 'package:lifeline/utils/logger.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
@@ -1023,7 +1024,7 @@ class DonationDialogController {
                       : null,
                   onBackgroundImageError: hasImage
                       ? (exception, stackTrace) {
-                          debugPrint('Error loading donor image: $exception');
+                          logDebug('Error loading donor image: $exception');
                         }
                       : null,
                   // Person icon sits behind the image; if the network image

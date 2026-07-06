@@ -1,3 +1,4 @@
+import 'package:lifeline/utils/logger.dart';
 import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -106,8 +107,8 @@ class LiveLocationService {
       locationSettings: _broadcastSettings(),
     ).listen(
       (pos) => updatePosition(sessionId, pos.latitude, pos.longitude)
-          .catchError((Object e) => debugPrint('live update failed: $e')),
-      onError: (Object e) => debugPrint('live stream error: $e'),
+          .catchError((Object e) => logDebug('live update failed: $e')),
+      onError: (Object e) => logDebug('live stream error: $e'),
     );
 
     _expiryTimer = Timer(ttl, () => stopBroadcast());
@@ -127,7 +128,7 @@ class LiveLocationService {
       try {
         await stopSession(id);
       } catch (e) {
-        debugPrint('stopSession failed: $e');
+        logDebug('stopSession failed: $e');
       }
     }
   }

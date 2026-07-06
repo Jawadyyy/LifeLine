@@ -1,3 +1,4 @@
+import 'package:lifeline/utils/logger.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -346,18 +347,18 @@ class AuthWrapper extends StatelessWidget {
         }
 
         // Debug prints
-        debugPrint('🔍 Auth State: ${snapshot.data?.email ?? "No user"}');
-        debugPrint('🔍 User ID: ${snapshot.data?.uid ?? "null"}');
+        logDebug('🔍 Auth State: ${snapshot.data != null ? "signed in" : "No user"}');
+        logDebug('🔍 User ID: ${snapshot.data?.uid ?? "null"}');
 
         // Not logged in - show welcome screen
         if (snapshot.data == null) {
-          debugPrint('➡️ Navigating to WelcomeScreen');
+          logDebug('➡️ Navigating to WelcomeScreen');
           return const WelcomeScreen();
         }
 
         // Logged in - use StreamBuilder to listen to profile changes
         final userId = snapshot.data!.uid;
-        debugPrint('➡️ User logged in, listening to profile changes...');
+        logDebug('➡️ User logged in, listening to profile changes...');
 
         return StreamBuilder<DocumentSnapshot>(
           stream: FirebaseFirestore.instance
@@ -378,7 +379,7 @@ class AuthWrapper extends StatelessWidget {
 
             // Handle case where document doesn't exist yet
             if (!profileSnapshot.hasData || !profileSnapshot.data!.exists) {
-              debugPrint(
+              logDebug(
                   '⚠️ User document does not exist, showing ProfileSetupScreen');
               return ProfileSetupScreen(
                 key: ValueKey(userId),
@@ -389,16 +390,16 @@ class AuthWrapper extends StatelessWidget {
             final data = profileSnapshot.data!.data() as Map<String, dynamic>?;
             final isProfileComplete = data?['isProfileComplete'] == true;
 
-            debugPrint('📋 Profile complete: $isProfileComplete');
-            debugPrint('📋 User data: $data');
+            logDebug('📋 Profile complete: $isProfileComplete');
+            logDebug('📋 User data: ${data != null ? "loaded" : "null"}');
 
             if (isProfileComplete) {
-              debugPrint('➡️ Navigating to MainNavigationScreen');
+              logDebug('➡️ Navigating to MainNavigationScreen');
               return MainNavigationScreen(
                 key: ValueKey(userId),
               );
             } else {
-              debugPrint('➡️ Navigating to ProfileSetupScreen');
+              logDebug('➡️ Navigating to ProfileSetupScreen');
               return ProfileSetupScreen(
                 key: ValueKey(userId),
               );

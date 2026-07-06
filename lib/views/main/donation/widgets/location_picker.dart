@@ -1,3 +1,4 @@
+import 'package:lifeline/utils/logger.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
@@ -124,7 +125,7 @@ class _LocationPickerWidgetState extends State<LocationPickerWidget> {
         _mapController.move(_currentLocation!, 15);
       }
     } catch (e) {
-      debugPrint('Error getting location: $e');
+      logDebug('Error getting location: $e');
       _showError('Could not get your location');
       _setDefaultLocation();
     }
@@ -185,7 +186,7 @@ class _LocationPickerWidgetState extends State<LocationPickerWidget> {
         _isSearching = false;
       });
     } catch (e) {
-      debugPrint('Error searching location: $e');
+      logDebug('Error searching location: $e');
       setState(() {
         _searchResults = [];
         _isSearching = false;
@@ -213,7 +214,7 @@ class _LocationPickerWidgetState extends State<LocationPickerWidget> {
       // Clear search
       _searchController.clear();
     } catch (e) {
-      debugPrint('Error selecting search result: $e');
+      logDebug('Error selecting search result: $e');
       setState(() {
         _isLoading = false;
       });
@@ -244,7 +245,7 @@ class _LocationPickerWidgetState extends State<LocationPickerWidget> {
         Navigator.pop(context);
       }
     } catch (e) {
-      debugPrint('Error confirming location: $e');
+      logDebug('Error confirming location: $e');
       _showError('Could not confirm location');
     } finally {
       if (mounted) {
@@ -303,7 +304,7 @@ class _LocationPickerWidgetState extends State<LocationPickerWidget> {
 
       return address;
     } catch (e) {
-      debugPrint('Error getting address: $e');
+      logDebug('Error getting address: $e');
       return 'Lat: ${latitude.toStringAsFixed(4)}, Lng: ${longitude.toStringAsFixed(4)}';
     }
   }
@@ -327,7 +328,7 @@ class _LocationPickerWidgetState extends State<LocationPickerWidget> {
         _selectedLocation = location;
       });
     } catch (e) {
-      debugPrint('Error getting current location: $e');
+      logDebug('Error getting current location: $e');
       _showError('Could not get your location');
     } finally {
       setState(() {

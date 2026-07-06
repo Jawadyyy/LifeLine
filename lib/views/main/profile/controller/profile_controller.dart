@@ -1,3 +1,4 @@
+import 'package:lifeline/utils/logger.dart';
 import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -158,7 +159,7 @@ class ProfileController extends ChangeNotifier {
       }
     } catch (e) {
       _setError("Error fetching user data: $e");
-      debugPrint("Error fetching user data: $e");
+      logDebug("Error fetching user data: $e");
     } finally {
       _setLoading(false);
     }

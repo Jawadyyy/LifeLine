@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lifeline/components/chat_widgets.dart';
 import 'package:lifeline/services/chat_service.dart';
+import 'package:lifeline/views/main/contact/chat/call_screen.dart';
 import 'package:provider/provider.dart';
 import 'package:lifeline/constants/app_colors.dart';
 
@@ -92,6 +93,15 @@ class _ChatScreenState extends State<ChatScreen> {
             contactName: widget.contactName,
             contactImageUrl: widget.contactImageUrl,
             peerUid: widget.contactUid,
+            onCallTap: widget.contactUid == null || widget.contactUid!.isEmpty
+                ? null
+                : () => Navigator.of(context).push(MaterialPageRoute(
+                      builder: (_) => CallScreen.outgoing(
+                        calleeUid: widget.contactUid!,
+                        peerName: widget.contactName,
+                        peerImageUrl: widget.contactImageUrl,
+                      ),
+                    )),
           ),
           Expanded(
             child: currentUid == null

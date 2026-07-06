@@ -1,3 +1,4 @@
+import 'package:lifeline/utils/logger.dart';
 import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -161,7 +162,7 @@ class _DonationMapScreenState extends State<DonationMapScreen>
 
       await _getCurrentLocation();
     } catch (e) {
-      debugPrint('Error in checkLocationAndLoad: $e');
+      logDebug('Error in checkLocationAndLoad: $e');
     } finally {
       if (mounted) {
         setState(() => _isLoadingLocation = false);
@@ -306,7 +307,7 @@ class _DonationMapScreenState extends State<DonationMapScreen>
         );
       }
     } catch (e) {
-      debugPrint('Error getting location: $e');
+      logDebug('Error getting location: $e');
       if (mounted) {
         _showSnackBar(
           'Could not get your location',
@@ -339,7 +340,7 @@ class _DonationMapScreenState extends State<DonationMapScreen>
         setState(() => _currentAddress = address);
       }
     } catch (e) {
-      debugPrint('Error getting address: $e');
+      logDebug('Error getting address: $e');
     }
   }
 

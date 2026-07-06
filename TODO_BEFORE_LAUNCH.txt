@@ -6,8 +6,7 @@ LIFELINE - PLAY STORE LAUNCH TODO
    contacts, health data, chat messages. No policy = instant rejection.
    -> Write + host privacy policy, add link in Play Console listing + app settings.
 
-2. iOS bundle ID still "com.example.lifeline" (ios/Runner Info.plist / project config).
-   Fine for Android-only launch, must fix before iOS submission.
+2. [DONE] iOS bundle ID fixed to com.lifeline.app.
 
 3. Firebase SDKs multiple major versions behind:
    - firebase_core: 3.15.2 -> 4.11.0
@@ -18,12 +17,21 @@ LIFELINE - PLAY STORE LAUNCH TODO
    - firebase_storage: 12.4.10 -> 13.4.3
    -> Test upgrade path before shipping, or consciously accept staying on old majors.
 
-4. 132 debugPrint() calls left in production code.
-   -> Strip or gate behind kDebugMode.
+4. [DONE] debugPrint calls (138) replaced with logDebug() (lib/utils/logger.dart,
+   no-op in release). PII trimmed from auth_service.dart, auth_wrapper.dart,
+   login_screen.dart, splash_screen.dart, contacts_screen_controller.dart along the way.
 
 5. No Terms of Service. Recommended given health/location data collection.
 
 6. PUSH_RELAY_URL empty in .env - verify push notifications actually work end-to-end.
+
+7. Chat calls button is a stub ("Calling - coming soon" snackbar,
+   chat_widgets.dart:155-160). No Agora/calling SDK integrated yet.
+   -> Either implement (Agora, ~3-5 days) or hide/remove the button before launch.
+
+8. Chat header "more" (vertical dots) menu button is an empty stub
+   (chat_widgets.dart:162-165, onPressed: () {}).
+   -> Implement or remove.
 
 === SECONDARY / RECOMMENDED ===
 - Test coverage thin: 10 test files, ~775 lines total. No widget/integration tests.

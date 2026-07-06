@@ -1,8 +1,8 @@
+import 'package:lifeline/utils/logger.dart';
 import 'dart:convert';
 import 'dart:io';
 
 import 'package:firebase_storage/firebase_storage.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 
@@ -33,10 +33,10 @@ class MediaUploadService {
       if (res.statusCode == 200) {
         return jsonDecode(res.body)['data']['url'] as String?;
       }
-      debugPrint('MediaUploadService: image upload failed ${res.statusCode}');
+      logDebug('MediaUploadService: image upload failed ${res.statusCode}');
       return null;
     } catch (e) {
-      debugPrint('MediaUploadService: image upload error $e');
+      logDebug('MediaUploadService: image upload error $e');
       return null;
     }
   }
@@ -53,7 +53,7 @@ class MediaUploadService {
       );
       return await ref.getDownloadURL();
     } catch (e) {
-      debugPrint('MediaUploadService: audio upload error $e');
+      logDebug('MediaUploadService: audio upload error $e');
       return null;
     }
   }

@@ -253,5 +253,17 @@
   },
   "typeMessageBelow": "نیچے پیغام لکھیں",
   "callingComingSoon": "کال — جلد آ رہا ہے",
-  "notRegisteredUser": "یہ رابطہ ابھی لائف لائن کا رجسٹرڈ صارف نہیں ہے۔"
+  "notRegisteredUser": "یہ رابطہ ابھی لائف لائن کا رجسٹرڈ صارف نہیں ہے۔",
+
+  "callRinging": "گھنٹی بج رہی ہے…",
+  "callConnecting": "رابطہ ہو رہا ہے…",
+  "callConnected": "رابطہ قائم ہے",
+  "incomingCall": "آنے والی کال",
+  "incomingVoiceCall": "آواز کی کال آ رہی ہے",
+  "callDeclined": "کال مسترد کر دی گئی",
+  "callEnded": "کال ختم ہو گئی",
+  "callMissed": "مس کال",
+  "micPermissionRequired": "کال کرنے کے لیے مائیکروفون کی اجازت درکار ہے۔",
+  "accept": "قبول کریں",
+  "decline": "مسترد کریں"
 }

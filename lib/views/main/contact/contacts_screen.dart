@@ -1,3 +1,4 @@
+import 'package:lifeline/utils/logger.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -72,7 +73,7 @@ class _ContactsPageState extends State<ContactsPage>
     try {
       await _globalDataService.loadContactsData();
     } catch (e) {
-      debugPrint('Error loading contacts: $e');
+      logDebug('Error loading contacts: $e');
     }
     if (!mounted) return;
     _applyContacts(_globalDataService.contacts);

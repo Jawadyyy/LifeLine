@@ -78,4 +78,9 @@
     <!-- Chat: voice notes (record) and photo attachments (image_picker camera) -->
     <uses-permission android:name="android.permission.RECORD_AUDIO"/>
     <uses-permission android:name="android.permission.CAMERA"/>
+    <!-- Voice/video calls (Agora RTC) -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS"/>
+    <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30"/>
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT"/>
 </manifest>

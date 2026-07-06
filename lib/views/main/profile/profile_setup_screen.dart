@@ -1,3 +1,4 @@
+import 'package:lifeline/utils/logger.dart';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -160,7 +161,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
 
       if (!mounted) return;
 
-      debugPrint('✅ Profile setup complete for user: $uid');
+      logDebug('✅ Profile setup complete for user: $uid');
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

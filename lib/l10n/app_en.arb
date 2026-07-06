@@ -262,5 +262,17 @@
   },
   "typeMessageBelow": "Type a message below",
   "callingComingSoon": "Calling — coming soon",
-  "notRegisteredUser": "This contact is not a registered LifeLine user yet."
+  "notRegisteredUser": "This contact is not a registered LifeLine user yet.",
+
+  "callRinging": "Ringing…",
+  "callConnecting": "Connecting…",
+  "callConnected": "Connected",
+  "incomingCall": "Incoming call",
+  "incomingVoiceCall": "Incoming voice call",
+  "callDeclined": "Call declined",
+  "callEnded": "Call ended",
+  "callMissed": "Missed call",
+  "micPermissionRequired": "Microphone permission is required to make calls.",
+  "accept": "Accept",
+  "decline": "Decline"
 }

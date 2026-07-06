@@ -1,3 +1,4 @@
+import 'package:lifeline/utils/logger.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -213,7 +214,7 @@ class ContactsScreenController {
         ),
       );
     } catch (e) {
-      debugPrint('Error in showContactsDialog: $e');
+      logDebug('Error in showContactsDialog: $e');
       _showErrorSnackbar('Error accessing contacts');
     }
   }
@@ -238,7 +239,7 @@ class ContactsScreenController {
         _showSuccessSnackbar('Contact added successfully');
       } catch (e) {
         _showErrorSnackbar('Failed to add contact: ${e.toString()}');
-        debugPrint('Error adding contact: $e');
+        logDebug('Error adding contact: $e');
       } finally {
         setStateFn(() => view.isLoading = false);
       }
@@ -256,7 +257,7 @@ class ContactsScreenController {
         _showSuccessSnackbar('Contact deleted');
       } catch (e) {
         _showErrorSnackbar('Failed to delete contact: ${e.toString()}');
-        debugPrint('Error deleting contact: $e');
+        logDebug('Error deleting contact: $e');
       } finally {
         setStateFn(() => view.isLoading = false);
       }
@@ -589,7 +590,7 @@ class ContactsScreenController {
                         Uri(scheme: 'tel', path: contact['phone']);
                     if (!await launchUrl(phoneUri,
                         mode: LaunchMode.externalApplication)) {
-                      debugPrint('Could not launch $phoneUri');
+                      logDebug('Could not launch phone dialer');
                     }
                   },
                   child: Container(

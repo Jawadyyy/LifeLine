@@ -1,3 +1,4 @@
+import 'package:lifeline/utils/logger.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -98,7 +99,7 @@ class DonationController extends ChangeNotifier {
         await refreshUserLocation();
       }
     } catch (e) {
-      debugPrint('Error loading user location: $e');
+      logDebug('Error loading user location: $e');
     }
   }
 
@@ -116,7 +117,7 @@ class DonationController extends ChangeNotifier {
       currentUserCity = extractCityFromAddress(address);
       notifyListeners();
     } catch (e) {
-      debugPrint('Error refreshing location: $e');
+      logDebug('Error refreshing location: $e');
       rethrow;
     }
   }
@@ -197,7 +198,7 @@ class DonationController extends ChangeNotifier {
         address: address,
       );
     } catch (e) {
-      debugPrint('Error getting current location: $e');
+      logDebug('Error getting current location: $e');
       rethrow;
     } finally {
       setLoadingLocation(false);
@@ -338,7 +339,7 @@ class DonationController extends ChangeNotifier {
       updateSelectedDateTime(
           DateTime(date.year, date.month, date.day, time.hour, time.minute));
     } catch (e) {
-      debugPrint('Error picking date time: $e');
+      logDebug('Error picking date time: $e');
     }
   }
 
@@ -383,7 +384,7 @@ class DonationController extends ChangeNotifier {
           subLocality = place.subLocality ?? place.thoroughfare ?? '';
         }
       } catch (e) {
-        debugPrint('Error getting placemark: $e');
+        logDebug('Error getting placemark: $e');
       }
 
       final post = {
@@ -408,7 +409,7 @@ class DonationController extends ChangeNotifier {
       resetForm();
       return true;
     } catch (e) {
-      debugPrint('Error submitting post: $e');
+      logDebug('Error submitting post: $e');
       return false;
     } finally {
       setLoading(false);
@@ -455,7 +456,7 @@ class DonationController extends ChangeNotifier {
             subLocality = place.subLocality ?? place.thoroughfare ?? '';
           }
         } catch (e) {
-          debugPrint('Error getting placemark: $e');
+          logDebug('Error getting placemark: $e');
         }
 
         updateData['latitude'] = latitude;
@@ -474,7 +475,7 @@ class DonationController extends ChangeNotifier {
 
       return true;
     } catch (e) {
-      debugPrint('Error updating post: $e');
+      logDebug('Error updating post: $e');
       return false;
     } finally {
       setLoading(false);
@@ -498,7 +499,7 @@ class DonationController extends ChangeNotifier {
 
       return true;
     } catch (e) {
-      debugPrint('Error marking as completed: $e');
+      logDebug('Error marking as completed: $e');
       return false;
     } finally {
       setLoading(false);
@@ -519,7 +520,7 @@ class DonationController extends ChangeNotifier {
 
       return true;
     } catch (e) {
-      debugPrint('Error deleting post: $e');
+      logDebug('Error deleting post: $e');
       return false;
     } finally {
       setLoading(false);
@@ -547,7 +548,7 @@ class DonationController extends ChangeNotifier {
           mode: LaunchMode.externalApplication);
       return true;
     } catch (e) {
-      debugPrint('Error opening WhatsApp: $e');
+      logDebug('Error opening WhatsApp: $e');
       return false;
     }
   }
@@ -567,7 +568,7 @@ class DonationController extends ChangeNotifier {
           await launchUrl(phoneUri, mode: LaunchMode.externalApplication);
       return launched;
     } catch (e) {
-      debugPrint('Error making phone call: $e');
+      logDebug('Error making phone call: $e');
       return false;
     }
   }
@@ -592,7 +593,7 @@ class DonationController extends ChangeNotifier {
       }
       return false;
     } catch (e) {
-      debugPrint('Error sending email: $e');
+      logDebug('Error sending email: $e');
       return false;
     }
   }
@@ -612,7 +613,7 @@ class DonationController extends ChangeNotifier {
           timeLimit: const Duration(seconds: 10),
         );
       } catch (e) {
-        debugPrint('Could not get current location: $e');
+        logDebug('Could not get current location: $e');
       }
 
       String url;
@@ -637,7 +638,7 @@ class DonationController extends ChangeNotifier {
           await launchUrl(uri, mode: LaunchMode.externalApplication);
       return launched;
     } catch (e) {
-      debugPrint('Error opening map: $e');
+      logDebug('Error opening map: $e');
       return false;
     }
   }

@@ -1,3 +1,4 @@
+import 'package:lifeline/utils/logger.dart';
 import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -94,7 +95,7 @@ class HomeController {
             .startBroadcast(ownerUid: user.uid)
             .timeout(const Duration(seconds: 8), onTimeout: () => null);
       } catch (e) {
-        debugPrint('live share start failed: $e');
+        logDebug('live share start failed: $e');
       }
       if (!mounted) return;
 
@@ -147,7 +148,7 @@ class HomeController {
           queued++;
           alerted.add(contact.uid);
         } catch (e) {
-          debugPrint('Error sending SOS to ${contact.name}: $e');
+          logDebug('Error sending SOS to ${contact.name}: $e');
           skipped.add(contact.name);
         }
       }
@@ -191,7 +192,7 @@ class HomeController {
         if (mounted) _showError('Could not open the dialer');
       }
     } catch (e) {
-      debugPrint('Dial error: $e');
+      logDebug('Dial error: $e');
       if (mounted) _showError('Could not open the dialer');
     }
   }

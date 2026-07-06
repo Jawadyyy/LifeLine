@@ -1,3 +1,4 @@
+import 'package:lifeline/utils/logger.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -54,13 +55,13 @@ class GlobalDataService extends ChangeNotifier {
 
     // Check if user has changed
     if (_currentUserId != null && _currentUserId != newUserId) {
-      debugPrint(
+      logDebug(
           'GlobalDataService: User changed from $_currentUserId to $newUserId');
       await clearAllData();
     }
 
     _currentUserId = newUserId;
-    debugPrint(
+    logDebug(
         'GlobalDataService: Initializing all data for user: $_currentUserId');
 
     await Future.wait([
@@ -68,7 +69,7 @@ class GlobalDataService extends ChangeNotifier {
       loadContactsData(),
       loadLocationData(),
     ]);
-    debugPrint('GlobalDataService: All data initialization complete');
+    logDebug('GlobalDataService: All data initialization complete');
   }
 
   // Load user data once
@@ -77,18 +78,18 @@ class GlobalDataService extends ChangeNotifier {
 
     // Check if user has changed
     if (_currentUserId != null && _currentUserId != currentAuthUser?.uid) {
-      debugPrint('GlobalDataService: User changed, clearing user data');
+      logDebug('GlobalDataService: User changed, clearing user data');
       _currentUser = null;
       _hasLoadedUser = false;
       _currentUserId = currentAuthUser?.uid;
     }
 
     if (_hasLoadedUser && !forceReload) {
-      debugPrint('GlobalDataService: User data already loaded, skipping...');
+      logDebug('GlobalDataService: User data already loaded, skipping...');
       return;
     }
 
-    debugPrint(
+    logDebug(
         'GlobalDataService: Loading user data for user: $_currentUserId');
     _isLoadingUser = true;
     notifyListeners();
@@ -97,10 +98,10 @@ class GlobalDataService extends ChangeNotifier {
       final userService = UserService();
       _currentUser = await userService.loadCurrentUser();
       _hasLoadedUser = true;
-      debugPrint(
+      logDebug(
           'GlobalDataService: User data loaded successfully - ${_currentUser?.email}');
     } catch (e) {
-      debugPrint('Error loading user data: $e');
+      logDebug('Error loading user data: $e');
       _currentUser = null;
       _hasLoadedUser = false;
     } finally {
@@ -115,19 +116,19 @@ class GlobalDataService extends ChangeNotifier {
 
     // Check if user has changed
     if (_currentUserId != null && _currentUserId != currentAuthUser?.uid) {
-      debugPrint('GlobalDataService: User changed, clearing contacts data');
+      logDebug('GlobalDataService: User changed, clearing contacts data');
       _contacts.clear();
       _hasLoadedContacts = false;
       _currentUserId = currentAuthUser?.uid;
     }
 
     if (_hasLoadedContacts && !forceReload) {
-      debugPrint(
+      logDebug(
           'GlobalDataService: Contacts data already loaded, skipping...');
       return;
     }
 
-    debugPrint(
+    logDebug(
         'GlobalDataService: Loading contacts data for user: $_currentUserId');
     _isLoadingContacts = true;
     notifyListeners();
@@ -153,16 +154,16 @@ class GlobalDataService extends ChangeNotifier {
         await _refreshContactImages();
 
         _hasLoadedContacts = true;
-        debugPrint(
+        logDebug(
             'GlobalDataService: Contacts data loaded successfully (${_contacts.length} contacts)');
       } else {
-        debugPrint(
+        logDebug(
             'GlobalDataService: No authenticated user, cannot load contacts');
         _contacts.clear();
         _hasLoadedContacts = false;
       }
     } catch (e) {
-      debugPrint('Error loading contacts: $e');
+      logDebug('Error loading contacts: $e');
       _contacts.clear();
       _hasLoadedContacts = false;
     } finally {
@@ -207,7 +208,7 @@ class GlobalDataService extends ChangeNotifier {
         }
       }
     } catch (e) {
-      debugPrint('GlobalDataService: Error refreshing contact images: $e');
+      logDebug('GlobalDataService: Error refreshing contact images: $e');
     }
   }
 
@@ -221,12 +222,12 @@ class GlobalDataService extends ChangeNotifier {
   // Load location data once
   Future<void> loadLocationData({bool forceReload = false}) async {
     if (_hasLoadedLocation && !forceReload) {
-      debugPrint(
+      logDebug(
           'GlobalDataService: Location data already loaded, skipping...');
       return;
     }
 
-    debugPrint('GlobalDataService: Loading location data...');
+    logDebug('GlobalDataService: Loading location data...');
     _isLoadingLocation = true;
     notifyListeners();
 
@@ -242,22 +243,22 @@ class GlobalDataService extends ChangeNotifier {
           _currentAddress = newAddress;
           _isLocationFetched = true;
           _locationLastUpdated = DateTime.now();
-          debugPrint(
+          logDebug(
               'GlobalDataService: Location data loaded successfully: $_currentAddress');
         } else {
-          debugPrint(
+          logDebug(
               'GlobalDataService: Location address unchanged, skipping notification');
         }
       } else {
         if (_currentAddress != 'Location permission denied') {
           _currentAddress = 'Location permission denied';
           _isLocationFetched = false;
-          debugPrint('GlobalDataService: Location permission denied');
+          logDebug('GlobalDataService: Location permission denied');
         }
       }
       _hasLoadedLocation = true;
     } catch (e) {
-      debugPrint('Error loading location: $e');
+      logDebug('Error loading location: $e');
       if (_currentAddress != 'Error getting location') {
         _currentAddress = 'Error getting location';
         _isLocationFetched = false;
@@ -304,7 +305,7 @@ class GlobalDataService extends ChangeNotifier {
         _currentAddress == 'Fetching location...') {
       await loadLocationData(forceReload: true);
     } else {
-      debugPrint(
+      logDebug(
           'GlobalDataService: Location data is already fresh, skipping update');
     }
   }
@@ -326,7 +327,7 @@ class GlobalDataService extends ChangeNotifier {
 
   // Clear all data (useful for logout or user change)
   Future<void> clearAllData() async {
-    debugPrint(
+    logDebug(
         'GlobalDataService: Clearing all data for user: $_currentUserId');
 
     _contacts.clear();
@@ -341,7 +342,7 @@ class GlobalDataService extends ChangeNotifier {
     _currentUserId = null;
 
     notifyListeners();
-    debugPrint('GlobalDataService: All data cleared');
+    logDebug('GlobalDataService: All data cleared');
   }
 
   // Check if all data is loaded

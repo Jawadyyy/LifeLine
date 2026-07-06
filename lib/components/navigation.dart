@@ -1,3 +1,4 @@
+import 'package:lifeline/utils/logger.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -45,7 +46,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   void initState() {
     super.initState();
     _currentUserId = FirebaseAuth.instance.currentUser?.uid;
-    debugPrint('🏠 MainNavigationScreen initialized for user: $_currentUserId');
+    logDebug('🏠 MainNavigationScreen initialized for user: $_currentUserId');
     _initializeGlobalData();
     _listenForAcceptedDonations();
     _initPush();
@@ -94,7 +95,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     // Check if user has changed
     final newUserId = FirebaseAuth.instance.currentUser?.uid;
     if (_currentUserId != newUserId) {
-      debugPrint('👤 User changed from $_currentUserId to $newUserId');
+      logDebug('👤 User changed from $_currentUserId to $newUserId');
       _currentUserId = newUserId;
 
       // Clear old data and reinitialize for new user
@@ -108,17 +109,17 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     try {
       // Clear cached data
       await _globalDataService.clearAllData();
-      debugPrint('🧹 Cleared old user data');
+      logDebug('🧹 Cleared old user data');
 
       // Reinitialize for new user
       await _globalDataService.initializeAllData();
-      debugPrint('✅ Reinitialized data for new user: $_currentUserId');
+      logDebug('✅ Reinitialized data for new user: $_currentUserId');
 
       if (mounted) {
         setState(() {}); // Trigger rebuild
       }
     } catch (e) {
-      debugPrint('Error clearing and reinitializing data: $e');
+      logDebug('Error clearing and reinitializing data: $e');
     }
   }
 
@@ -134,9 +135,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   Future<void> _initializeGlobalData() async {
     try {
       await _globalDataService.initializeAllData();
-      debugPrint('GlobalDataService: All data initialized successfully');
+      logDebug('GlobalDataService: All data initialized successfully');
     } catch (e) {
-      debugPrint('Error initializing GlobalDataService: $e');
+      logDebug('Error initializing GlobalDataService: $e');
     }
   }
 

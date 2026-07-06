@@ -1,3 +1,4 @@
+import 'package:lifeline/utils/logger.dart';
 import 'package:flutter/foundation.dart';
 import 'package:lifeline/services/chat_service.dart';
 
@@ -44,7 +45,7 @@ class SosFollowup {
         await chat.send(chatId, uid, message, type: 'safe');
         sent++;
       } catch (e) {
-        debugPrint('safe follow-up to $uid failed: $e');
+        logDebug('safe follow-up to $uid failed: $e');
       }
     }
     clear();

@@ -37,11 +37,16 @@ class ChatHeader extends StatelessWidget {
   /// dot is shown rather than a misleading "Online".
   final String? peerUid;
 
+  /// Starts a voice call to the peer. Null when calling isn't available yet
+  /// (e.g. peer uid unresolved) — falls back to a "coming soon" notice.
+  final VoidCallback? onCallTap;
+
   const ChatHeader({
     super.key,
     required this.contactName,
     this.contactImageUrl,
     this.peerUid,
+    this.onCallTap,
   });
 
   /// Derives a truthful presence from a peer's user document: online only when
@@ -153,11 +158,13 @@ class ChatHeader extends StatelessWidget {
               ),
               IconButton(
                 icon: const Icon(Icons.call_outlined, color: LL.orange, size: 22),
-                onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                      content:
-                          Text(AppLocalizations.of(context).callingComingSoon)),
-                ),
+                onPressed: onCallTap ??
+                    () => ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                              content: Text(
+                                  AppLocalizations.of(context)
+                                      .callingComingSoon)),
+                        ),
               ),
               IconButton(
                 icon: const Icon(Icons.more_vert_rounded,

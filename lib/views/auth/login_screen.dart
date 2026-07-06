@@ -1,3 +1,4 @@
+import 'package:lifeline/utils/logger.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -79,8 +80,8 @@ class _LoginScreenState extends State<LoginScreen> {
       }
 
       // ✅ Login successful - AuthWrapper will handle navigation automatically
-      debugPrint('✅ Email login successful: ${result.data?.email}');
-      debugPrint('✅ User ID: ${result.data?.uid}');
+      logDebug('✅ Email login successful');
+      logDebug('✅ User ID: ${result.data?.uid}');
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -130,8 +131,8 @@ class _LoginScreenState extends State<LoginScreen> {
       }
 
       // ✅ Google login successful - AuthWrapper will handle navigation automatically
-      debugPrint('✅ Google login successful: ${result.data?.email}');
-      debugPrint('✅ User ID: ${result.data?.uid}');
+      logDebug('✅ Google login successful');
+      logDebug('✅ User ID: ${result.data?.uid}');
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

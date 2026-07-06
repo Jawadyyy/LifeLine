@@ -1,8 +1,10 @@
+import 'package:lifeline/utils/logger.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:lifeline/components/navigation.dart';
 import 'package:lifeline/constants/app_colors.dart';
+import 'package:lifeline/services/call_service.dart';
 import 'package:lifeline/views/entry/welcome_screen.dart';
 import 'package:lifeline/views/main/profile/profile_setup_screen.dart';
 
@@ -14,17 +16,17 @@ class AuthWrapper extends StatelessWidget {
     return StreamBuilder<User?>(
       stream: FirebaseAuth.instance.authStateChanges(),
       builder: (context, snapshot) {
-        debugPrint('═══════════════════════════════════════');
-        debugPrint('🔄 AuthWrapper rebuild');
-        debugPrint('Connection state: ${snapshot.connectionState}');
-        debugPrint('Has data: ${snapshot.hasData}');
-        debugPrint('User: ${snapshot.data?.email}');
-        debugPrint('User ID: ${snapshot.data?.uid}');
-        debugPrint('═══════════════════════════════════════');
+        logDebug('═══════════════════════════════════════');
+        logDebug('🔄 AuthWrapper rebuild');
+        logDebug('Connection state: ${snapshot.connectionState}');
+        logDebug('Has data: ${snapshot.hasData}');
+        logDebug('Has user: ${snapshot.data != null}');
+        logDebug('User ID: ${snapshot.data?.uid}');
+        logDebug('═══════════════════════════════════════');
 
         // Show loading while checking auth state
         if (snapshot.connectionState == ConnectionState.waiting) {
-          debugPrint('⏳ Waiting for auth state...');
+          logDebug('⏳ Waiting for auth state...');
           return Scaffold(
             backgroundColor: AppColors.primary,
             body: Center(
@@ -37,13 +39,17 @@ class AuthWrapper extends StatelessWidget {
 
         // Not logged in - show welcome screen
         if (snapshot.data == null) {
-          debugPrint('➡️ No user - showing WelcomeScreen');
+          logDebug('➡️ No user - showing WelcomeScreen');
           return const WelcomeScreen();
         }
 
         // Logged in - use StreamBuilder to listen to profile changes
         final userId = snapshot.data!.uid;
-        debugPrint('✅ User logged in: $userId');
+        logDebug('✅ User logged in: $userId');
+
+        // Idempotent — re-subscribing on every rebuild is a no-op once
+        // already listening for this uid.
+        CallService.instance.listenForIncomingCalls(userId);
 
         return StreamBuilder<DocumentSnapshot>(
           stream: FirebaseFirestore.instance
@@ -51,15 +57,15 @@ class AuthWrapper extends StatelessWidget {
               .doc(userId)
               .snapshots(),
           builder: (context, profileSnapshot) {
-            debugPrint('───────────────────────────────────────');
-            debugPrint('📄 Profile StreamBuilder');
-            debugPrint('Connection state: ${profileSnapshot.connectionState}');
-            debugPrint('Has data: ${profileSnapshot.hasData}');
-            debugPrint('Doc exists: ${profileSnapshot.data?.exists}');
-            debugPrint('───────────────────────────────────────');
+            logDebug('───────────────────────────────────────');
+            logDebug('📄 Profile StreamBuilder');
+            logDebug('Connection state: ${profileSnapshot.connectionState}');
+            logDebug('Has data: ${profileSnapshot.hasData}');
+            logDebug('Doc exists: ${profileSnapshot.data?.exists}');
+            logDebug('───────────────────────────────────────');
 
             if (profileSnapshot.connectionState == ConnectionState.waiting) {
-              debugPrint('⏳ Waiting for profile data...');
+              logDebug('⏳ Waiting for profile data...');
               return Scaffold(
                 backgroundColor: AppColors.primary,
                 body: Center(
@@ -72,8 +78,8 @@ class AuthWrapper extends StatelessWidget {
 
             // Handle case where document doesn't exist yet
             if (!profileSnapshot.hasData || !profileSnapshot.data!.exists) {
-              debugPrint('⚠️ User document does not exist');
-              debugPrint('➡️ Showing ProfileSetupScreen');
+              logDebug('⚠️ User document does not exist');
+              logDebug('➡️ Showing ProfileSetupScreen');
               return ProfileSetupScreen(
                 key: ValueKey(userId),
               );
@@ -83,18 +89,18 @@ class AuthWrapper extends StatelessWidget {
             final data = profileSnapshot.data!.data() as Map<String, dynamic>?;
             final isProfileComplete = data?['isProfileComplete'] == true;
 
-            debugPrint('📋 Profile data: $data');
-            debugPrint('📋 isProfileComplete: $isProfileComplete');
+            logDebug('📋 Profile data: ${data != null ? "loaded" : "null"}');
+            logDebug('📋 isProfileComplete: $isProfileComplete');
 
             if (isProfileComplete) {
-              debugPrint('✅ Profile complete');
-              debugPrint('➡️ Showing MainNavigationScreen');
+              logDebug('✅ Profile complete');
+              logDebug('➡️ Showing MainNavigationScreen');
               return MainNavigationScreen(
                 key: ValueKey(userId),
               );
             } else {
-              debugPrint('❌ Profile incomplete');
-              debugPrint('➡️ Showing ProfileSetupScreen');
+              logDebug('❌ Profile incomplete');
+              logDebug('➡️ Showing ProfileSetupScreen');
               return ProfileSetupScreen(
                 key: ValueKey(userId),
               );

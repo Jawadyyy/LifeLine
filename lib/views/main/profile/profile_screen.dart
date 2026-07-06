@@ -1,3 +1,4 @@
+import 'package:lifeline/utils/logger.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
@@ -52,7 +53,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
     // If global service doesn't have user data yet, fetch it directly
     if (_globalDataService.currentUser == null) {
-      debugPrint('ProfileScreen: No global data, fetching directly...');
+      logDebug('ProfileScreen: No global data, fetching directly...');
       await _profileController.fetchUserData();
     }
 
@@ -75,7 +76,7 @@ class _ProfilePageState extends State<ProfilePage> {
           currentUser.name != globalUser.name ||
           currentUser.email != globalUser.email ||
           currentUser.profileImage != globalUser.profileImage) {
-        debugPrint('ProfileScreen: Updating user data from global service');
+        logDebug('ProfileScreen: Updating user data from global service');
         _profileController.setCurrentUser(globalUser);
       }
     }
@@ -340,7 +341,7 @@ class _ProfilePageState extends State<ProfilePage> {
       // the profile reuses it instead of re-downloading every time.
       backgroundImage: CachedNetworkImageProvider(imageUrl),
       onBackgroundImageError: (exception, stackTrace) {
-        debugPrint('Error loading profile image: $exception');
+        logDebug('Error loading profile image: $exception');
       },
       child: null,
     );
