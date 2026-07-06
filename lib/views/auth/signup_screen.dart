@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lifeline/components/custom_button.dart';
 import 'package:lifeline/components/phone_field.dart';
@@ -46,18 +47,19 @@ class _SignUpScreenState extends State<SignUpScreen> {
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
 
+    final l = AppLocalizations.of(context);
     if (!AuthValidators.isNonEmpty(fullName)) {
-      _showSnackbar("Full name is required!");
+      _showSnackbar(l.fullNameRequired);
       return;
     }
 
     if (!AuthValidators.isValidEmail(email)) {
-      _showSnackbar("Invalid email format!");
+      _showSnackbar(l.invalidEmailFormat);
       return;
     }
 
     if (!AuthValidators.isValidPassword(password)) {
-      _showSnackbar("Password must be at least 6 characters!");
+      _showSnackbar(l.passwordMinLength);
       return;
     }
 
@@ -71,18 +73,18 @@ class _SignUpScreenState extends State<SignUpScreen> {
       );
 
       if (!result.isSuccess) {
-        _showSnackbar(result.message ?? 'Signup failed');
+        _showSnackbar(result.message ?? l.signupFailed);
         return;
       }
 
-      _showSnackbar("Account registered! Successfully!", isSuccess: true);
+      _showSnackbar(l.accountRegistered, isSuccess: true);
 
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => const LoginScreen()),
       );
     } catch (e) {
-      _showSnackbar("Error: ${e.toString()}");
+      _showSnackbar(l.errorGeneric(e.toString()));
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
     }
@@ -100,6 +102,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     return Scaffold(
       backgroundColor: AppColors.surface,
       body: Column(
@@ -114,7 +117,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    "Sign Up",
+                    l.signUp,
                     style: GoogleFonts.nunito(
                       fontWeight: FontWeight.bold,
                       fontSize: 32,
@@ -151,7 +154,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     width: double.infinity,
                     height: 50,
                     child: CustomButton(
-                      text: "Sign Ups",
+                      text: l.signUp,
                       onPressed: _registerAccount,
                       isLoading: _isSubmitting,
                     ),
@@ -161,7 +164,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        "Already have an account? ",
+                        l.haveAccount,
                         style: GoogleFonts.nunito(
                           color: AppColors.textPrimary,
                         ),
@@ -186,7 +189,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           );
                         },
                         child: Text(
-                          "Log In",
+                          l.logIn,
                           style: GoogleFonts.nunito(
                             color: AppColors.primary,
                             fontWeight: FontWeight.bold,

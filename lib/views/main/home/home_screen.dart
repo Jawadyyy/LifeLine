@@ -10,6 +10,7 @@ import 'package:lifeline/services/global_data_service.dart';
 import 'package:lifeline/services/live_location_service.dart';
 import 'package:lifeline/services/push_service.dart';
 import 'package:lifeline/services/sos_followup.dart';
+import 'package:lifeline/utils/urdu_transliterate.dart';
 import 'package:lifeline/views/chatbot/screens/chat_home_screen.dart';
 import 'package:lifeline/views/main/donation/donation_map_screen.dart';
 import 'package:lifeline/views/main/home/controller/home_controller.dart';
@@ -59,11 +60,11 @@ class _HomeScreenState extends State<HomeScreen> {
     return n.isEmpty ? '?' : n[0].toUpperCase();
   }
 
-  String get _greeting {
+  String _greetingFor(AppLocalizations loc) {
     final h = DateTime.now().hour;
-    if (h < 12) return 'Good morning';
-    if (h < 17) return 'Good afternoon';
-    return 'Good evening';
+    if (h < 12) return loc.goodMorning;
+    if (h < 17) return loc.goodAfternoon;
+    return loc.goodEvening;
   }
 
   @override
@@ -172,16 +173,19 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _greetingBlock() {
-    final name = _firstName;
+    final loc = AppLocalizations.of(context);
+    final isUrdu = Localizations.localeOf(context).languageCode == 'ur';
+    final name = isUrdu ? transliterateToUrdu(_firstName) : _firstName;
+    final greeting = _greetingFor(loc);
     return Padding(
       padding: const EdgeInsets.fromLTRB(26, 22, 26, 0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(name.isEmpty ? _greeting : '$_greeting, $name',
+          Text(name.isEmpty ? greeting : loc.greetingWithName(greeting, name),
               style: LL.body(13.5, weight: FontWeight.w600, color: LL.muted)),
           const SizedBox(height: 6),
-          Text('Help is one\ntap away.', style: LL.display(30)),
+          Text(loc.helpOneTapAway, style: LL.display(30)),
         ],
       ),
     );
@@ -189,6 +193,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // ── Quick actions: Call 1122 + Medical ID ─────────────────────────────────
   Widget _quickActions() {
+    final loc = AppLocalizations.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Row(
@@ -196,8 +201,8 @@ class _HomeScreenState extends State<HomeScreen> {
           Expanded(
             child: _QuickCard(
               icon: Icons.call_rounded,
-              title: 'Call 1122',
-              subtitle: 'Ambulance',
+              title: loc.call1122,
+              subtitle: loc.ambulance,
               onTap: () => controller.callEmergencyServices(),
             ),
           ),
@@ -205,8 +210,8 @@ class _HomeScreenState extends State<HomeScreen> {
           Expanded(
             child: _QuickCard(
               icon: Icons.medical_information_outlined,
-              title: AppLocalizations.of(context).medicalId,
-              subtitle: 'View card',
+              title: loc.medicalId,
+              subtitle: loc.viewCard,
               onTap: () => Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => const MedicalIdScreen()),
@@ -219,6 +224,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _donateBanner() {
+    final loc = AppLocalizations.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Material(
@@ -261,10 +267,10 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Donate Blood, Save Lives',
+                      Text(loc.donateBloodTitle,
                           style: LL.body(14.5, weight: FontWeight.w700)),
                       const SizedBox(height: 2),
-                      Text('Find donation camps near you',
+                      Text(loc.findDonationCamps,
                           style: LL.body(12, color: LL.muted)),
                     ],
                   ),
@@ -411,7 +417,7 @@ class _SosDialState extends State<_SosDial> with SingleTickerProviderStateMixin 
                           color: Colors.white,
                           letterSpacing: 2)),
                   const SizedBox(height: 8),
-                  Text('HOLD TO CALL',
+                  Text(AppLocalizations.of(context).holdToCall,
                       style: LL.body(11,
                           weight: FontWeight.w700,
                           color: Colors.white.withOpacity(0.85),
@@ -486,6 +492,7 @@ class _LiveShareBanner extends StatelessWidget {
       valueListenable: LiveLocationService.activeSession,
       builder: (context, sessionId, _) {
         if (sessionId == null) return const SizedBox.shrink();
+        final loc = AppLocalizations.of(context);
         return Material(
           color: AppColors.primary,
           child: Padding(
@@ -495,10 +502,10 @@ class _LiveShareBanner extends StatelessWidget {
                 const Icon(Icons.share_location_rounded,
                     color: Colors.white, size: 20),
                 const SizedBox(width: 10),
-                const Expanded(
+                Expanded(
                   child: Text(
-                    'Sharing your live location with contacts',
-                    style: TextStyle(
+                    loc.sharingLiveLocation,
+                    style: const TextStyle(
                         color: Colors.white,
                         fontSize: 13,
                         fontWeight: FontWeight.w600),
@@ -506,8 +513,8 @@ class _LiveShareBanner extends StatelessWidget {
                 ),
                 TextButton(
                   onPressed: () => LiveLocationService.instance.stopBroadcast(),
-                  child: const Text('STOP',
-                      style: TextStyle(
+                  child: Text(loc.stop,
+                      style: const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
                           letterSpacing: 0.5)),
@@ -532,6 +539,7 @@ class _SafeFollowupBanner extends StatelessWidget {
       valueListenable: SosFollowup.alertedContacts,
       builder: (context, contacts, _) {
         if (contacts.isEmpty) return const SizedBox.shrink();
+        final loc = AppLocalizations.of(context);
         return Material(
           color: AppColors.success,
           child: Padding(
@@ -541,10 +549,10 @@ class _SafeFollowupBanner extends StatelessWidget {
                 const Icon(Icons.verified_rounded,
                     color: Colors.white, size: 20),
                 const SizedBox(width: 10),
-                const Expanded(
+                Expanded(
                   child: Text(
-                    'Emergency active — let your contacts know you are safe',
-                    style: TextStyle(
+                    loc.imSafeBanner,
+                    style: const TextStyle(
                         color: Colors.white,
                         fontSize: 13,
                         fontWeight: FontWeight.w600),
@@ -568,7 +576,7 @@ class _SafeFollowupBanner extends StatelessWidget {
                         chatId: ChatService.chatIdFor(uid, r),
                         payload: {
                           'senderUid': uid,
-                          'senderName': user?.displayName ?? 'Your contact',
+                          'senderName': user?.displayName ?? loc.yourContact,
                         },
                       );
                     }
@@ -576,15 +584,15 @@ class _SafeFollowupBanner extends StatelessWidget {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text(count > 0
-                            ? "Sent 'I'm safe' to $count contact${count == 1 ? '' : 's'}"
-                            : "Nothing to send"),
+                            ? loc.safeSentCount(count)
+                            : loc.nothingToSend),
                         backgroundColor: AppColors.success,
                         behavior: SnackBarBehavior.floating,
                       ),
                     );
                   },
-                  child: const Text("I'M SAFE",
-                      style: TextStyle(
+                  child: Text(loc.imSafe,
+                      style: const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
                           letterSpacing: 0.5)),

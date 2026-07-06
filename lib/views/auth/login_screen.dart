@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lifeline/components/custom_button.dart';
 import 'package:lifeline/views/auth/forgotpass_screen.dart';
@@ -39,10 +40,11 @@ class _LoginScreenState extends State<LoginScreen> {
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
 
+    final l = AppLocalizations.of(context);
     if (!AuthValidators.isValidEmail(email)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Wrong email format"),
+        SnackBar(
+          content: Text(l.wrongEmailFormat),
           backgroundColor: AppColors.error,
         ),
       );
@@ -51,8 +53,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
     if (!AuthValidators.isValidPassword(password)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Password must be at least 6 characters"),
+        SnackBar(
+          content: Text(l.passwordMinLength),
           backgroundColor: AppColors.error,
         ),
       );
@@ -69,7 +71,7 @@ class _LoginScreenState extends State<LoginScreen> {
       if (!result.isSuccess) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(result.message ?? 'Login failed'),
+            content: Text(result.message ?? l.loginFailed),
             backgroundColor: AppColors.error,
           ),
         );
@@ -82,7 +84,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(result.message ?? 'Login successful'),
+          content: Text(result.message ?? l.loginSuccessful),
           backgroundColor: AppColors.secondary,
         ),
       );
@@ -92,12 +94,12 @@ class _LoginScreenState extends State<LoginScreen> {
     } catch (e) {
       if (!mounted) return;
 
-      String message = "Error: ${e.toString()}";
+      String message = l.errorGeneric(e.toString());
       if (e is FirebaseAuthException) {
         if (e.code == 'user-not-found') {
-          message = 'No user exists with that email';
+          message = l.noUserWithEmail;
         } else if (e.code == 'wrong-password') {
-          message = 'Wrong password provided';
+          message = l.wrongPassword;
         }
       }
       ScaffoldMessenger.of(context).showSnackBar(
@@ -110,6 +112,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> onValidateGoogle(BuildContext context) async {
     if (_isGoogleLoading || _isLoggingIn) return;
+    final l = AppLocalizations.of(context);
     try {
       setState(() => _isGoogleLoading = true);
       final result = await AuthService().signInWithGoogle();
@@ -119,7 +122,7 @@ class _LoginScreenState extends State<LoginScreen> {
       if (!result.isSuccess || result.data == null) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(result.message ?? 'Google Sign-In failed'),
+            content: Text(result.message ?? l.googleSignInFailed),
             backgroundColor: AppColors.error,
           ),
         );
@@ -132,7 +135,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(result.message ?? 'Login successful'),
+          content: Text(result.message ?? l.loginSuccessful),
           backgroundColor: AppColors.secondary,
         ),
       );
@@ -144,7 +147,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text("Google Sign-In Failed: ${e.toString()}"),
+          content: Text(l.googleSignInFailedError(e.toString())),
           backgroundColor: AppColors.error,
         ),
       );
@@ -155,6 +158,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     return Scaffold(
       backgroundColor: AppColors.surface,
       body: Column(
@@ -167,7 +171,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    "Log In",
+                    l.logIn,
                     style: GoogleFonts.nunito(
                       fontWeight: FontWeight.bold,
                       fontSize: 32,
@@ -177,14 +181,14 @@ class _LoginScreenState extends State<LoginScreen> {
                   const SizedBox(height: 16),
                   CustomTextField(
                     controller: _emailController,
-                    hintText: "Email Address",
+                    hintText: l.emailAddress,
                     prefixIcon: emailIcon,
                     keyboardType: TextInputType.emailAddress,
                   ),
                   const SizedBox(height: 20),
                   CustomTextField(
                     controller: _passwordController,
-                    hintText: "Password",
+                    hintText: l.password,
                     prefixIcon: passwordIcon,
                     suffixIcon: _isPasswordVisible ? eyeSlashIcon : eyeIcon,
                     obscureText: !_isPasswordVisible,
@@ -216,7 +220,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         );
                       },
                       child: Text(
-                        "Forgot Password?",
+                        l.forgotPassword,
                         style: GoogleFonts.nunito(
                           color: AppColors.primary,
                           fontWeight: FontWeight.bold,
@@ -229,20 +233,20 @@ class _LoginScreenState extends State<LoginScreen> {
                     width: double.infinity,
                     height: 50,
                     child: CustomButton(
-                      text: "Login",
+                      text: l.loginButton,
                       onPressed: _validateAndLogin,
                       isLoading: _isLoggingIn,
                     ),
                   ),
                   const SizedBox(height: 20),
-                  const Row(
+                  Row(
                     children: [
-                      Expanded(child: Divider()),
+                      const Expanded(child: Divider()),
                       Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 8),
-                        child: Text("OR"),
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        child: Text(l.orDivider),
                       ),
-                      Expanded(child: Divider()),
+                      const Expanded(child: Divider()),
                     ],
                   ),
                   const SizedBox(height: 20),
@@ -255,7 +259,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        "Don't have an account? ",
+                        l.noAccount,
                         style: GoogleFonts.nunito(
                           color: AppColors.textPrimary,
                         ),
@@ -280,7 +284,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           );
                         },
                         child: Text(
-                          "Sign Up",
+                          l.signUp,
                           style: GoogleFonts.nunito(
                             color: AppColors.primary,
                             fontWeight: FontWeight.bold,

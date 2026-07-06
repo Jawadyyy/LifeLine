@@ -160,6 +160,7 @@ class ProfileWidgets {
     Color? primaryColor,
     Color? textColor,
     Color? surfaceColor,
+    String? requiredMessage,
   }) {
     final color = primaryColor ?? AppColors.primary;
     final textCol = textColor ?? AppColors.textPrimary;
@@ -174,7 +175,7 @@ class ProfileWidgets {
         style: GoogleFonts.poppins(color: textCol),
         validator: (value) {
           if (!isOptional && (value == null || value.trim().isEmpty)) {
-            return 'Please enter $label';
+            return requiredMessage ?? 'Please enter $label';
           }
           return null;
         },
@@ -394,11 +395,12 @@ class ProfileWidgets {
   static Widget buildTeamInfo({
     required String name,
     required String role,
+    String developedByLabel = 'Developed By',
   }) {
     return Column(
       children: [
         Text(
-          'Developed By',
+          developedByLabel,
           style: GoogleFonts.poppins(
             fontSize: 14,
             color: AppColors.textGrey,

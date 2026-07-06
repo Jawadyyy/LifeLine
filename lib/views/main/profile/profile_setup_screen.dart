@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -101,7 +102,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                'This phone number is already in use.',
+                AppLocalizations.of(context).phoneInUse,
                 style: GoogleFonts.poppins(color: Colors.white),
               ),
               backgroundColor: Colors.red,
@@ -164,7 +165,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Profile updated successfully!',
+            AppLocalizations.of(context).profileUpdated,
             style: GoogleFonts.poppins(color: Colors.white),
           ),
           backgroundColor: Colors.green,
@@ -184,7 +185,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Error updating profile: $e',
+            AppLocalizations.of(context).errUpdatingProfile(e.toString()),
             style: GoogleFonts.poppins(color: Colors.white),
           ),
           backgroundColor: Colors.red,
@@ -210,6 +211,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     return Scaffold(
       backgroundColor: _secondaryColor,
       body: SafeArea(
@@ -258,46 +260,51 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                 child: Form(
                   key: _formKey,
                   child: Column(children: [
-                    ProfileWidgets.buildSectionTitle('Personal Information',
+                    ProfileWidgets.buildSectionTitle(l.personalInformation,
                         primaryColor: _primaryColor),
                     ProfileWidgets.buildInputField(
                       controller: _phoneController,
-                      label: 'Phone Number',
+                      label: l.fieldPhone,
                       icon: Icons.phone,
                       keyboardType: TextInputType.phone,
+                      requiredMessage: l.pleaseEnter(l.fieldPhone),
                     ),
                     const SizedBox(height: 12),
                     ProfileWidgets.buildInputField(
                       controller: _ageController,
-                      label: 'Age',
+                      label: l.age,
                       icon: Icons.cake,
                       keyboardType: TextInputType.number,
+                      requiredMessage: l.pleaseEnter(l.age),
                     ),
                     const SizedBox(height: 12),
                     ProfileWidgets.buildInputField(
                       controller: _addressController,
-                      label: 'Home Address',
+                      label: l.fieldHomeAddress,
                       icon: Icons.home,
+                      requiredMessage: l.pleaseEnter(l.fieldHomeAddress),
                     ),
-                    ProfileWidgets.buildSectionTitle('Health Information',
+                    ProfileWidgets.buildSectionTitle(l.healthInformation,
                         primaryColor: _primaryColor),
                     Row(
                       children: [
                         Expanded(
                           child: ProfileWidgets.buildInputField(
                             controller: _heightController,
-                            label: 'Height (cm)',
+                            label: l.heightCm,
                             icon: Icons.height,
                             keyboardType: TextInputType.number,
+                            requiredMessage: l.pleaseEnter(l.heightCm),
                           ),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
                           child: ProfileWidgets.buildInputField(
                             controller: _weightController,
-                            label: 'Weight (lbs)',
+                            label: l.weightLbs,
                             icon: Icons.monitor_weight,
                             keyboardType: TextInputType.number,
+                            requiredMessage: l.pleaseEnter(l.weightLbs),
                           ),
                         ),
                       ],
@@ -305,7 +312,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                     const SizedBox(height: 12),
                     ProfileWidgets.buildDropdown(
                       value: _selectedBloodGroup,
-                      label: 'Blood Group',
+                      label: l.fieldBloodGroup,
                       icon: Icons.bloodtype,
                       items: ProfileController.bloodGroupOptions,
                       onChanged: (val) =>
@@ -314,7 +321,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                     const SizedBox(height: 12),
                     ProfileWidgets.buildDropdown(
                       value: _selectedDisease,
-                      label: 'Diseases (if any)',
+                      label: l.diseasesIfAny,
                       icon: Icons.health_and_safety,
                       items: ProfileController.diseaseOptions,
                       onChanged: (val) =>
@@ -323,17 +330,17 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                     const SizedBox(height: 12),
                     ProfileWidgets.buildDropdown(
                       value: _selectedAllergy,
-                      label: 'Allergies (if any)',
+                      label: l.allergiesIfAny,
                       icon: Icons.warning_amber_rounded,
                       items: ProfileController.allergyOptions,
                       onChanged: (val) =>
                           setState(() => _selectedAllergy = val),
                     ),
-                    ProfileWidgets.buildSectionTitle('Emergency Information',
+                    ProfileWidgets.buildSectionTitle(l.emergencyInformation,
                         primaryColor: _primaryColor),
                     ProfileWidgets.buildInputField(
                       controller: _emergencyTextController,
-                      label: 'Custom Emergency Message',
+                      label: l.customEmergencyMessage,
                       icon: Icons.sms,
                       isOptional: true,
                       maxLines: 3,
@@ -343,8 +350,8 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                       onCancel: () => Navigator.pop(context),
                       onSave: _updateUserData,
                       isLoading: _isLoading,
-                      cancelText: 'CANCEL',
-                      saveText: 'SAVE PROFILE',
+                      cancelText: l.cancelAction,
+                      saveText: l.saveProfile,
                       primaryColor: _primaryColor,
                       surfaceColor: _cardColor,
                     ),

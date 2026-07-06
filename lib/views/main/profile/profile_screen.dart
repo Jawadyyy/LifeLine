@@ -1,5 +1,4 @@
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -102,6 +101,7 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   Widget build(BuildContext context) {
     final DynamicColors colors = DynamicColors(false);
+    final l = AppLocalizations.of(context);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -131,7 +131,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 children: [
                   const SizedBox(height: 10),
                   Text(
-                    'Profile',
+                    l.navProfile,
                     style: TextStyle(
                       color: AppColors.textTertiary,
                       fontSize: 22,
@@ -168,7 +168,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   ),
                   const SizedBox(height: 15),
                   Text(
-                    _profileController.currentUser?.name ?? 'Unknown',
+                    _profileController.currentUser?.name ?? l.unknownUser,
                     style: GoogleFonts.poppins(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
@@ -195,12 +195,12 @@ class _ProfilePageState extends State<ProfilePage> {
                 children: [
                   ProfileWidgets.buildStatCard(
                       icon: Icons.cake_outlined,
-                      label: 'Age',
+                      label: l.age,
                       value: _profileController.currentUser?.age ?? 'N/A',
                       colors: colors),
                   ProfileWidgets.buildStatCard(
                       icon: Icons.monitor_heart_outlined,
-                      label: 'BMI',
+                      label: l.bmiLabel,
                       value: _profileController.currentUser?.bmi ?? '0.0',
                       isBmi: true,
                       colors: colors,
@@ -209,7 +209,7 @@ class _ProfilePageState extends State<ProfilePage> {
                           0.0)),
                   ProfileWidgets.buildStatCard(
                       icon: Icons.bloodtype_outlined,
-                      label: 'Blood Type',
+                      label: l.bloodType,
                       value: _profileController.currentUser?.bloodType ?? 'N/A',
                       colors: colors),
                 ],
@@ -221,8 +221,8 @@ class _ProfilePageState extends State<ProfilePage> {
                 children: [
                   ProfileWidgets.buildMenuCard(
                     icon: Icons.person_outline,
-                    title: 'Edit Profile',
-                    subtitle: 'Update your personal information',
+                    title: l.editProfile,
+                    subtitle: l.editProfileSubtitle,
                     onTap: () async {
                       await Navigator.push(
                         context,
@@ -248,8 +248,8 @@ class _ProfilePageState extends State<ProfilePage> {
                   const SizedBox(height: 15),
                   ProfileWidgets.buildMenuCard(
                     icon: Icons.medical_information_outlined,
-                    title: 'Medical ID',
-                    subtitle: 'Blood type, allergies & emergency contact',
+                    title: l.medicalId,
+                    subtitle: l.medicalIdSubtitle,
                     onTap: () => Navigator.push(
                       context,
                       MaterialPageRoute(
@@ -260,16 +260,16 @@ class _ProfilePageState extends State<ProfilePage> {
                   const SizedBox(height: 15),
                   ProfileWidgets.buildMenuCard(
                     icon: Icons.language,
-                    title: 'Language',
-                    subtitle: 'Choose your preferred language',
+                    title: l.language,
+                    subtitle: l.languageSubtitle,
                     onTap: () => _showLanguageDialog(context),
                     colors: colors,
                   ),
                   const SizedBox(height: 15),
                   ProfileWidgets.buildMenuCard(
                     icon: Icons.help_outline,
-                    title: 'Help & FAQs',
-                    subtitle: 'Get answers to common questions',
+                    title: l.helpFaqs,
+                    subtitle: l.helpFaqsSubtitle,
                     onTap: () {
                       _showFAQDialog(context);
                     },
@@ -278,12 +278,10 @@ class _ProfilePageState extends State<ProfilePage> {
                   const SizedBox(height: 15),
                   ProfileWidgets.buildMenuCard(
                     icon: Icons.lock_outline,
-                    title: 'Change Password',
-                    subtitle: 'Update your account password',
-                    onTap: () async {
-                      await FirebaseAuth.instance.signOut();
-
-                      Navigator.pushReplacement(
+                    title: l.changePassword,
+                    subtitle: l.changePasswordSubtitle,
+                    onTap: () {
+                      Navigator.push(
                         context,
                         PageRouteBuilder(
                           pageBuilder:
@@ -301,8 +299,8 @@ class _ProfilePageState extends State<ProfilePage> {
                   const SizedBox(height: 15),
                   ProfileWidgets.buildMenuCard(
                     icon: Icons.logout,
-                    title: 'Logout',
-                    subtitle: 'Sign out of your account',
+                    title: l.logout,
+                    subtitle: l.logoutSubtitle,
                     onTap: () async {
                       await _profileController.signOut();
                       Navigator.pushAndRemoveUntil(
@@ -356,6 +354,7 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   void _showProfileImageOptions(BuildContext context) {
+    final l = AppLocalizations.of(context);
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -372,7 +371,7 @@ class _ProfilePageState extends State<ProfilePage> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                "Update Profile Picture",
+                l.updateProfilePicture,
                 style: GoogleFonts.poppins(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
@@ -383,7 +382,7 @@ class _ProfilePageState extends State<ProfilePage> {
               ProfileWidgets.buildImageOption(
                 icon: Icons.camera_alt,
                 color: AppColors.primary,
-                label: "Take Photo",
+                label: l.takePhoto,
                 onTap: () {
                   Navigator.pop(context);
                   _updateProfileImage(ImageSource.camera);
@@ -392,7 +391,7 @@ class _ProfilePageState extends State<ProfilePage> {
               ProfileWidgets.buildImageOption(
                 icon: Icons.photo_library,
                 color: AppColors.primary,
-                label: "Choose from Gallery",
+                label: l.chooseFromGallery,
                 onTap: () {
                   Navigator.pop(context);
                   _updateProfileImage(ImageSource.gallery);
@@ -402,7 +401,7 @@ class _ProfilePageState extends State<ProfilePage> {
               TextButton(
                 onPressed: () => Navigator.pop(context),
                 child: Text(
-                  "Cancel",
+                  l.cancel,
                   style: GoogleFonts.poppins(
                     color: AppColors.textGrey,
                     fontWeight: FontWeight.w500,
@@ -457,6 +456,7 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   void _showFAQDialog(BuildContext context) {
+    final l = AppLocalizations.of(context);
     showDialog(
       context: context,
       builder: (context) => Dialog(
@@ -478,7 +478,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'About Lifeline',
+                    l.aboutLifeline,
                     style: GoogleFonts.poppins(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
@@ -493,7 +493,7 @@ class _ProfilePageState extends State<ProfilePage> {
               ),
               const SizedBox(height: 20),
               Text(
-                'Lifeline is a medical emergency response app designed to provide quick access to emergency services and personal health information.',
+                l.aboutLifelineBody,
                 style: GoogleFonts.poppins(
                   fontSize: 14,
                   color: AppColors.textPrimary,
@@ -503,7 +503,8 @@ class _ProfilePageState extends State<ProfilePage> {
               const SizedBox(height: 30),
               ProfileWidgets.buildTeamInfo(
                 name: 'Jawad Mansoor',
-                role: 'Lead Developer',
+                role: l.leadDeveloper,
+                developedByLabel: l.developedBy,
               ),
               const SizedBox(height: 20),
               Container(
@@ -514,7 +515,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
-                  'Version 1.0.0',
+                  l.versionLabel('1.0.0'),
                   style: GoogleFonts.poppins(
                     color: AppColors.primary,
                     fontWeight: FontWeight.w500,
@@ -533,7 +534,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 ),
                 onPressed: () => Navigator.pop(context),
                 child: Text(
-                  'Close',
+                  l.close,
                   style: GoogleFonts.poppins(
                     color: AppColors.textTertiary,
                     fontWeight: FontWeight.w600,

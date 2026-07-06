@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:lifeline/constants/app_colors.dart';
 import 'package:lifeline/constants/app_design.dart';
@@ -24,9 +25,7 @@ class ChatHomeScreen extends StatefulWidget {
 }
 
 class _ChatHomeScreenState extends State<ChatHomeScreen> {
-  static const _greeting =
-      "Hi! I'm your LifeLine medical assistant. Ask me about general health or "
-      "first aid.\n\nFor emergencies, call **1122** or use the SOS button.";
+  String get _greeting => AppLocalizations.of(context).assistantGreeting;
 
   final GeminiService _gemini = GeminiService();
   final ScrollController _scrollController = ScrollController();
@@ -54,6 +53,7 @@ class _ChatHomeScreenState extends State<ChatHomeScreen> {
   // ─── Persistence ────────────────────────────────────────────────────────────
   Future<void> _loadHistory() async {
     final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
     final raw = prefs.getString(_storageKey);
     if (raw != null) {
       try {
@@ -141,25 +141,24 @@ class _ChatHomeScreenState extends State<ChatHomeScreen> {
   }
 
   Future<void> _clearChat() async {
+    final loc = AppLocalizations.of(context);
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Clear conversation?'),
-        content: const Text(
-            'This deletes your chat history with the assistant. This cannot be '
-            'undone.'),
+        title: Text(loc.clearConversationTitle),
+        content: Text(loc.clearConversationBody),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('CANCEL',
-                style: TextStyle(color: AppColors.textGrey)),
+            child: Text(loc.cancelAction,
+                style: const TextStyle(color: AppColors.textGrey)),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
-            child: const Text('CLEAR',
-                style: TextStyle(color: AppColors.textTertiary)),
+            child: Text(loc.clearAction,
+                style: const TextStyle(color: AppColors.textTertiary)),
           ),
         ],
       ),
@@ -216,6 +215,7 @@ class _ChatHomeScreenState extends State<ChatHomeScreen> {
       _loaded && !_isTyping && _messages.length <= 1;
 
   Widget _buildHeader() {
+    final loc = AppLocalizations.of(context);
     return Container(
       padding: const EdgeInsets.fromLTRB(12, 6, 18, 14),
       decoration: const BoxDecoration(
@@ -252,7 +252,7 @@ class _ChatHomeScreenState extends State<ChatHomeScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text('Medical Assistant',
+                Text(loc.medicalAssistant,
                     style: LL.display(18, weight: FontWeight.w700)),
                 const SizedBox(height: 2),
                 Row(
@@ -264,7 +264,7 @@ class _ChatHomeScreenState extends State<ChatHomeScreen> {
                           color: LL.green, shape: BoxShape.circle),
                     ),
                     const SizedBox(width: 6),
-                    Text('Online · AI companion',
+                    Text(loc.assistantOnline,
                         style: LL.body(12, color: LL.muted)),
                   ],
                 ),
@@ -272,7 +272,7 @@ class _ChatHomeScreenState extends State<ChatHomeScreen> {
             ),
           ),
           IconButton(
-            tooltip: 'Clear chat',
+            tooltip: loc.clearChat,
             icon: const Icon(Icons.delete_outline_rounded,
                 color: Color(0xFFADB1BB)),
             onPressed: _clearChat,
@@ -303,7 +303,7 @@ class _ChatHomeScreenState extends State<ChatHomeScreen> {
             const SizedBox(width: 6),
             Flexible(
               child: Text(
-                'Not a substitute for emergency care — call 1122',
+                AppLocalizations.of(context).disclaimerShort,
                 style: LL.body(11.5,
                     weight: FontWeight.w600, color: const Color(0xFFC2541F)),
               ),
@@ -339,7 +339,7 @@ class _ChatHomeScreenState extends State<ChatHomeScreen> {
                     onSubmitted: _handleSend,
                     style: LL.body(14, color: LL.ink),
                     decoration: InputDecoration(
-                      hintText: 'Ask about your health…',
+                      hintText: AppLocalizations.of(context).askAboutHealth,
                       hintStyle: LL.body(14, color: LL.faint),
                       border: InputBorder.none,
                       contentPadding: const EdgeInsets.symmetric(
@@ -589,15 +589,22 @@ class _Suggestions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
+    final items = [
+      loc.suggestionBurn,
+      loc.suggestionCpr,
+      loc.suggestionStroke,
+      loc.suggestionBleeding,
+    ];
     return SizedBox(
       height: 42,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.fromLTRB(18, 0, 18, 6),
-        itemCount: _ChatHomeScreenStateSuggestions.items.length,
+        itemCount: items.length,
         separatorBuilder: (_, __) => const SizedBox(width: 9),
         itemBuilder: (context, i) {
-          final s = _ChatHomeScreenStateSuggestions.items[i];
+          final s = items[i];
           return GestureDetector(
             onTap: () => onTap(s),
             child: Container(
@@ -617,14 +624,4 @@ class _Suggestions extends StatelessWidget {
       ),
     );
   }
-}
-
-/// Suggestion prompts, kept next to the screen that owns them.
-class _ChatHomeScreenStateSuggestions {
-  static const items = [
-    'How do I treat a minor burn?',
-    'Steps to perform CPR',
-    'What are the signs of a stroke?',
-    'How to stop heavy bleeding?',
-  ];
 }

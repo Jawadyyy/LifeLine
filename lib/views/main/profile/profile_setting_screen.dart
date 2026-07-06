@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lifeline/constants/app_colors.dart';
 import 'package:lifeline/views/main/profile/controller/profile_controller.dart';
@@ -87,11 +88,11 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen>
     }
   }
 
-  String _getBMICategory(double bmi) {
-    if (bmi < 18.5) return 'Underweight';
-    if (bmi < 25) return 'Normal';
-    if (bmi < 30) return 'Overweight';
-    return 'Obese';
+  String _getBMICategory(AppLocalizations l, double bmi) {
+    if (bmi < 18.5) return l.bmiUnderweight;
+    if (bmi < 25) return l.bmiNormal;
+    if (bmi < 30) return l.bmiOverweight;
+    return l.bmiObese;
   }
 
   Color _getBMIColor(double bmi) {
@@ -125,7 +126,7 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen>
       _animationController.forward();
     } catch (e) {
       if (mounted) {
-        _showErrorSnackbar('Failed to load profile data');
+        _showErrorSnackbar(AppLocalizations.of(context).errLoadProfile);
       }
     } finally {
       setState(() => _isLoading = false);
@@ -137,7 +138,7 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen>
 
     // Validation
     if (_usernameController.text.trim().isEmpty) {
-      _showErrorSnackbar('Username is required');
+      _showErrorSnackbar(AppLocalizations.of(context).usernameRequired);
       return;
     }
 
@@ -166,15 +167,15 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen>
       final success = await _profileController.updateUserData(userData);
 
       if (success && mounted) {
-        _showSuccessSnackbar('Profile updated successfully!');
+        _showSuccessSnackbar(AppLocalizations.of(context).profileUpdated);
         await Future.delayed(const Duration(milliseconds: 500));
         if (mounted) Navigator.pop(context);
       } else if (!success && mounted) {
-        _showErrorSnackbar('Failed to update profile');
+        _showErrorSnackbar(AppLocalizations.of(context).errUpdateProfile);
       }
     } catch (e) {
       if (mounted) {
-        _showErrorSnackbar('An error occurred. Please try again');
+        _showErrorSnackbar(AppLocalizations.of(context).errGeneric);
       }
     } finally {
       setState(() => _isSaving = false);
@@ -241,6 +242,7 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen>
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     return Scaffold(
       backgroundColor: AppColors.background,
       body: CustomScrollView(
@@ -264,17 +266,17 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen>
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         _buildSectionHeader(
-                            'Personal Information', Icons.person),
+                            l.personalInformation, Icons.person),
                         const SizedBox(height: 16),
                         _buildPersonalInfoSection(),
                         const SizedBox(height: 32),
                         _buildSectionHeader(
-                            'Health Information', Icons.favorite),
+                            l.healthInformation, Icons.favorite),
                         const SizedBox(height: 16),
                         _buildHealthInfoSection(),
                         const SizedBox(height: 32),
                         _buildSectionHeader(
-                            'Body Metrics', Icons.fitness_center),
+                            l.bodyMetrics, Icons.fitness_center),
                         const SizedBox(height: 16),
                         _buildBodyMetricsSection(),
                         if (_calculateBMI() != null) ...[
@@ -282,7 +284,7 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen>
                           _buildBMICard(),
                         ],
                         const SizedBox(height: 32),
-                        _buildSectionHeader('Emergency', Icons.emergency),
+                        _buildSectionHeader(l.emergencyTitle, Icons.emergency),
                         const SizedBox(height: 16),
                         _buildEmergencySection(),
                         const SizedBox(height: 40),
@@ -311,7 +313,7 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen>
       ),
       flexibleSpace: FlexibleSpaceBar(
         title: Text(
-          'Profile Settings',
+          AppLocalizations.of(context).profileSettings,
           style: GoogleFonts.poppins(
             fontSize: 20,
             fontWeight: FontWeight.bold,
@@ -369,6 +371,7 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen>
   }
 
   Widget _buildPersonalInfoSection() {
+    final l = AppLocalizations.of(context);
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -386,14 +389,14 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen>
         children: [
           _buildEnhancedInputField(
             controller: _usernameController,
-            label: 'Username',
+            label: l.fieldUsername,
             icon: Icons.person_outline,
-            hint: 'Enter your username',
+            hint: l.hintUsername,
           ),
           const SizedBox(height: 16),
           _buildEnhancedInputField(
             controller: _phoneController,
-            label: 'Phone Number',
+            label: l.fieldPhone,
             icon: Icons.phone,
             hint: '+1 234 567 8900',
             keyboardType: TextInputType.phone,
@@ -401,17 +404,17 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen>
           const SizedBox(height: 16),
           _buildEnhancedInputField(
             controller: _ageController,
-            label: 'Age',
+            label: l.age,
             icon: Icons.cake,
-            hint: 'Enter your age',
+            hint: l.hintAge,
             keyboardType: TextInputType.number,
           ),
           const SizedBox(height: 16),
           _buildEnhancedInputField(
             controller: _addressController,
-            label: 'Home Address',
+            label: l.fieldHomeAddress,
             icon: Icons.home,
-            hint: 'Enter your address',
+            hint: l.hintHomeAddress,
             maxLines: 2,
           ),
         ],
@@ -420,6 +423,7 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen>
   }
 
   Widget _buildHealthInfoSection() {
+    final l = AppLocalizations.of(context);
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -438,7 +442,7 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen>
           _buildEnhancedDropdown(
             value: _selectedBloodGroup,
             items: ProfileController.bloodGroupOptions,
-            label: 'Blood Group',
+            label: l.fieldBloodGroup,
             icon: Icons.bloodtype,
             onChanged: (value) => setState(() => _selectedBloodGroup = value),
           ),
@@ -446,7 +450,7 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen>
           _buildEnhancedDropdown(
             value: _selectedDisease,
             items: ProfileController.diseaseOptions,
-            label: 'Medical Conditions',
+            label: l.medicalConditions,
             icon: Icons.health_and_safety,
             onChanged: (value) => setState(() => _selectedDisease = value),
           ),
@@ -454,7 +458,7 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen>
           _buildEnhancedDropdown(
             value: _selectedAllergy,
             items: ProfileController.allergyOptions,
-            label: 'Allergies',
+            label: l.allergies,
             icon: Icons.warning_amber_rounded,
             onChanged: (value) => setState(() => _selectedAllergy = value),
           ),
@@ -464,6 +468,7 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen>
   }
 
   Widget _buildBodyMetricsSection() {
+    final l = AppLocalizations.of(context);
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -482,9 +487,9 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen>
           Expanded(
             child: _buildEnhancedInputField(
               controller: _heightController,
-              label: 'Height',
+              label: l.height,
               icon: Icons.height,
-              hint: 'cm',
+              hint: l.hintCm,
               keyboardType: TextInputType.number,
             ),
           ),
@@ -492,9 +497,9 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen>
           Expanded(
             child: _buildEnhancedInputField(
               controller: _weightController,
-              label: 'Weight',
+              label: l.weight,
               icon: Icons.monitor_weight,
-              hint: 'lbs',
+              hint: l.hintLbs,
               keyboardType: TextInputType.number,
             ),
           ),
@@ -504,10 +509,11 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen>
   }
 
   Widget _buildBMICard() {
+    final l = AppLocalizations.of(context);
     final bmi = _calculateBMI();
     if (bmi == null) return const SizedBox.shrink();
 
-    final category = _getBMICategory(bmi);
+    final category = _getBMICategory(l, bmi);
     final color = _getBMIColor(bmi);
 
     return Container(
@@ -537,7 +543,7 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Body Mass Index',
+                  l.bodyMassIndex,
                   style: GoogleFonts.poppins(
                     fontSize: 12,
                     color: Colors.grey[600],
@@ -590,6 +596,7 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen>
   }
 
   Widget _buildEmergencySection() {
+    final l = AppLocalizations.of(context);
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -605,9 +612,9 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen>
       padding: const EdgeInsets.all(16),
       child: _buildEnhancedInputField(
         controller: _emergencyTextController,
-        label: 'Custom Emergency Message',
+        label: l.customEmergencyMessage,
         icon: Icons.sms,
-        hint: 'Enter emergency contact message',
+        hint: l.hintEmergencyMessage,
         maxLines: 3,
       ),
     );
@@ -727,6 +734,7 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen>
   }
 
   Widget _buildActionButtons() {
+    final l = AppLocalizations.of(context);
     return Row(
       children: [
         Expanded(
@@ -743,7 +751,7 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen>
               ),
             ),
             child: Text(
-              'CANCEL',
+              l.cancelAction,
               style: GoogleFonts.poppins(
                 fontWeight: FontWeight.bold,
                 fontSize: 15,
@@ -784,7 +792,7 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen>
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        'SAVE CHANGES',
+                        l.saveChanges,
                         style: GoogleFonts.poppins(
                           fontWeight: FontWeight.bold,
                           fontSize: 15,

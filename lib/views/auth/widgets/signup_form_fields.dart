@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lifeline/components/custom_text_field.dart';
 
 class SignupFormFields extends StatelessWidget {
@@ -29,25 +30,26 @@ class SignupFormFields extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         CustomTextField(
           controller: nameController,
-          hintText: "Full Name",
+          hintText: l.fullName,
           prefixIcon: nameIcon,
         ),
         const SizedBox(height: 20),
         CustomTextField(
           controller: emailController,
-          hintText: "Email Address",
+          hintText: l.emailAddress,
           prefixIcon: emailIcon,
           keyboardType: TextInputType.emailAddress,
         ),
         const SizedBox(height: 20),
         CustomTextField(
           controller: passwordController,
-          hintText: "Password",
+          hintText: l.password,
           prefixIcon: passwordIcon,
           obscureText: !isPasswordVisible,
           suffixIcon: isPasswordVisible ? eyeSlashIcon : eyeIcon,

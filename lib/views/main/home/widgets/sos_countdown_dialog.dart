@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lifeline/constants/app_colors.dart';
 
 /// A cancellable 5-second countdown shown before an SOS alert fires.
@@ -57,6 +58,7 @@ class _SosCountdownDialogState extends State<SosCountdownDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     return Dialog(
       backgroundColor: AppColors.surface,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
@@ -91,7 +93,7 @@ class _SosCountdownDialogState extends State<SosCountdownDialog> {
             ),
             const SizedBox(height: 20),
             Text(
-              'Sending ${widget.emergencyType}',
+              loc.sendingType(widget.emergencyType),
               textAlign: TextAlign.center,
               style: const TextStyle(
                 fontSize: 18,
@@ -100,10 +102,10 @@ class _SosCountdownDialogState extends State<SosCountdownDialog> {
               ),
             ),
             const SizedBox(height: 8),
-            const Text(
-              'Your location will be shared with your emergency contacts.',
+            Text(
+              loc.sosLocationShared,
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 13, color: AppColors.textGrey),
+              style: const TextStyle(fontSize: 13, color: AppColors.textGrey),
             ),
             const SizedBox(height: 24),
             SizedBox(
@@ -117,9 +119,9 @@ class _SosCountdownDialogState extends State<SosCountdownDialog> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                child: const Text(
-                  'CANCEL',
-                  style: TextStyle(
+                child: Text(
+                  loc.cancel.toUpperCase(),
+                  style: const TextStyle(
                     color: AppColors.textTertiary,
                     fontWeight: FontWeight.bold,
                     letterSpacing: 0.5,
@@ -131,9 +133,9 @@ class _SosCountdownDialogState extends State<SosCountdownDialog> {
             const SizedBox(height: 6),
             TextButton(
               onPressed: () => Navigator.of(context).pop(true),
-              child: const Text(
-                'Send now',
-                style: TextStyle(color: AppColors.primary),
+              child: Text(
+                loc.sendNow,
+                style: const TextStyle(color: AppColors.primary),
               ),
             ),
           ],

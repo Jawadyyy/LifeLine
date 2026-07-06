@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lifeline/constants/app_colors.dart';
 import 'package:lifeline/services/chat_service.dart';
 import 'package:lifeline/services/firestore_service.dart';
@@ -44,13 +45,13 @@ class HomeController {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => const AlertDialog(
+      builder: (context) => AlertDialog(
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            CircularProgressIndicator(),
-            SizedBox(height: 16),
-            Text('Sending emergency alerts...'),
+            const CircularProgressIndicator(),
+            const SizedBox(height: 16),
+            Text(AppLocalizations.of(context).sendingAlerts),
           ],
         ),
       ),
@@ -229,41 +230,42 @@ class HomeController {
   }
 
   Widget _buildEmergencyBottomSheet() {
+    final loc = AppLocalizations.of(context);
     final List<Map<String, dynamic>> emergencyTypes = [
       {
         "image": 'assets/images/icons/ambulance.png',
-        "type": 'Medical Emergency',
-        "description": 'Request immediate medical assistance',
+        "type": loc.medicalEmergency,
+        "description": loc.medicalEmergencyDesc,
         "color": Color(0xFFFF6B6B),
       },
       {
         "image": 'assets/images/icons/policeman.png',
-        "type": 'Police Assistance',
-        "description": 'Alert for security or law enforcement',
+        "type": loc.policeAssistance,
+        "description": loc.policeAssistanceDesc,
         "color": Color(0xFF4ECDC4),
       },
       {
         "image": 'assets/images/icons/fire.png',
-        "type": 'Fire Alert',
-        "description": 'Report fire or smoke emergency',
+        "type": loc.fireAlert,
+        "description": loc.fireAlertDesc,
         "color": Color(0xFFFF8C42),
       },
       {
         "image": 'assets/images/icons/healthcare.png',
-        "type": 'Health Issue',
-        "description": 'Non-critical health concern',
+        "type": loc.healthIssue,
+        "description": loc.healthIssueDesc,
         "color": Color(0xFF95E1D3),
       },
       {
         "image": 'assets/images/icons/warning.png',
-        "type": 'SOS',
-        "description": 'General distress signal',
+        "type": loc.sosGeneral,
+        "description": loc.sosGeneralDesc,
         "color": Color(0xFFFFA07A),
       },
       {
         "image": 'assets/images/icons/bandage.png',
-        "type": 'General Emergency',
-        "description": 'Other emergency situations',
+        "type": loc.generalEmergency,
+        "description": loc.generalEmergencyDesc,
         "color": Color(0xFFAA96DA),
       },
     ];
@@ -307,9 +309,9 @@ class HomeController {
                   ),
                 ),
                 const SizedBox(width: 12),
-                const Text(
-                  'Select Emergency Type',
-                  style: TextStyle(
+                Text(
+                  loc.selectEmergencyType,
+                  style: const TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
                     color: AppColors.textPrimary,
@@ -435,6 +437,7 @@ class HomeController {
 
   /// Prominent "call emergency services" tile inside the bottom sheet.
   Widget _buildDirectCallTile() {
+    final loc = AppLocalizations.of(context);
     return Material(
       color: AppColors.error,
       borderRadius: BorderRadius.circular(16),
@@ -450,22 +453,22 @@ class HomeController {
             children: [
               const Icon(Icons.call, color: AppColors.textTertiary, size: 26),
               const SizedBox(width: 14),
-              const Expanded(
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Call Ambulance / $emergencyDialNumber',
-                      style: TextStyle(
+                      loc.callAmbulance(emergencyDialNumber),
+                      style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                         color: AppColors.textTertiary,
                       ),
                     ),
-                    SizedBox(height: 2),
+                    const SizedBox(height: 2),
                     Text(
-                      'Dial emergency services directly',
-                      style: TextStyle(
+                      loc.dialDirectly,
+                      style: const TextStyle(
                         fontSize: 12.5,
                         color: AppColors.textTertiary,
                       ),
