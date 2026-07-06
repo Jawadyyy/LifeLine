@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lifeline/constants/app_colors.dart';
 import 'package:lifeline/constants/app_design.dart';
 import 'package:lifeline/views/main/contact/controller/contacts_screen_controller.dart';
@@ -224,6 +225,7 @@ class _ContactsPageState extends State<ContactsPage>
   }
 
   Widget _buildHeader() {
+    final l = AppLocalizations.of(context);
     final count = filteredContacts.length;
     return Padding(
       padding: const EdgeInsets.fromLTRB(26, 14, 26, 0),
@@ -234,10 +236,10 @@ class _ContactsPageState extends State<ContactsPage>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text("People we'll alert in an emergency",
+                Text(l.contactsSubtitle,
                     style: LL.body(13, weight: FontWeight.w600, color: LL.muted)),
                 const SizedBox(height: 5),
-                Text('Emergency Circle', style: LL.display(28)),
+                Text(l.emergencyCircle, style: LL.display(28)),
                 if (count > 0) const SizedBox(height: 2),
               ],
             ),
@@ -289,7 +291,7 @@ class _ContactsPageState extends State<ContactsPage>
           },
           style: LL.body(15, color: LL.ink),
           decoration: InputDecoration(
-            hintText: 'Search contacts…',
+            hintText: AppLocalizations.of(context).searchContacts,
             hintStyle: LL.body(15, color: LL.faint),
             prefixIcon: const Icon(Icons.search, color: LL.orange),
             border: InputBorder.none,
@@ -301,6 +303,7 @@ class _ContactsPageState extends State<ContactsPage>
   }
 
   Widget _buildSectionLabel() {
+    final l = AppLocalizations.of(context);
     final count = filteredContacts.length;
     if (count == 0) return const SizedBox(height: 4);
     return Padding(
@@ -308,10 +311,10 @@ class _ContactsPageState extends State<ContactsPage>
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text('YOUR CONTACTS',
+          Text(l.yourContacts,
               style: LL.body(12,
                   weight: FontWeight.w800, color: LL.faint, letterSpacing: 1.2)),
-          Text('$count ${count == 1 ? 'person' : 'people'}',
+          Text(l.peopleCount(count),
               style: LL.body(12, weight: FontWeight.w700, color: LL.orange)),
         ],
       ),
@@ -333,8 +336,8 @@ class _ContactsPageState extends State<ContactsPage>
           const SizedBox(height: 16),
           Text(
             _searchController.text.isEmpty
-                ? 'No emergency contacts yet'
-                : 'No matching contacts',
+                ? AppLocalizations.of(context).noContactsYet
+                : AppLocalizations.of(context).noMatchingContacts,
             style: LL.body(15, weight: FontWeight.w600, color: LL.muted),
           ),
           if (_searchController.text.isEmpty) ...[
@@ -360,6 +363,7 @@ class _AddContactTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     return GestureDetector(
       onTap: onTap,
       child: CustomPaint(
@@ -390,10 +394,10 @@ class _AddContactTile extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Add emergency contact',
+                    Text(l.addEmergencyContact,
                         style: LL.body(15.5, weight: FontWeight.w700)),
                     const SizedBox(height: 2),
-                    Text('Alerted the moment you trigger SOS',
+                    Text(l.addContactSubtitle,
                         style: LL.body(13, color: LL.muted)),
                   ],
                 ),

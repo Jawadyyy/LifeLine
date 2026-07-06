@@ -60,5 +60,60 @@
   "english": "English",
   "urdu": "اردو",
   "cancel": "Cancel",
-  "save": "Save"
+  "save": "Save",
+
+  "contactsSubtitle": "People we'll alert in an emergency",
+  "emergencyCircle": "Emergency Circle",
+  "searchContacts": "Search contacts…",
+  "yourContacts": "YOUR CONTACTS",
+  "peopleCount": "{count, plural, =1{1 person} other{{count} people}}",
+  "@peopleCount": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "noContactsYet": "No emergency contacts yet",
+  "noMatchingContacts": "No matching contacts",
+  "addEmergencyContact": "Add emergency contact",
+  "addContactSubtitle": "Alerted the moment you trigger SOS",
+
+  "notSignedIn": "You are not signed in.",
+  "medicalIdFooter": "Show this screen to first responders.\nAccessible from the lock screen.",
+  "emergencyMedicalId": "EMERGENCY MEDICAL ID",
+  "verified": "VERIFIED",
+  "ageNotSet": "Age not set",
+  "yearsSuffix": "{age} years",
+  "@yearsSuffix": {
+    "placeholders": { "age": { "type": "String" } }
+  },
+  "bloodTypeLabel": "BLOOD TYPE",
+  "criticalAllergy": "CRITICAL ALLERGY",
+  "conditionLabel": "CONDITION",
+  "bmiLabel": "BMI",
+  "heightLabel": "HEIGHT",
+  "weightLabel": "WEIGHT",
+  "emergencyNoteLabel": "EMERGENCY NOTE",
+  "emergencyContactLabel": "EMERGENCY CONTACT",
+  "scanAtEr": "SCAN AT ER",
+
+  "onboardEyebrow1": "Welcome to",
+  "onboardHeading1": "Get started",
+  "onboardBody1": "Access emergency help, find nearby hospitals, and stay safe with real-time support — whenever you need it.",
+  "onboardEyebrow2": "Around you",
+  "onboardTitle2": "Find help fast",
+  "onboardHeading2": "Nearby hospitals & responders",
+  "onboardBody2": "See the closest emergency rooms, clinics, and first responders on a live map, with directions in one tap.",
+  "onboardEyebrow3": "Stay connected",
+  "onboardTitle3": "Share & stay safe",
+  "onboardHeading3": "Alert your emergency contacts",
+  "onboardBody3": "Instantly share your live location and status with trusted contacts the moment something goes wrong.",
+  "getStarted": "Get Started",
+  "continueLabel": "Continue",
+  "skip": "Skip",
+
+  "chatStartConversation": "Start a conversation with {name}",
+  "@chatStartConversation": {
+    "placeholders": { "name": { "type": "String" } }
+  },
+  "typeMessageBelow": "Type a message below",
+  "callingComingSoon": "Calling — coming soon",
+  "notRegisteredUser": "This contact is not a registered LifeLine user yet."
 }

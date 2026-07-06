@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lifeline/components/chat_widgets.dart';
 import 'package:lifeline/services/chat_service.dart';
 import 'package:provider/provider.dart';
@@ -94,7 +95,8 @@ class _ChatScreenState extends State<ChatScreen> {
           ),
           Expanded(
             child: currentUid == null
-                ? const _ChatNotice(message: 'You are not signed in.')
+                ? _ChatNotice(
+                    message: AppLocalizations.of(context).notSignedIn)
                 : FutureBuilder<String?>(
                     future: _peerUidFuture,
                     // When the uid was passed in (the common case) it's known
@@ -111,9 +113,9 @@ class _ChatScreenState extends State<ChatScreen> {
                           return const Center(
                               child: CircularProgressIndicator());
                         }
-                        return const _ChatNotice(
+                        return _ChatNotice(
                           message:
-                              'This contact is not a registered LifeLine user yet.',
+                              AppLocalizations.of(context).notRegisteredUser,
                         );
                       }
                       return _ChatBody(

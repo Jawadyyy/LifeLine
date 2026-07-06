@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lifeline/views/auth/login_screen.dart';
 
@@ -28,35 +29,31 @@ class _Onboard {
   });
 }
 
-const List<_Onboard> _pages = [
-  _Onboard(
-    eyebrow: 'Welcome to',
-    title: 'LifeLine',
-    heading: 'Get started',
-    body:
-        'Access emergency help, find nearby hospitals, and stay safe with '
-        'real-time support — whenever you need it.',
-    icon: Icons.favorite,
-  ),
-  _Onboard(
-    eyebrow: 'Around you',
-    title: 'Find help fast',
-    heading: 'Nearby hospitals & responders',
-    body:
-        'See the closest emergency rooms, clinics, and first responders on a '
-        'live map, with directions in one tap.',
-    icon: Icons.location_on,
-  ),
-  _Onboard(
-    eyebrow: 'Stay connected',
-    title: 'Share & stay safe',
-    heading: 'Alert your emergency contacts',
-    body:
-        'Instantly share your live location and status with trusted contacts '
-        'the moment something goes wrong.',
-    icon: Icons.verified_user,
-  ),
-];
+/// Builds the onboarding pages from the active locale's strings. Not const so
+/// the copy follows the user's language choice.
+List<_Onboard> _buildPages(AppLocalizations l) => [
+      _Onboard(
+        eyebrow: l.onboardEyebrow1,
+        title: l.appName,
+        heading: l.onboardHeading1,
+        body: l.onboardBody1,
+        icon: Icons.favorite,
+      ),
+      _Onboard(
+        eyebrow: l.onboardEyebrow2,
+        title: l.onboardTitle2,
+        heading: l.onboardHeading2,
+        body: l.onboardBody2,
+        icon: Icons.location_on,
+      ),
+      _Onboard(
+        eyebrow: l.onboardEyebrow3,
+        title: l.onboardTitle3,
+        heading: l.onboardHeading3,
+        body: l.onboardBody3,
+        icon: Icons.verified_user,
+      ),
+    ];
 
 class WelcomeScreen extends StatefulWidget {
   const WelcomeScreen({super.key});
@@ -70,6 +67,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
   final PageController _controller = PageController();
   late final AnimationController _pulse;
   int _index = 0;
+  List<_Onboard> _pages = const [];
 
   @override
   void initState() {
@@ -78,6 +76,13 @@ class _WelcomeScreenState extends State<WelcomeScreen>
       vsync: this,
       duration: const Duration(milliseconds: 2400),
     )..repeat(reverse: true);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Rebuild the onboarding copy whenever the locale changes.
+    _pages = _buildPages(AppLocalizations.of(context));
   }
 
   @override
@@ -114,6 +119,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final bool last = _index == _pages.length - 1;
 
     return Scaffold(
@@ -161,7 +167,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                   ),
                   const SizedBox(height: 20),
                   _CtaButton(
-                    label: last ? 'Get Started' : 'Continue',
+                    label: last ? l.getStarted : l.continueLabel,
                     onTap: _next,
                   ),
                   // Reserve the skip row's height on every page so the button
@@ -176,7 +182,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                         child: TextButton(
                           onPressed: _finish,
                           child: Text(
-                            'Skip',
+                            l.skip,
                             style: GoogleFonts.nunito(
                               fontSize: 14,
                               fontWeight: FontWeight.w600,

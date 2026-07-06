@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lifeline/constants/app_design.dart';
 import 'package:lifeline/models/user_model.dart';
 import 'package:lifeline/views/main/medical_id/widgets/medical_id_card.dart';
@@ -65,7 +66,7 @@ class _MedicalIdScreenState extends State<MedicalIdScreen> {
             Expanded(
               child: uid == null
                   ? Center(
-                      child: Text('You are not signed in.',
+                      child: Text(AppLocalizations.of(context).notSignedIn,
                           style: LL.body(14, color: LL.muted)))
                   : StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
                       stream: FirebaseFirestore.instance
@@ -103,8 +104,8 @@ class _MedicalIdScreenState extends State<MedicalIdScreen> {
                                   const SizedBox(height: 18),
                                   if (widget.uid == null)
                                     Text(
-                                      'Show this screen to first responders.\n'
-                                      'Accessible from the lock screen.',
+                                      AppLocalizations.of(context)
+                                          .medicalIdFooter,
                                       textAlign: TextAlign.center,
                                       style: LL.body(12.5,
                                           color: LL.muted, height: 1.5),
@@ -134,7 +135,7 @@ class _MedicalIdScreenState extends State<MedicalIdScreen> {
                 color: LL.ink, size: 20),
           ),
           const SizedBox(width: 6),
-          Text(widget.title ?? 'Medical ID',
+          Text(widget.title ?? AppLocalizations.of(context).medicalId,
               style: LL.display(22, weight: FontWeight.w700)),
         ],
       ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lifeline/constants/app_design.dart';
 import 'package:lifeline/models/user_model.dart';
 
@@ -21,14 +22,18 @@ class MedicalIdCard extends StatelessWidget {
     this.onCallContact,
   });
 
-  String _orNotSet(String? v) {
+  /// A value counts as "set" when it's non-empty and not the placeholder N/A.
+  bool _has(String? v) {
     final s = v?.trim();
-    if (s == null || s.isEmpty || s.toUpperCase() == 'N/A') return 'Not set';
-    return s;
+    return !(s == null || s.isEmpty || s.toUpperCase() == 'N/A');
   }
+
+  String _orNotSet(String? v, AppLocalizations l) =>
+      _has(v) ? v!.trim() : l.notSet;
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     return Container(
       decoration: BoxDecoration(
         color: LL.card,
@@ -72,21 +77,21 @@ class MedicalIdCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  _cardHead(),
+                  _cardHead(l),
                   const SizedBox(height: 18),
-                  _nameAndBlood(),
+                  _nameAndBlood(l),
                   const SizedBox(height: 18),
-                  _allergyHighlight(),
+                  _allergyHighlight(l),
                   const SizedBox(height: 10),
-                  _grid(),
+                  _grid(l),
                   const SizedBox(height: 10),
-                  _emergencyContact(),
-                  if (_orNotSet(user.emergencyText) != 'Not set') ...[
+                  _emergencyContact(l),
+                  if (_has(user.emergencyText)) ...[
                     const SizedBox(height: 10),
-                    _noteBlock(),
+                    _noteBlock(l),
                   ],
                   const SizedBox(height: 18),
-                  _scanStrip(),
+                  _scanStrip(l),
                 ],
               ),
             ),
@@ -96,14 +101,14 @@ class MedicalIdCard extends StatelessWidget {
     );
   }
 
-  Widget _cardHead() {
+  Widget _cardHead(AppLocalizations l) {
     return Row(
       children: [
         const Icon(Icons.medical_information_outlined,
             color: LL.orange, size: 18),
         const SizedBox(width: 8),
         Expanded(
-          child: Text('EMERGENCY MEDICAL ID',
+          child: Text(l.emergencyMedicalId,
               style: LL.body(11,
                   weight: FontWeight.w800,
                   color: LL.orange,
@@ -115,7 +120,7 @@ class MedicalIdCard extends StatelessWidget {
             color: LL.soft,
             borderRadius: BorderRadius.circular(20),
           ),
-          child: Text('VERIFIED',
+          child: Text(l.verified,
               style: LL.body(10,
                   weight: FontWeight.w700,
                   color: LL.orange,
@@ -125,10 +130,9 @@ class MedicalIdCard extends StatelessWidget {
     );
   }
 
-  Widget _nameAndBlood() {
-    final age = _orNotSet(user.age);
-    final sub = age == 'Not set' ? 'Age not set' : '$age years';
-    final blood = _orNotSet(user.bloodType) == 'Not set' ? '—' : user.bloodType;
+  Widget _nameAndBlood(AppLocalizations l) {
+    final sub = _has(user.age) ? l.yearsSuffix(user.age!.trim()) : l.ageNotSet;
+    final blood = _has(user.bloodType) ? user.bloodType : '—';
     return Row(
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
@@ -136,7 +140,7 @@ class MedicalIdCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(_orNotSet(user.name),
+              Text(_orNotSet(user.name, l),
                   style: LL.display(25, height: 1.1),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis),
@@ -152,7 +156,7 @@ class MedicalIdCard extends StatelessWidget {
                 style: LL.display(40,
                     weight: FontWeight.w800, color: LL.orange, height: 0.9)),
             const SizedBox(height: 3),
-            Text('BLOOD TYPE',
+            Text(l.bloodTypeLabel,
                 style: LL.body(10,
                     weight: FontWeight.w700,
                     color: LL.orangeText,
@@ -163,7 +167,7 @@ class MedicalIdCard extends StatelessWidget {
     );
   }
 
-  Widget _allergyHighlight() {
+  Widget _allergyHighlight(AppLocalizations l) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 13),
       decoration: BoxDecoration(
@@ -179,7 +183,7 @@ class MedicalIdCard extends StatelessWidget {
               const Icon(Icons.warning_amber_rounded,
                   color: LL.orange, size: 15),
               const SizedBox(width: 7),
-              Text('CRITICAL ALLERGY',
+              Text(l.criticalAllergy,
                   style: LL.body(10.5,
                       weight: FontWeight.w800,
                       color: LL.orange,
@@ -187,29 +191,30 @@ class MedicalIdCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 5),
-          Text(_orNotSet(user.allergy),
+          Text(_orNotSet(user.allergy, l),
               style: LL.body(17, weight: FontWeight.w700)),
         ],
       ),
     );
   }
 
-  Widget _grid() {
+  Widget _grid(AppLocalizations l) {
     return Column(
       children: [
         Row(
           children: [
-            Expanded(child: _cell('CONDITION', _orNotSet(user.disease))),
+            Expanded(
+                child: _cell(l.conditionLabel, _orNotSet(user.disease, l))),
             const SizedBox(width: 10),
-            Expanded(child: _cell('BMI', _orNotSet(user.bmi))),
+            Expanded(child: _cell(l.bmiLabel, _orNotSet(user.bmi, l))),
           ],
         ),
         const SizedBox(height: 10),
         Row(
           children: [
-            Expanded(child: _cell('HEIGHT', _orNotSet(user.height))),
+            Expanded(child: _cell(l.heightLabel, _orNotSet(user.height, l))),
             const SizedBox(width: 10),
-            Expanded(child: _cell('WEIGHT', _orNotSet(user.weight))),
+            Expanded(child: _cell(l.weightLabel, _orNotSet(user.weight, l))),
           ],
         ),
       ],
@@ -241,7 +246,7 @@ class MedicalIdCard extends StatelessWidget {
     );
   }
 
-  Widget _noteBlock() {
+  Widget _noteBlock(AppLocalizations l) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -252,23 +257,23 @@ class MedicalIdCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('EMERGENCY NOTE',
+          Text(l.emergencyNoteLabel,
               style: LL.body(10,
                   weight: FontWeight.w700,
                   color: LL.orangeText,
                   letterSpacing: 1.2)),
           const SizedBox(height: 4),
-          Text(_orNotSet(user.emergencyText),
+          Text(_orNotSet(user.emergencyText, l),
               style: LL.body(14.5, weight: FontWeight.w600)),
         ],
       ),
     );
   }
 
-  Widget _emergencyContact() {
-    final name = _orNotSet(primaryContactName);
+  Widget _emergencyContact(AppLocalizations l) {
+    final name = _orNotSet(primaryContactName, l);
     final hasContact =
-        name != 'Not set' && (primaryContactPhone?.isNotEmpty ?? false);
+        _has(primaryContactName) && (primaryContactPhone?.isNotEmpty ?? false);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 13),
       decoration: BoxDecoration(
@@ -281,13 +286,13 @@ class MedicalIdCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('EMERGENCY CONTACT',
+                Text(l.emergencyContactLabel,
                     style: LL.body(10,
                         weight: FontWeight.w700,
                         color: LL.orangeText,
                         letterSpacing: 1.2)),
                 const SizedBox(height: 3),
-                Text(hasContact ? name : 'Not set',
+                Text(hasContact ? name : l.notSet,
                     style: LL.body(16, weight: FontWeight.w700)),
                 if (hasContact)
                   Text(primaryContactPhone!,
@@ -320,7 +325,7 @@ class MedicalIdCard extends StatelessWidget {
     );
   }
 
-  Widget _scanStrip() {
+  Widget _scanStrip(AppLocalizations l) {
     // Decorative barcode — deterministic bar heights for a stable render.
     const heights = [1.0, .7, 1.0, .55, 1.0, .8, 1.0, .6, 1.0, .75, 1.0, .5,
         1.0, .85, 1.0];
@@ -350,7 +355,7 @@ class MedicalIdCard extends StatelessWidget {
               ],
             ),
           ),
-          Text('SCAN AT ER',
+          Text(l.scanAtEr,
               style: LL.body(10,
                   weight: FontWeight.w700,
                   color: LL.orange,

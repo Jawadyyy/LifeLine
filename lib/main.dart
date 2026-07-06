@@ -113,6 +113,14 @@ class _MyAppState extends State<MyApp> {
         GlobalCupertinoLocalizations.delegate,
       ],
       supportedLocales: AppLocalizations.supportedLocales,
+      // Urdu is an RTL language, which would otherwise mirror the entire UI
+      // (bottom nav, rows, back arrows). Keep the layout LTR and only swap the
+      // text to Urdu — the script itself still shapes right-to-left within each
+      // text run, so translations read correctly without flipping the chrome.
+      builder: (context, child) => Directionality(
+        textDirection: TextDirection.ltr,
+        child: child!,
+      ),
       theme: ThemeData(
         brightness: Brightness.light,
         scaffoldBackgroundColor: AppColors.background,

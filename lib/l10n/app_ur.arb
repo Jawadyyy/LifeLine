@@ -51,5 +51,60 @@
   "english": "English",
   "urdu": "اردو",
   "cancel": "منسوخ کریں",
-  "save": "محفوظ کریں"
+  "save": "محفوظ کریں",
+
+  "contactsSubtitle": "ہنگامی صورتحال میں جن لوگوں کو ہم اطلاع دیں گے",
+  "emergencyCircle": "ہنگامی حلقہ",
+  "searchContacts": "رابطے تلاش کریں…",
+  "yourContacts": "آپ کے رابطے",
+  "peopleCount": "{count, plural, =1{1 فرد} other{{count} افراد}}",
+  "@peopleCount": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "noContactsYet": "ابھی کوئی ہنگامی رابطہ نہیں",
+  "noMatchingContacts": "کوئی مماثل رابطہ نہیں",
+  "addEmergencyContact": "ہنگامی رابطہ شامل کریں",
+  "addContactSubtitle": "جیسے ہی آپ ایس او ایس دبائیں گے انہیں اطلاع مل جائے گی",
+
+  "notSignedIn": "آپ سائن ان نہیں ہیں۔",
+  "medicalIdFooter": "یہ اسکرین طبی امدادی عملے کو دکھائیں۔\nلاک اسکرین سے قابل رسائی ہے۔",
+  "emergencyMedicalId": "ہنگامی میڈیکل آئی ڈی",
+  "verified": "تصدیق شدہ",
+  "ageNotSet": "عمر درج نہیں",
+  "yearsSuffix": "{age} سال",
+  "@yearsSuffix": {
+    "placeholders": { "age": { "type": "String" } }
+  },
+  "bloodTypeLabel": "بلڈ گروپ",
+  "criticalAllergy": "شدید الرجی",
+  "conditionLabel": "بیماری",
+  "bmiLabel": "بی ایم آئی",
+  "heightLabel": "قد",
+  "weightLabel": "وزن",
+  "emergencyNoteLabel": "ہنگامی نوٹ",
+  "emergencyContactLabel": "ہنگامی رابطہ",
+  "scanAtEr": "ای آر پر اسکین کریں",
+
+  "onboardEyebrow1": "خوش آمدید",
+  "onboardHeading1": "آغاز کریں",
+  "onboardBody1": "ہنگامی مدد حاصل کریں، قریبی ہسپتال تلاش کریں، اور حقیقی وقت کی معاونت کے ساتھ محفوظ رہیں — جب بھی آپ کو ضرورت ہو۔",
+  "onboardEyebrow2": "آپ کے آس پاس",
+  "onboardTitle2": "تیزی سے مدد پائیں",
+  "onboardHeading2": "قریبی ہسپتال اور امدادی عملہ",
+  "onboardBody2": "قریب ترین ہنگامی کمرے، کلینک اور امدادی عملہ لائیو نقشے پر دیکھیں، ایک ٹیپ میں راستہ حاصل کریں۔",
+  "onboardEyebrow3": "جڑے رہیں",
+  "onboardTitle3": "شیئر کریں اور محفوظ رہیں",
+  "onboardHeading3": "اپنے ہنگامی رابطوں کو مطلع کریں",
+  "onboardBody3": "جیسے ہی کچھ غلط ہو، اپنا لائیو مقام اور حالت فوراً قابل اعتماد رابطوں کے ساتھ شیئر کریں۔",
+  "getStarted": "شروع کریں",
+  "continueLabel": "جاری رکھیں",
+  "skip": "چھوڑیں",
+
+  "chatStartConversation": "{name} کے ساتھ گفتگو شروع کریں",
+  "@chatStartConversation": {
+    "placeholders": { "name": { "type": "String" } }
+  },
+  "typeMessageBelow": "نیچے پیغام لکھیں",
+  "callingComingSoon": "کال — جلد آ رہا ہے",
+  "notRegisteredUser": "یہ رابطہ ابھی لائف لائن کا رجسٹرڈ صارف نہیں ہے۔"
 }

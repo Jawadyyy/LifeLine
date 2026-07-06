@@ -6,6 +6,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:emoji_picker_flutter/emoji_picker_flutter.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:lifeline/constants/app_colors.dart';
@@ -153,7 +154,9 @@ class ChatHeader extends StatelessWidget {
               IconButton(
                 icon: const Icon(Icons.call_outlined, color: LL.orange, size: 22),
                 onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Calling — coming soon')),
+                  SnackBar(
+                      content:
+                          Text(AppLocalizations.of(context).callingComingSoon)),
                 ),
               ),
               IconButton(
@@ -246,6 +249,7 @@ class ChatEmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final hasImage = contactImageUrl != null && contactImageUrl!.isNotEmpty;
     return Center(
       child: Padding(
@@ -284,7 +288,7 @@ class ChatEmptyState extends StatelessWidget {
                   fontSize: 18,
                   fontWeight: FontWeight.w700)),
           const SizedBox(height: 6),
-          Text('Start a conversation with ${contactName.split(' ').first}',
+          Text(l.chatStartConversation(contactName.split(' ').first),
               textAlign: TextAlign.center,
               style: const TextStyle(
                   color: AppColors.textLight, fontSize: 13.5, height: 1.5)),
@@ -298,7 +302,7 @@ class ChatEmptyState extends StatelessWidget {
               Icon(Icons.keyboard_alt_outlined,
                   color: AppColors.primary, size: 16),
               const SizedBox(width: 6),
-              Text('Type a message below',
+              Text(l.typeMessageBelow,
                   style: TextStyle(
                       color: AppColors.primary,
                       fontSize: 12.5,
