@@ -73,7 +73,16 @@ class _ChatScreenState extends State<ChatScreen> {
   Widget build(BuildContext context) {
     final currentUid = FirebaseAuth.instance.currentUser?.uid;
 
-    return Scaffold(
+    // If the keyboard is open, a back press should only dismiss it and stay on
+    // the chat; block the pop and unfocus instead of leaving the screen.
+    final keyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
+
+    return PopScope(
+      canPop: !keyboardOpen,
+      onPopInvoked: (didPop) {
+        if (!didPop) FocusScope.of(context).unfocus();
+      },
+      child: Scaffold(
       backgroundColor: const Color(0xFFF6F4F1),
       resizeToAvoidBottomInset: true,
       body: Column(
@@ -118,6 +127,7 @@ class _ChatScreenState extends State<ChatScreen> {
           ),
         ],
       ),
+    ),
     );
   }
 }
@@ -222,6 +232,9 @@ class _ChatBodyState extends State<_ChatBody> {
                   child: ListView.builder(
                     controller: _scrollController,
                     reverse: true,
+                    // Prebuild ~1.5 screens of bubbles beyond the viewport so a
+                    // fast fling scrolls smoothly instead of flashing blanks.
+                    cacheExtent: 1200,
                     padding: const EdgeInsets.symmetric(
                         vertical: 18, horizontal: 12),
                     itemCount: msgs.length + (showTopLoader ? 1 : 0),

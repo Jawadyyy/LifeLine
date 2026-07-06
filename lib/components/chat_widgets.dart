@@ -117,7 +117,14 @@ class ChatHeader extends StatelessWidget {
               IconButton(
                 icon: const Icon(Icons.arrow_back_ios_new_rounded,
                     color: Color(0xFF554F49), size: 20),
-                onPressed: () => Navigator.pop(context),
+                onPressed: () {
+                  // Close the keyboard first if it's open; otherwise leave.
+                  if (MediaQuery.of(context).viewInsets.bottom > 0) {
+                    FocusScope.of(context).unfocus();
+                  } else {
+                    Navigator.pop(context);
+                  }
+                },
               ),
               _avatar(46, online: online),
               const SizedBox(width: 12),
@@ -187,11 +194,17 @@ class ChatHeader extends StatelessWidget {
             alignment: Alignment.center,
             clipBehavior: Clip.antiAlias,
             child: hasImage
-                ? Image.network(contactImageUrl!,
+                ? CachedNetworkImage(
+                    imageUrl: contactImageUrl!,
                     width: size,
                     height: size,
                     fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => _initial(size))
+                    // Decode at ~3x logical size — crisp on retina, but a tiny
+                    // fraction of the memory/decode cost of the full-res source.
+                    memCacheWidth: (size * 3).round(),
+                    memCacheHeight: (size * 3).round(),
+                    placeholder: (_, __) => _initial(size),
+                    errorWidget: (_, __, ___) => _initial(size))
                 : _initial(size),
           ),
           // Presence dot — only rendered while the peer is truly online.
@@ -253,9 +266,15 @@ class ChatEmptyState extends StatelessWidget {
             ),
             child: ClipOval(
                 child: hasImage
-                    ? Image.network(contactImageUrl!,
+                    ? CachedNetworkImage(
+                        imageUrl: contactImageUrl!,
+                        width: 96,
+                        height: 96,
                         fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => _letterAvatar())
+                        memCacheWidth: 288,
+                        memCacheHeight: 288,
+                        placeholder: (_, __) => _letterAvatar(),
+                        errorWidget: (_, __, ___) => _letterAvatar())
                     : _letterAvatar()),
           ),
           const SizedBox(height: 18),
@@ -523,6 +542,10 @@ class _ImageBubble extends StatelessWidget {
                           : CachedNetworkImage(
                               imageUrl: url,
                               fit: BoxFit.cover,
+                              // Thumbnail caps at 240pt wide; decode at 2x for
+                              // retina sharpness instead of the full camera-res
+                              // bitmap. Full res is loaded only in the viewer.
+                              memCacheWidth: 480,
                               placeholder: (_, __) => _imagePlaceholder(),
                               errorWidget: (_, __, ___) => _imageError(),
                             ),
@@ -1376,7 +1399,15 @@ class _ChatInputBarState extends State<ChatInputBar>
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    // While the in-app emoji panel is open a back press should close it and
+    // stay on the chat. This nested PopScope is consulted alongside the one on
+    // the chat screen; either blocking canPop stops the route from popping.
+    return PopScope(
+      canPop: !_emojiOpen,
+      onPopInvoked: (didPop) {
+        if (!didPop && _emojiOpen) setState(() => _emojiOpen = false);
+      },
+      child: Container(
       decoration: const BoxDecoration(
         color: _headerBg,
         border: Border(top: BorderSide(color: _chatDivider)),
@@ -1423,6 +1454,7 @@ class _ChatInputBarState extends State<ChatInputBar>
             ),
           ),
       ]),
+    ),
     );
   }
 
