@@ -8,8 +8,9 @@ class ChatMessage {
   final MessageStatus status;
 
   /// Message kind: `'text'`, `'emergency'` (SOS location alert), `'safe'`
-  /// (the "I'm safe now" follow-up), `'image'` (a photo), or `'voice'` (an
-  /// audio note). The chat UI renders each distinctly.
+  /// (the "I'm safe now" follow-up), `'image'` (a photo), `'voice'` (an
+  /// audio note), or `'call'` (a voice-call log entry). The chat UI renders
+  /// each distinctly.
   final String type;
 
   /// When an emergency message also starts a live share, the id of the
@@ -24,6 +25,8 @@ class ChatMessage {
 
   /// For `type == 'voice'`: clip length in milliseconds, for the duration label
   /// and progress bar without having to load the file first.
+  /// For `type == 'call'`: how long the call lasted; null means the call was
+  /// never answered (missed).
   final int? durationMs;
 
   /// True once the sender has edited the message; the bubble shows an
@@ -48,6 +51,10 @@ class ChatMessage {
   bool get isSafe => type == 'safe';
   bool get isImage => type == 'image';
   bool get isVoice => type == 'voice';
+  bool get isCall => type == 'call';
+
+  /// For `type == 'call'`: true when the call was never answered.
+  bool get isMissedCall => isCall && durationMs == null;
 
   /// Voice clip length as a [Duration] (zero when unknown).
   Duration get duration => Duration(milliseconds: durationMs ?? 0);

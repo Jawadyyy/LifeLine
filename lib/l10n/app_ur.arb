@@ -263,6 +263,7 @@
   "callDeclined": "کال مسترد کر دی گئی",
   "callEnded": "کال ختم ہو گئی",
   "callMissed": "مس کال",
+  "voiceCall": "آواز کی کال",
   "micPermissionRequired": "کال کرنے کے لیے مائیکروفون کی اجازت درکار ہے۔",
   "accept": "قبول کریں",
   "decline": "مسترد کریں"

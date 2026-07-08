@@ -201,8 +201,13 @@ class _ChatBodyState extends State<_ChatBody> {
       BuildContext context, ChatProvider provider, ChatMessage msg) async {
     final onServer = msg.status != MessageStatus.sending &&
         msg.status != MessageStatus.failed;
-    final canCopy = msg.text.trim().isNotEmpty;
-    final canEdit = msg.isSent && msg.type == 'text' && onServer;
+    // Call log entries are records, not content — nothing useful to copy.
+    final canCopy = msg.text.trim().isNotEmpty && msg.type != 'call';
+    // Messages are only editable for 10 minutes after being sent.
+    final withinEditWindow =
+        DateTime.now().difference(msg.time) < const Duration(minutes: 10);
+    final canEdit =
+        msg.isSent && msg.type == 'text' && onServer && withinEditWindow;
     final canDelete = msg.isSent && onServer;
     if (!canCopy && !canEdit && !canDelete) return;
 
@@ -265,46 +270,10 @@ class _ChatBodyState extends State<_ChatBody> {
   }
 
   Future<void> _showEditDialog(ChatProvider provider, ChatMessage msg) async {
-    final controller = TextEditingController(text: msg.text);
     final newText = await showDialog<String>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        backgroundColor: Colors.white,
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Edit message',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          maxLines: null,
-          textCapitalization: TextCapitalization.sentences,
-          decoration: InputDecoration(
-            border:
-                OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('CANCEL'),
-          ),
-          ElevatedButton(
-            onPressed: () =>
-                Navigator.pop(dialogContext, controller.text.trim()),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8)),
-            ),
-            child: const Text('SAVE', style: TextStyle(color: Colors.white)),
-          ),
-        ],
-      ),
+      builder: (dialogContext) => _EditMessageDialog(initialText: msg.text),
     );
-    controller.dispose();
     if (newText == null || newText.isEmpty || newText == msg.text) return;
     await provider.editMessage(msg.id, newText);
   }
@@ -448,6 +417,72 @@ class _ChatBodyState extends State<_ChatBody> {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Owns its [TextEditingController] so it is disposed with the dialog's own
+/// element, after the route has fully left the tree — disposing it right
+/// after `showDialog` returns races the pop animation and trips the
+/// `_dependents.isEmpty` framework assertion.
+class _EditMessageDialog extends StatefulWidget {
+  const _EditMessageDialog({required this.initialText});
+
+  final String initialText;
+
+  @override
+  State<_EditMessageDialog> createState() => _EditMessageDialogState();
+}
+
+class _EditMessageDialogState extends State<_EditMessageDialog> {
+  late final TextEditingController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.initialText);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      backgroundColor: Colors.white,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      title: const Text('Edit message',
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+      content: TextField(
+        controller: _controller,
+        autofocus: true,
+        maxLines: null,
+        textCapitalization: TextCapitalization.sentences,
+        decoration: InputDecoration(
+          border:
+              OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('CANCEL'),
+        ),
+        ElevatedButton(
+          onPressed: () => Navigator.pop(context, _controller.text.trim()),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.primary,
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          ),
+          child: const Text('SAVE', style: TextStyle(color: Colors.white)),
+        ),
+      ],
     );
   }
 }

@@ -272,6 +272,7 @@
   "callDeclined": "Call declined",
   "callEnded": "Call ended",
   "callMissed": "Missed call",
+  "voiceCall": "Voice call",
   "micPermissionRequired": "Microphone permission is required to make calls.",
   "accept": "Accept",
   "decline": "Decline"

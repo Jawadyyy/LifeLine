@@ -375,6 +375,9 @@ class MessageBubble extends StatelessWidget {
     if (message.isVoice) {
       return _VoiceBubble(message: message, onLongPress: onLongPress);
     }
+    if (message.isCall) {
+      return _CallBubble(message: message, onLongPress: onLongPress);
+    }
     final isSent = message.isSent;
     final isFailed = message.status == MessageStatus.failed;
     final isSending = message.status == MessageStatus.sending;
@@ -1136,6 +1139,127 @@ class _EmergencyBubble extends StatelessWidget {
 }
 
 // ─── Safe Bubble ──────────────────────────────────────────────────────────────
+/// Compact bubble for `type == 'call'` log entries: answered calls show the
+/// duration, unanswered ones a red missed-call row. Written by the caller's
+/// device when the call finishes.
+class _CallBubble extends StatelessWidget {
+  final ChatMessage message;
+  final VoidCallback? onLongPress;
+  const _CallBubble({required this.message, this.onLongPress});
+
+  String _durationText() {
+    final d = message.duration;
+    final m = d.inMinutes.remainder(60).toString().padLeft(2, '0');
+    final s = d.inSeconds.remainder(60).toString().padLeft(2, '0');
+    return d.inHours > 0 ? '${d.inHours}:$m:$s' : '$m:$s';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
+    final isSent = message.isSent;
+    final missed = message.isMissedCall;
+    final accent = missed ? Colors.red.shade400 : AppColors.primary;
+
+    return Align(
+      alignment: isSent ? Alignment.centerRight : Alignment.centerLeft,
+      child: Padding(
+        padding: EdgeInsets.only(
+            left: isSent ? 52 : 0, right: isSent ? 0 : 52, bottom: 3),
+        child: Column(
+          crossAxisAlignment:
+              isSent ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+          children: [
+            GestureDetector(
+              onLongPress: onLongPress,
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.only(
+                    topLeft: const Radius.circular(20),
+                    topRight: const Radius.circular(20),
+                    bottomLeft: Radius.circular(isSent ? 20 : 7),
+                    bottomRight: Radius.circular(isSent ? 7 : 20),
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF40281A).withOpacity(0.10),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    )
+                  ],
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: accent.withOpacity(0.12),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        missed
+                            ? (isSent
+                                ? Icons.phone_missed_rounded
+                                : Icons.call_missed_rounded)
+                            : (isSent
+                                ? Icons.call_made_rounded
+                                : Icons.call_received_rounded),
+                        color: accent,
+                        size: 18,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          missed ? loc.callMissed : loc.voiceCall,
+                          style: TextStyle(
+                            color: missed
+                                ? Colors.red.shade700
+                                : AppColors.textPrimary,
+                            fontSize: 14.5,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        if (!missed) ...[
+                          const SizedBox(height: 2),
+                          Text(
+                            _durationText(),
+                            style: const TextStyle(
+                                color: _metaGray,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 3),
+            Padding(
+              padding:
+                  EdgeInsets.only(left: isSent ? 0 : 6, right: isSent ? 4 : 0),
+              child: Text(DateFormat('h:mm a').format(message.time),
+                  style: const TextStyle(
+                      color: _metaGray,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 /// Distinct green bubble for the `type == 'safe'` "I'm safe now" follow-up.
 class _SafeBubble extends StatelessWidget {
   final ChatMessage message;
