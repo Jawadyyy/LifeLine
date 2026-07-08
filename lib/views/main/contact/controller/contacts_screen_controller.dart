@@ -234,6 +234,8 @@ class ContactsScreenController {
 
         await _contactsRef.add(newContact);
 
+        await _addReciprocalContact(userData['uid'] as String? ?? '');
+
         await _globalDataService.loadContactsData(forceReload: true);
 
         _showSuccessSnackbar('Contact added successfully');
@@ -243,6 +245,38 @@ class ContactsScreenController {
       } finally {
         setStateFn(() => view.isLoading = false);
       }
+    }
+  }
+
+  /// When A adds B, also add A into B's contacts so B sees A without having
+  /// to add them back. Uses a deterministic doc id (A's uid) and create-only
+  /// security rules, so a second add is a no-op instead of a duplicate.
+  Future<void> _addReciprocalContact(String otherUid) async {
+    final me = _currentUser;
+    if (me == null || otherUid.isEmpty || otherUid == me.uid) return;
+    try {
+      final myDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(me.uid)
+          .get();
+      final myData = myDoc.data() ?? <String, dynamic>{};
+
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(otherUid)
+          .collection('contacts')
+          .doc(me.uid)
+          .set({
+        'name': myData['username'] ?? '',
+        'phone': myData['phone'] ?? '',
+        'profileImageUrl': myData['profileImageUrl'] ?? '',
+        'uid': me.uid,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      // permission-denied here means the reciprocal entry already exists
+      // (rules only allow create, not update) — safe to ignore.
+      logDebug('Reciprocal contact add skipped: $e');
     }
   }
 

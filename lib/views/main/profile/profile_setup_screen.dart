@@ -138,8 +138,17 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
 
       final currentUser = await _userService.loadCurrentUser();
 
+      // Never persist the 'Loading...' placeholder that UserModel.fromMap
+      // returns when the username field is missing from the Firestore doc.
+      final loadedName = currentUser?.name;
+      final resolvedName = (loadedName == null ||
+              loadedName.isEmpty ||
+              loadedName == 'Loading...')
+          ? (FirebaseAuth.instance.currentUser?.displayName ?? 'User')
+          : loadedName;
+
       final newUser = UserModel(
-        name: currentUser?.name ?? "User",
+        name: resolvedName,
         bloodType: _selectedBloodGroup ?? 'None',
         height: height.toStringAsFixed(1),
         weight: weight.toStringAsFixed(1),

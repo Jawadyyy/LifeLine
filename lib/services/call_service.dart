@@ -41,8 +41,24 @@ class CallService {
     final existing = _engine;
     if (existing != null) return existing;
     final appId = dotenv.env['AGORA_APP_ID'] ?? '';
+    if (appId.isEmpty) {
+      logDebug('Agora: AGORA_APP_ID missing from .env — calls cannot work');
+    }
     final engine = createAgoraRtcEngine();
     await engine.initialize(RtcEngineContext(appId: appId));
+    // Joining with an empty token only works while the Agora project is in
+    // App-ID-only auth (testing mode). If a certificate is enabled these
+    // callbacks are the only place the resulting join failure surfaces.
+    engine.registerEventHandler(RtcEngineEventHandler(
+      onError: (err, msg) => logDebug('Agora error: $err $msg'),
+      onJoinChannelSuccess: (conn, _) =>
+          logDebug('Agora: joined ${conn.channelId} as uid ${conn.localUid}'),
+      onUserJoined: (conn, uid, _) => logDebug('Agora: peer $uid joined'),
+      onUserOffline: (conn, uid, reason) =>
+          logDebug('Agora: peer $uid left ($reason)'),
+      onConnectionStateChanged: (conn, state, reason) =>
+          logDebug('Agora: connection $state ($reason)'),
+    ));
     await engine.enableAudio();
     await engine.setChannelProfile(ChannelProfileType.channelProfileCommunication);
     await engine.setDefaultAudioRouteToSpeakerphone(false);

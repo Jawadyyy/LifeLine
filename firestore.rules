@@ -14,9 +14,16 @@ service cloud.firestore {
       allow read: if isSignedIn();
       allow write: if isSignedIn() && request.auth.uid == uid;
 
-      // contacts: private to owner
+      // contacts: private to owner, with one exception — when A adds B as a
+      // contact, A may create exactly one reciprocal entry in B's contacts
+      // (doc id = A's uid, data.uid = A's uid) so B sees A automatically.
+      // Create-only: if the entry exists, the write is denied (no duplicates,
+      // no tampering with an entry B may have edited).
       match /contacts/{contactId} {
         allow read, write: if isSignedIn() && request.auth.uid == uid;
+        allow create: if isSignedIn()
+          && contactId == request.auth.uid
+          && request.resource.data.uid == request.auth.uid;
       }
 
       // donation_posts: any signed-in user can read; only the owner creates/
@@ -59,6 +66,27 @@ service cloud.firestore {
           && request.resource.data.senderId == request.auth.uid;
         allow update, delete: if isParticipant();
       }
+    }
+
+    // ---- calls ----
+    // Voice-call signaling. Caller creates the doc; either participant may
+    // read it or advance its status (ringing -> accepted/declined/ended/
+    // missed). The callee's incoming-call listener queries on calleeUid, which
+    // the read rule provably constrains.
+    match /calls/{callId} {
+      function isCallParticipant() {
+        return isSignedIn() && (
+          resource.data.callerUid == request.auth.uid ||
+          resource.data.calleeUid == request.auth.uid
+        );
+      }
+
+      allow create: if isSignedIn()
+        && request.resource.data.callerUid == request.auth.uid;
+      allow read: if isCallParticipant();
+      allow update: if isCallParticipant()
+        && request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(['status', 'endedAt']);
     }
 
     // ---- live_locations ----

@@ -14,7 +14,7 @@ class CustomBottomNavigationBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return DecoratedBox(
       decoration: BoxDecoration(
         color: Colors.white,
         boxShadow: [
@@ -29,38 +29,47 @@ class CustomBottomNavigationBar extends StatelessWidget {
           topRight: Radius.circular(25),
         ),
       ),
-      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 15),
-      child: Row(
-        children: [
-          _buildBarItem(
-            context,
-            index: 0,
-            iconPath: "assets/images/navbar/home.png",
-            label: "Home",
-            isActive: currentIndex == 0,
+      // Bottom system inset (gesture-nav bar / home indicator) varies by
+      // device — without SafeArea the fixed padding below left content
+      // sitting under that inset, getting clipped/squished by the system UI
+      // on devices with a taller inset than others.
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 15),
+          child: Row(
+            children: [
+              _buildBarItem(
+                context,
+                index: 0,
+                iconPath: "assets/images/navbar/home.png",
+                label: "Home",
+                isActive: currentIndex == 0,
+              ),
+              _buildBarItem(
+                context,
+                index: 1,
+                iconPath: "assets/images/navbar/circle.png",
+                label: "Contacts",
+                isActive: currentIndex == 1,
+              ),
+              _buildBarItem(
+                context,
+                index: 2,
+                iconPath: "assets/images/navbar/map.png",
+                label: "Map",
+                isActive: currentIndex == 2,
+              ),
+              _buildBarItem(
+                context,
+                index: 3,
+                iconPath: "assets/images/navbar/profile.png",
+                label: "Profile",
+                isActive: currentIndex == 3,
+              ),
+            ],
           ),
-          _buildBarItem(
-            context,
-            index: 1,
-            iconPath: "assets/images/navbar/circle.png",
-            label: "Contacts",
-            isActive: currentIndex == 1,
-          ),
-          _buildBarItem(
-            context,
-            index: 2,
-            iconPath: "assets/images/navbar/map.png",
-            label: "Map",
-            isActive: currentIndex == 2,
-          ),
-          _buildBarItem(
-            context,
-            index: 3,
-            iconPath: "assets/images/navbar/profile.png",
-            label: "Profile",
-            isActive: currentIndex == 3,
-          ),
-        ],
+        ),
       ),
     );
   }
