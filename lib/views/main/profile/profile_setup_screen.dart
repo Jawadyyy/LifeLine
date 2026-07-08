@@ -58,8 +58,8 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
     super.dispose();
   }
 
-  Future<String?> uploadImageToImgBB(String filePath) async {
-    return await _profileController.uploadImageToImgBB(filePath);
+  Future<String?> _uploadProfileImage(String filePath) async {
+    return await _profileController.uploadProfileImage(filePath);
   }
 
   Future<void> _loadUserData() async {
@@ -126,9 +126,9 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
               0.0
           : 0.0;
 
-      String profileImageUrl = 'https://via.placeholder.com/150';
+      String profileImageUrl = '';
       if (_profileImage != null) {
-        final uploadedUrl = await uploadImageToImgBB(_profileImage!.path);
+        final uploadedUrl = await _uploadProfileImage(_profileImage!.path);
         if (uploadedUrl != null) {
           profileImageUrl = uploadedUrl;
         } else {
@@ -137,6 +137,15 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
       }
 
       final currentUser = await _userService.loadCurrentUser();
+
+      // No new image picked: keep whatever the account already has (e.g. the
+      // Google photo saved at sign-in). Never persist the old
+      // via.placeholder.com junk URL — empty means "no picture".
+      if (profileImageUrl.isEmpty) {
+        final existing = currentUser?.profileImage ?? '';
+        profileImageUrl =
+            existing.contains('via.placeholder.com') ? '' : existing;
+      }
 
       // Never persist the 'Loading...' placeholder that UserModel.fromMap
       // returns when the username field is missing from the Firestore doc.

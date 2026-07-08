@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:audioplayers/audioplayers.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -82,7 +83,8 @@ class ChatHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     // Without a uid there's nothing to stream — render a presence-less header.
     if (peerUid == null || peerUid!.isEmpty) {
-      return _build(context, online: false, statusText: '');
+      return _build(context,
+          online: false, statusText: '', imageUrl: contactImageUrl);
     }
     return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
       stream: FirebaseFirestore.instance
@@ -91,17 +93,29 @@ class ChatHeader extends StatelessWidget {
           .snapshots(),
       builder: (context, snapshot) {
         final data = snapshot.data?.data();
+        // Prefer the live profile picture from users/{uid} over the snapshot
+        // stored on the contact (which may be stale — or absent entirely when
+        // the chat was opened from a push notification). Old accounts may have
+        // the via.placeholder.com junk URL persisted — treat it as no picture.
+        String? pick(String? url) =>
+            (url != null && url.isNotEmpty && !url.contains('via.placeholder.com'))
+                ? url
+                : null;
         return _build(
           context,
           online: _isOnline(data),
           statusText: _statusText(data),
+          imageUrl:
+              pick(data?['profileImageUrl'] as String?) ?? pick(contactImageUrl),
         );
       },
     );
   }
 
   Widget _build(BuildContext context,
-      {required bool online, required String statusText}) {
+      {required bool online,
+      required String statusText,
+      required String? imageUrl}) {
     return Container(
       decoration: BoxDecoration(
         color: _headerBg,
@@ -132,7 +146,7 @@ class ChatHeader extends StatelessWidget {
                   }
                 },
               ),
-              _avatar(46, online: online),
+              _avatar(46, online: online, imageUrl: imageUrl),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -180,8 +194,9 @@ class ChatHeader extends StatelessWidget {
     );
   }
 
-  Widget _avatar(double size, {required bool online}) {
-    final hasImage = contactImageUrl != null && contactImageUrl!.isNotEmpty;
+  Widget _avatar(double size,
+      {required bool online, required String? imageUrl}) {
+    final hasImage = imageUrl != null && imageUrl.isNotEmpty;
     return SizedBox(
       width: size,
       height: size,
@@ -205,7 +220,7 @@ class ChatHeader extends StatelessWidget {
             clipBehavior: Clip.antiAlias,
             child: hasImage
                 ? CachedNetworkImage(
-                    imageUrl: contactImageUrl!,
+                    imageUrl: imageUrl,
                     width: size,
                     height: size,
                     fit: BoxFit.cover,
@@ -339,7 +354,12 @@ class MessageBubble extends StatelessWidget {
   final ChatMessage message;
   final VoidCallback? onRetry;
 
-  const MessageBubble({super.key, required this.message, this.onRetry});
+  /// Opens the message actions menu (copy / edit / delete). Not attached to
+  /// emergency or safe bubbles — those are safety records.
+  final VoidCallback? onLongPress;
+
+  const MessageBubble(
+      {super.key, required this.message, this.onRetry, this.onLongPress});
 
   @override
   Widget build(BuildContext context) {
@@ -350,10 +370,10 @@ class MessageBubble extends StatelessWidget {
       return _SafeBubble(message: message);
     }
     if (message.isImage) {
-      return _ImageBubble(message: message);
+      return _ImageBubble(message: message, onLongPress: onLongPress);
     }
     if (message.isVoice) {
-      return _VoiceBubble(message: message);
+      return _VoiceBubble(message: message, onLongPress: onLongPress);
     }
     final isSent = message.isSent;
     final isFailed = message.status == MessageStatus.failed;
@@ -361,7 +381,7 @@ class MessageBubble extends StatelessWidget {
     final emojiOnly = _isEmojiOnly(message.text);
 
     final bubble = GestureDetector(
-      onLongPress: isFailed ? onRetry : null,
+      onLongPress: isFailed ? onRetry : onLongPress,
       child: Container(
         constraints: const BoxConstraints(minWidth: 40),
         padding: emojiOnly
@@ -435,6 +455,12 @@ class MessageBubble extends StatelessWidget {
                       const SizedBox(width: 6),
                     ]),
                   ),
+                if (message.edited)
+                  const Text('edited · ',
+                      style: TextStyle(
+                          color: _metaGray,
+                          fontSize: 11,
+                          fontStyle: FontStyle.italic)),
                 Text(DateFormat('h:mm a').format(message.time),
                     style: const TextStyle(
                         color: _metaGray,
@@ -510,7 +536,8 @@ Widget _timeStatusRow(ChatMessage message, {Color? timeColor}) {
 /// Photo message: a rounded thumbnail that opens full-screen on tap.
 class _ImageBubble extends StatelessWidget {
   final ChatMessage message;
-  const _ImageBubble({required this.message});
+  final VoidCallback? onLongPress;
+  const _ImageBubble({required this.message, this.onLongPress});
 
   @override
   Widget build(BuildContext context) {
@@ -528,6 +555,7 @@ class _ImageBubble extends StatelessWidget {
               isSent ? CrossAxisAlignment.end : CrossAxisAlignment.start,
           children: [
             GestureDetector(
+              onLongPress: onLongPress,
               onTap: (url == null || url.isEmpty)
                   ? null
                   : () => Navigator.of(context).push(PageRouteBuilder(
@@ -665,10 +693,12 @@ class _FullScreenImage extends StatelessWidget {
 }
 
 // ─── Voice Bubble ─────────────────────────────────────────────────────────────
-/// Audio-note message: play/pause with a scrub bar and duration label.
+/// Audio-note message: play/pause with an Instagram-style waveform that fills
+/// with playback progress and supports tap/drag seeking.
 class _VoiceBubble extends StatefulWidget {
   final ChatMessage message;
-  const _VoiceBubble({required this.message});
+  final VoidCallback? onLongPress;
+  const _VoiceBubble({required this.message, this.onLongPress});
 
   @override
   State<_VoiceBubble> createState() => _VoiceBubbleState();
@@ -680,14 +710,28 @@ class _VoiceBubbleState extends State<_VoiceBubble> {
   Duration _position = Duration.zero;
   Duration _total = Duration.zero;
 
+  /// Pseudo-amplitudes for the waveform. Real amplitude data isn't stored, so
+  /// derive a stable-looking wave from the message id — same message always
+  /// renders the same shape on both phones.
+  late final List<double> _amps;
+
   late final StreamSubscription<Duration> _posSub;
   late final StreamSubscription<Duration> _durSub;
   late final StreamSubscription<void> _completeSub;
   late final StreamSubscription<PlayerState> _stateSub;
 
+  static const int _barCount = 34;
+
   @override
   void initState() {
     super.initState();
+    final rnd = math.Random(widget.message.id.hashCode);
+    _amps = List.generate(_barCount, (i) {
+      // Blend randomness with a gentle envelope so it reads like speech
+      // (quieter at the edges) instead of white noise.
+      final envelope = math.sin((i + 1) / (_barCount + 1) * math.pi);
+      return (0.25 + rnd.nextDouble() * 0.75) * (0.45 + 0.55 * envelope);
+    });
     _total = widget.message.duration;
     _posSub = _player.onPositionChanged.listen((p) {
       if (mounted) setState(() => _position = p);
@@ -728,6 +772,15 @@ class _VoiceBubbleState extends State<_VoiceBubble> {
     }
   }
 
+  Future<void> _seekToFraction(double fraction) async {
+    if (_total <= Duration.zero) return;
+    final clamped = fraction.clamp(0.0, 1.0);
+    final target = Duration(
+        milliseconds: (_total.inMilliseconds * clamped).round());
+    setState(() => _position = target);
+    await _player.seek(target);
+  }
+
   String _fmt(Duration d) {
     final m = d.inMinutes.remainder(60).toString();
     final s = d.inSeconds.remainder(60).toString().padLeft(2, '0');
@@ -756,115 +809,96 @@ class _VoiceBubbleState extends State<_VoiceBubble> {
           crossAxisAlignment:
               isSent ? CrossAxisAlignment.end : CrossAxisAlignment.start,
           children: [
-            Container(
-              width: 220,
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-              decoration: BoxDecoration(
-                color: bubbleColor,
-                borderRadius: BorderRadius.only(
-                  topLeft: const Radius.circular(18),
-                  topRight: const Radius.circular(18),
-                  bottomLeft: Radius.circular(isSent ? 18 : 6),
-                  bottomRight: Radius.circular(isSent ? 6 : 18),
+            GestureDetector(
+              onLongPress: widget.onLongPress,
+              child: Container(
+                width: 230,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+                decoration: BoxDecoration(
+                  color: bubbleColor,
+                  borderRadius: BorderRadius.only(
+                    topLeft: const Radius.circular(18),
+                    topRight: const Radius.circular(18),
+                    bottomLeft: Radius.circular(isSent ? 18 : 6),
+                    bottomRight: Radius.circular(isSent ? 6 : 18),
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: isSent
+                          ? AppColors.primary.withOpacity(0.25)
+                          : Colors.black.withOpacity(0.06),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    )
+                  ],
                 ),
-                boxShadow: [
-                  BoxShadow(
-                    color: isSent
-                        ? AppColors.primary.withOpacity(0.25)
-                        : Colors.black.withOpacity(0.06),
-                    blurRadius: 6,
-                    offset: const Offset(0, 2),
-                  )
-                ],
-              ),
-              child: Row(
-                children: [
-                  GestureDetector(
-                    onTap: isSending ? null : _toggle,
-                    child: Container(
-                      width: 38,
-                      height: 38,
-                      decoration: BoxDecoration(
-                        color: fg.withOpacity(isSent ? 0.22 : 0.12),
-                        shape: BoxShape.circle,
+                child: Row(
+                  children: [
+                    GestureDetector(
+                      onTap: isSending ? null : _toggle,
+                      child: Container(
+                        width: 38,
+                        height: 38,
+                        decoration: BoxDecoration(
+                          color: fg.withOpacity(isSent ? 0.22 : 0.12),
+                          shape: BoxShape.circle,
+                        ),
+                        child: isSending
+                            ? Padding(
+                                padding: const EdgeInsets.all(10),
+                                child: CircularProgressIndicator(
+                                    strokeWidth: 2, color: fg),
+                              )
+                            : Icon(
+                                playing
+                                    ? Icons.pause_rounded
+                                    : Icons.play_arrow_rounded,
+                                color: fg,
+                                size: 24),
                       ),
-                      child: isSending
-                          ? Padding(
-                              padding: const EdgeInsets.all(10),
-                              child: CircularProgressIndicator(
-                                  strokeWidth: 2, color: fg),
-                            )
-                          : Icon(
-                              playing
-                                  ? Icons.pause_rounded
-                                  : Icons.play_arrow_rounded,
-                              color: fg,
-                              size: 24),
                     ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        SizedBox(
-                          height: 18,
-                          child: LayoutBuilder(builder: (context, c) {
-                            return Stack(
-                              alignment: Alignment.centerLeft,
-                              children: [
-                                Container(
-                                  height: 3,
-                                  decoration: BoxDecoration(
-                                    color: fg.withOpacity(0.25),
-                                    borderRadius: BorderRadius.circular(2),
-                                  ),
-                                ),
-                                FractionallySizedBox(
-                                  widthFactor: progress == 0 ? 0.001 : progress,
-                                  child: Container(
-                                    height: 3,
-                                    decoration: BoxDecoration(
-                                      color: fg,
-                                      borderRadius: BorderRadius.circular(2),
-                                    ),
-                                  ),
-                                ),
-                                Positioned(
-                                  left: (c.maxWidth - 10) * progress,
-                                  child: Container(
-                                    width: 10,
-                                    height: 10,
-                                    decoration: BoxDecoration(
-                                        color: fg, shape: BoxShape.circle),
-                                  ),
-                                ),
-                              ],
-                            );
-                          }),
-                        ),
-                        const SizedBox(height: 2),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Icon(Icons.mic_rounded,
-                                size: 13, color: fg.withOpacity(0.8)),
-                            Text(
-                              _fmt(playing || _position > Duration.zero
-                                  ? _position
-                                  : remaining),
-                              style: TextStyle(
-                                  color: fg.withOpacity(0.9),
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w500),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: SizedBox(
+                        height: 32,
+                        child: LayoutBuilder(builder: (context, c) {
+                          void seekAt(double dx) =>
+                              _seekToFraction(dx / c.maxWidth);
+                          return GestureDetector(
+                            behavior: HitTestBehavior.opaque,
+                            onTapDown: isSending
+                                ? null
+                                : (d) => seekAt(d.localPosition.dx),
+                            onHorizontalDragUpdate: isSending
+                                ? null
+                                : (d) => seekAt(d.localPosition.dx),
+                            child: CustomPaint(
+                              size: Size(c.maxWidth, 32),
+                              painter: _WaveformPainter(
+                                amps: _amps,
+                                progress: progress,
+                                played: fg,
+                                unplayed: fg.withOpacity(0.30),
+                              ),
                             ),
-                          ],
-                        ),
-                      ],
+                          );
+                        }),
+                      ),
                     ),
-                  ),
-                ],
+                    const SizedBox(width: 8),
+                    Text(
+                      _fmt(playing || _position > Duration.zero
+                          ? _position
+                          : remaining),
+                      style: TextStyle(
+                          color: fg.withOpacity(0.9),
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w600,
+                          fontFeatures: const [FontFeature.tabularFigures()]),
+                    ),
+                  ],
+                ),
               ),
             ),
             const SizedBox(height: 4),
@@ -874,6 +908,53 @@ class _VoiceBubbleState extends State<_VoiceBubble> {
       ),
     );
   }
+}
+
+/// Draws the voice-note waveform: rounded vertical bars whose height follows
+/// [amps]; bars left of [progress] use the [played] color, the rest [unplayed].
+class _WaveformPainter extends CustomPainter {
+  final List<double> amps;
+  final double progress;
+  final Color played;
+  final Color unplayed;
+
+  const _WaveformPainter({
+    required this.amps,
+    required this.progress,
+    required this.played,
+    required this.unplayed,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (amps.isEmpty) return;
+    final slot = size.width / amps.length;
+    final barWidth = slot * 0.58;
+    final radius = Radius.circular(barWidth / 2);
+    final center = size.height / 2;
+    final playedPaint = Paint()..color = played;
+    final unplayedPaint = Paint()..color = unplayed;
+
+    for (var i = 0; i < amps.length; i++) {
+      final h = math.max(3.0, amps[i] * size.height);
+      final x = slot * i + (slot - barWidth) / 2;
+      final barDone = (i + 0.5) / amps.length <= progress;
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromLTWH(x, center - h / 2, barWidth, h),
+          radius,
+        ),
+        barDone ? playedPaint : unplayedPaint,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(_WaveformPainter old) =>
+      old.progress != progress ||
+      old.played != played ||
+      old.unplayed != unplayed ||
+      old.amps != amps;
 }
 
 // ─── Emergency Bubble ─────────────────────────────────────────────────────────
@@ -1247,6 +1328,13 @@ class _ChatInputBarState extends State<ChatInputBar>
   Timer? _recordTimer;
   double _dragDx = 0;
 
+  /// True while the long-press gesture is actually held. `_startRecording` is
+  /// async (permission dialog, temp dir); the finger can lift before the
+  /// recorder starts — most commonly on first use, lifting to tap "Allow" on
+  /// the mic permission dialog. Without this flag the recorder then starts
+  /// with no gesture attached and nothing ever stops it.
+  bool _pressActive = false;
+
   static const double _cancelThreshold = -110;
 
   @override
@@ -1358,8 +1446,20 @@ class _ChatInputBarState extends State<ChatInputBar>
     final dir = await getTemporaryDirectory();
     final path =
         '${dir.path}/voice_${DateTime.now().millisecondsSinceEpoch}.m4a';
+    // The press may have been released while the awaits above ran (e.g. the
+    // finger lifted to answer the permission dialog). Starting now would leave
+    // an orphaned recording no gesture can stop — bail out instead.
+    if (!_pressActive) return;
     await _recorder.start(
         const RecordConfig(encoder: AudioEncoder.aacLc), path: path);
+    if (!_pressActive) {
+      // Released during recorder startup: discard immediately.
+      try {
+        final p = await _recorder.stop();
+        if (p != null) File(p).deleteSync();
+      } catch (_) {}
+      return;
+    }
     _recordStart = DateTime.now();
     _dragDx = 0;
     setState(() {
@@ -1563,14 +1663,28 @@ class _ChatInputBarState extends State<ChatInputBar>
     if (_hasText) {
       return GestureDetector(onTap: _send, child: circle);
     }
-    // Empty text ⇒ press-and-hold to record, slide left to cancel.
+    // Empty text ⇒ press-and-hold to record, slide left to cancel. A plain
+    // tap can't record, so surface the gesture instead of doing nothing.
     return GestureDetector(
-      onLongPressStart: (_) => _startRecording(),
+      onTap: () => ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Hold the mic to record a voice note'),
+          duration: Duration(seconds: 2),
+          behavior: SnackBarBehavior.floating,
+        ),
+      ),
+      onLongPressStart: (_) {
+        _pressActive = true;
+        _startRecording();
+      },
       onLongPressMoveUpdate: (d) {
         setState(() => _dragDx = d.offsetFromOrigin.dx);
       },
-      onLongPressEnd: (_) =>
-          _stopRecording(cancel: _dragDx < _cancelThreshold),
+      onLongPressEnd: (_) {
+        _pressActive = false;
+        if (_recording) _stopRecording(cancel: _dragDx < _cancelThreshold);
+      },
+      onLongPressCancel: () => _pressActive = false,
       child: circle,
     );
   }
@@ -1595,15 +1709,20 @@ class _ChatInputBarState extends State<ChatInputBar>
               fontSize: 13),
         ),
       ),
-      Container(
-        width: 46,
-        height: 46,
-        decoration: BoxDecoration(
-          color: cancelling ? AppColors.textLight : Colors.red,
-          shape: BoxShape.circle,
+      // Tap-to-send fallback: if the hold gesture is ever lost (stuck
+      // recording), this still ends the recording cleanly.
+      GestureDetector(
+        onTap: () => _stopRecording(cancel: false),
+        child: Container(
+          width: 46,
+          height: 46,
+          decoration: BoxDecoration(
+            color: cancelling ? AppColors.textLight : Colors.red,
+            shape: BoxShape.circle,
+          ),
+          child: const Center(
+              child: Icon(Icons.send_rounded, color: Colors.white, size: 22)),
         ),
-        child: const Center(
-            child: Icon(Icons.mic_rounded, color: Colors.white, size: 22)),
       ),
     ]);
   }

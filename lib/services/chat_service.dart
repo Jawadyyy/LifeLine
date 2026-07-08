@@ -85,6 +85,7 @@ class ChatService {
       imageUrl: data['imageUrl'] as String?,
       audioUrl: data['audioUrl'] as String?,
       durationMs: (data['durationMs'] as num?)?.toInt(),
+      edited: data['edited'] == true,
     );
   }
 
@@ -155,6 +156,54 @@ class ChatService {
       if (durationMs != null) 'durationMs': durationMs,
     });
     await batch.commit();
+  }
+
+  /// Sender-side: rewrites a message's text and tags it `edited`. The chat
+  /// preview is refreshed in case the edited message is the latest one.
+  Future<void> editMessage(
+      String chatId, String messageId, String newText) async {
+    final trimmed = newText.trim();
+    if (trimmed.isEmpty) return;
+    await _chatRef(chatId).collection('messages').doc(messageId).update({
+      'text': trimmed,
+      'edited': true,
+    });
+    await _refreshChatPreview(chatId);
+  }
+
+  /// Sender-side: removes a message entirely, then repoints the chat preview
+  /// at whatever message is now the latest.
+  Future<void> deleteMessage(String chatId, String messageId) async {
+    await _chatRef(chatId).collection('messages').doc(messageId).delete();
+    await _refreshChatPreview(chatId);
+  }
+
+  /// Recomputes `lastMessage`/`lastTime` from the newest surviving message so
+  /// the chat list doesn't keep showing an edited-away or deleted preview.
+  Future<void> _refreshChatPreview(String chatId) async {
+    final snap = await _chatRef(chatId)
+        .collection('messages')
+        .orderBy('time', descending: true)
+        .limit(1)
+        .get();
+    if (snap.docs.isEmpty) {
+      await _chatRef(chatId).set(
+          {'lastMessage': ''}, SetOptions(merge: true));
+      return;
+    }
+    final data = snap.docs.first.data();
+    final text = (data['text'] as String?)?.trim() ?? '';
+    final preview = text.isNotEmpty
+        ? text
+        : data['imageUrl'] != null
+            ? '📷 Photo'
+            : data['audioUrl'] != null
+                ? '🎤 Voice message'
+                : '';
+    await _chatRef(chatId).set({
+      'lastMessage': preview,
+      if (data['time'] != null) 'lastTime': data['time'],
+    }, SetOptions(merge: true));
   }
 
   /// Recipient-side: advances the peer's incoming messages from `sent` to
@@ -292,6 +341,28 @@ class ChatProvider extends ChangeNotifier {
     }
   }
 
+  /// Rewrites one of the current user's messages (long-press → Edit).
+  Future<void> editMessage(String messageId, String newText) async {
+    try {
+      await _service.editMessage(chatId, messageId, newText);
+    } catch (error) {
+      _errorMessage = 'Could not edit message';
+      logDebug('ChatProvider editMessage error: $error');
+      notifyListeners();
+    }
+  }
+
+  /// Deletes one of the current user's messages (long-press → Delete).
+  Future<void> deleteMessage(String messageId) async {
+    try {
+      await _service.deleteMessage(chatId, messageId);
+    } catch (error) {
+      _errorMessage = 'Could not delete message';
+      logDebug('ChatProvider deleteMessage error: $error');
+      notifyListeners();
+    }
+  }
+
   /// True while a picked image / recorded clip is uploading, so the input bar
   /// can show a spinner instead of letting the user fire duplicates.
   bool _sendingMedia = false;
@@ -302,7 +373,7 @@ class ChatProvider extends ChangeNotifier {
     _sendingMedia = true;
     notifyListeners();
     try {
-      final url = await _uploads.uploadImage(localPath);
+      final url = await _uploads.uploadImage(localPath, chatId: chatId);
       if (url == null) {
         _errorMessage = 'Image upload failed';
       } else {

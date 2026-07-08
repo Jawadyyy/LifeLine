@@ -1,60 +1,106 @@
 import 'package:lifeline/utils/logger.dart';
-import 'dart:convert';
 import 'dart:io';
 
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 
-/// Uploads chat media to their hosts and returns a public URL.
+/// Uploads all app media (chat images, voice notes, profile pictures) to
+/// Supabase Storage and returns a public URL.
 ///
-/// Images reuse the same ImgBB path the profile picture upload uses (see
-/// ProfileController.uploadImageToImgBB); audio goes to Firebase Storage under
-/// `chat_media/{chatId}/` since ImgBB only accepts images.
+/// One public bucket (`media`) with per-feature prefixes:
+///   chat/{chatId}/...    chat images + voice notes
+///   profile/{uid}/...    profile pictures
+///
+/// Supabase replaced the old split hosting (images on ImgBB, audio on
+/// Firebase Storage) — one free host for every file type, no billing plan
+/// required. URLs already stored in Firestore keep working; only new uploads
+/// land here.
 class MediaUploadService {
-  MediaUploadService({FirebaseStorage? storage}) : _storage = storage;
+  MediaUploadService({http.Client? httpClient})
+      : _http = httpClient ?? http.Client();
 
-  // Resolved lazily so merely constructing this service (e.g. inside a
-  // ChatProvider under unit test) never touches FirebaseStorage.instance,
-  // which throws when Firebase isn't initialized.
-  final FirebaseStorage? _storage;
-  FirebaseStorage get _fs => _storage ?? FirebaseStorage.instance;
+  final http.Client _http;
 
-  /// Uploads an image file to ImgBB and returns its hosted URL, or null on
-  /// failure. Mirrors the profile-picture upload path.
-  Future<String?> uploadImage(String filePath) async {
-    final apiKey = dotenv.env['IMGBB_KEY'] ?? '';
-    final url = Uri.parse('https://api.imgbb.com/1/upload?key=$apiKey');
+  static const _bucket = 'media';
+
+  String get _baseUrl => (dotenv.env['SUPABASE_URL'] ?? '')
+      .replaceAll(RegExp(r'/+$'), '');
+  String get _anonKey => dotenv.env['SUPABASE_ANON_KEY'] ?? '';
+
+  /// Uploads [filePath] to `bucket/objectPath` and returns the public URL, or
+  /// null on failure. Object paths get a millisecond timestamp prefix so
+  /// repeat uploads never collide or overwrite.
+  Future<String?> _upload(
+    String filePath,
+    String objectPath,
+    String contentType,
+  ) async {
+    if (_baseUrl.isEmpty || _anonKey.isEmpty) {
+      logDebug('MediaUploadService: SUPABASE_URL / SUPABASE_ANON_KEY missing '
+          'from .env — uploads cannot work');
+      return null;
+    }
     try {
-      final request = http.MultipartRequest('POST', url)
-        ..files.add(await http.MultipartFile.fromPath('image', filePath));
-      final response = await request.send();
-      final res = await http.Response.fromStream(response);
-      if (res.statusCode == 200) {
-        return jsonDecode(res.body)['data']['url'] as String?;
+      final bytes = await File(filePath).readAsBytes();
+      final uri = Uri.parse('$_baseUrl/storage/v1/object/$_bucket/$objectPath');
+      final resp = await _http
+          .post(
+            uri,
+            headers: {
+              'Authorization': 'Bearer $_anonKey',
+              'apikey': _anonKey,
+              'Content-Type': contentType,
+              // Overwrite guard is handled by unique paths; upsert false keeps
+              // an accidental duplicate path from clobbering an older file.
+              'x-upsert': 'false',
+            },
+            body: bytes,
+          )
+          .timeout(const Duration(seconds: 30));
+
+      if (resp.statusCode == 200) {
+        return '$_baseUrl/storage/v1/object/public/$_bucket/$objectPath';
       }
-      logDebug('MediaUploadService: image upload failed ${res.statusCode}');
+      logDebug(
+          'MediaUploadService: upload failed ${resp.statusCode} ${resp.body}');
       return null;
     } catch (e) {
-      logDebug('MediaUploadService: image upload error $e');
+      logDebug('MediaUploadService: upload error $e');
       return null;
     }
   }
 
-  /// Uploads a recorded audio clip to Firebase Storage and returns its download
-  /// URL, or null on failure.
-  Future<String?> uploadAudio(String filePath, {required String chatId}) async {
-    try {
-      final name = '${DateTime.now().millisecondsSinceEpoch}.m4a';
-      final ref = _fs.ref().child('chat_media/$chatId/$name');
-      await ref.putFile(
-        File(filePath),
-        SettableMetadata(contentType: 'audio/mp4'),
-      );
-      return await ref.getDownloadURL();
-    } catch (e) {
-      logDebug('MediaUploadService: audio upload error $e');
-      return null;
-    }
+  String _stamp() => DateTime.now().millisecondsSinceEpoch.toString();
+
+  /// Uploads a chat image and returns its hosted URL, or null on failure.
+  Future<String?> uploadImage(String filePath, {String? chatId}) {
+    final ext = filePath.split('.').last.toLowerCase();
+    final safeExt = ['jpg', 'jpeg', 'png', 'webp', 'gif'].contains(ext)
+        ? ext
+        : 'jpg';
+    final prefix = chatId != null ? 'chat/$chatId' : 'chat/misc';
+    return _upload(
+      filePath,
+      '$prefix/${_stamp()}.$safeExt',
+      'image/${safeExt == 'jpg' ? 'jpeg' : safeExt}',
+    );
+  }
+
+  /// Uploads a recorded voice note and returns its hosted URL, or null on
+  /// failure.
+  Future<String?> uploadAudio(String filePath, {required String chatId}) {
+    return _upload(filePath, 'chat/$chatId/${_stamp()}.m4a', 'audio/mp4');
+  }
+
+  /// Uploads a profile picture and returns its hosted URL, or null on failure.
+  Future<String?> uploadProfileImage(String filePath, {required String uid}) {
+    final ext = filePath.split('.').last.toLowerCase();
+    final safeExt =
+        ['jpg', 'jpeg', 'png', 'webp'].contains(ext) ? ext : 'jpg';
+    return _upload(
+      filePath,
+      'profile/$uid/${_stamp()}.$safeExt',
+      'image/${safeExt == 'jpg' ? 'jpeg' : safeExt}',
+    );
   }
 }

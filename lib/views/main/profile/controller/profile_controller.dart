@@ -1,14 +1,12 @@
 import 'package:lifeline/utils/logger.dart';
-import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:lifeline/models/user_model.dart';
 import 'package:lifeline/services/auth_service.dart';
 import 'package:lifeline/services/global_data_service.dart';
+import 'package:lifeline/services/media_upload_service.dart';
 
 class ProfileController extends ChangeNotifier {
   final ImagePicker _picker = ImagePicker();
@@ -207,29 +205,13 @@ class ProfileController extends ChangeNotifier {
     }
   }
 
-  // Upload image to ImgBB
-  Future<String?> uploadImageToImgBB(String filePath) async {
-    final apiKey = dotenv.env['IMGBB_KEY'] ?? '';
-    final url = Uri.parse('https://api.imgbb.com/1/upload?key=$apiKey');
-
-    try {
-      final request = http.MultipartRequest('POST', url)
-        ..files.add(await http.MultipartFile.fromPath('image', filePath));
-
-      final response = await request.send();
-      final res = await http.Response.fromStream(response);
-
-      if (res.statusCode == 200) {
-        final data = jsonDecode(res.body);
-        return data['data']['url'];
-      } else {
-        _setError("Image upload failed");
-        return null;
-      }
-    } catch (e) {
-      _setError("Error uploading image: $e");
-      return null;
-    }
+  // Upload profile picture to Supabase Storage
+  Future<String?> uploadProfileImage(String filePath) async {
+    final String userId = _authService.getCurrentUserId();
+    final url =
+        await MediaUploadService().uploadProfileImage(filePath, uid: userId);
+    if (url == null) _setError("Image upload failed");
+    return url;
   }
 
   // Update profile image
@@ -238,7 +220,7 @@ class ProfileController extends ChangeNotifier {
       final XFile? pickedFile = await _picker.pickImage(source: source);
       if (pickedFile == null) return false;
 
-      final imageUrl = await uploadImageToImgBB(pickedFile.path);
+      final imageUrl = await uploadProfileImage(pickedFile.path);
       if (imageUrl == null) return false;
 
       final String userId = _authService.getCurrentUserId();

@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:lifeline/models/chat_message.dart';
 import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import 'package:lifeline/components/chat_widgets.dart';
 import 'package:lifeline/services/chat_service.dart';
@@ -192,6 +194,155 @@ class _ChatBodyState extends State<_ChatBody> {
     });
   }
 
+  /// Long-press menu: copy any text message; edit/delete only the current
+  /// user's own messages. Edits are limited to plain text messages that have
+  /// actually reached the server.
+  Future<void> _showMessageActions(
+      BuildContext context, ChatProvider provider, ChatMessage msg) async {
+    final onServer = msg.status != MessageStatus.sending &&
+        msg.status != MessageStatus.failed;
+    final canCopy = msg.text.trim().isNotEmpty;
+    final canEdit = msg.isSent && msg.type == 'text' && onServer;
+    final canDelete = msg.isSent && onServer;
+    if (!canCopy && !canEdit && !canDelete) return;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 8),
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: AppColors.textGrey.withOpacity(0.4),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 6),
+            if (canCopy)
+              ListTile(
+                leading: const Icon(Icons.copy_rounded,
+                    color: AppColors.textGrey),
+                title: const Text('Copy'),
+                onTap: () {
+                  Clipboard.setData(ClipboardData(text: msg.text));
+                  Navigator.pop(sheetContext);
+                },
+              ),
+            if (canEdit)
+              ListTile(
+                leading:
+                    const Icon(Icons.edit_rounded, color: AppColors.textGrey),
+                title: const Text('Edit'),
+                onTap: () {
+                  Navigator.pop(sheetContext);
+                  _showEditDialog(provider, msg);
+                },
+              ),
+            if (canDelete)
+              ListTile(
+                leading: Icon(Icons.delete_outline_rounded,
+                    color: AppColors.error),
+                title: Text('Delete',
+                    style: TextStyle(color: AppColors.error)),
+                onTap: () {
+                  Navigator.pop(sheetContext);
+                  _confirmDelete(provider, msg);
+                },
+              ),
+            const SizedBox(height: 6),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _showEditDialog(ChatProvider provider, ChatMessage msg) async {
+    final controller = TextEditingController(text: msg.text);
+    final newText = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: Colors.white,
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Edit message',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          maxLines: null,
+          textCapitalization: TextCapitalization.sentences,
+          decoration: InputDecoration(
+            border:
+                OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('CANCEL'),
+          ),
+          ElevatedButton(
+            onPressed: () =>
+                Navigator.pop(dialogContext, controller.text.trim()),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8)),
+            ),
+            child: const Text('SAVE', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (newText == null || newText.isEmpty || newText == msg.text) return;
+    await provider.editMessage(msg.id, newText);
+  }
+
+  Future<void> _confirmDelete(ChatProvider provider, ChatMessage msg) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: Colors.white,
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Delete message?',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+        content: const Text(
+            'This message will be removed for everyone in the chat.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('CANCEL'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.error,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8)),
+            ),
+            child:
+                const Text('DELETE', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) {
+      await provider.deleteMessage(msg.id);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     // Reuse a cached provider so the Firestore stream persists across visits;
@@ -275,7 +426,11 @@ class _ChatBodyState extends State<_ChatBody> {
                               5;
                       return Column(children: [
                         if (showDivider) TimeDivider(time: msg.time),
-                        MessageBubble(message: msg),
+                        MessageBubble(
+                          message: msg,
+                          onLongPress: () =>
+                              _showMessageActions(context, provider, msg),
+                        ),
                       ]);
                     },
                   ),

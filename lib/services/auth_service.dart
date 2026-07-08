@@ -148,24 +148,37 @@ class AuthService {
             'username': user.displayName ?? 'No name',
             'email': user.email,
             'phone': '',
+            'profileImageUrl': user.photoURL ?? '',
             'created_at': FieldValue.serverTimestamp(),
             'isProfileComplete': false,
           }, SetOptions(merge: true));
-        } else if (existingUsername == null ||
-            existingUsername.isEmpty ||
-            existingUsername == 'Loading...') {
-          // Repair docs created by the old race (or corrupted by the
-          // profile-setup fallback persisting the 'Loading...' placeholder).
-          logDebug('🩹 Backfilling missing username on existing document');
-          await FirebaseFirestore.instance
-              .collection('users')
-              .doc(user.uid)
-              .set({
-            'username': user.displayName ?? 'No name',
-            'email': existingData?['email'] ?? user.email,
-          }, SetOptions(merge: true));
         } else {
-          logDebug('✅ User document already exists');
+          // Repair docs created by the old race (or corrupted by the
+          // profile-setup fallback persisting placeholders): backfill a
+          // missing username and/or profile picture from the Google account.
+          final patch = <String, dynamic>{};
+          if (existingUsername == null ||
+              existingUsername.isEmpty ||
+              existingUsername == 'Loading...') {
+            patch['username'] = user.displayName ?? 'No name';
+            patch['email'] = existingData?['email'] ?? user.email;
+          }
+          final existingImage =
+              (existingData?['profileImageUrl'] as String?) ?? '';
+          final hasRealImage = existingImage.isNotEmpty &&
+              !existingImage.contains('via.placeholder.com');
+          if (!hasRealImage && (user.photoURL ?? '').isNotEmpty) {
+            patch['profileImageUrl'] = user.photoURL;
+          }
+          if (patch.isNotEmpty) {
+            logDebug('🩹 Backfilling ${patch.keys} on existing document');
+            await FirebaseFirestore.instance
+                .collection('users')
+                .doc(user.uid)
+                .set(patch, SetOptions(merge: true));
+          } else {
+            logDebug('✅ User document already exists');
+          }
         }
       }
 

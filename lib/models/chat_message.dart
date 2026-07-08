@@ -26,6 +26,10 @@ class ChatMessage {
   /// and progress bar without having to load the file first.
   final int? durationMs;
 
+  /// True once the sender has edited the message; the bubble shows an
+  /// "edited" tag next to the timestamp.
+  final bool edited;
+
   ChatMessage({
     required this.id,
     required this.text,
@@ -37,6 +41,7 @@ class ChatMessage {
     this.imageUrl,
     this.audioUrl,
     this.durationMs,
+    this.edited = false,
   });
 
   bool get isEmergency => type == 'emergency';
@@ -58,5 +63,6 @@ class ChatMessage {
         imageUrl: imageUrl,
         audioUrl: audioUrl,
         durationMs: durationMs,
+        edited: edited,
       );
 }
