@@ -20,7 +20,7 @@
   "call1122": "Call 1122",
   "ambulance": "Ambulance",
   "viewCard": "View card",
-  "holdToCall": "HOLD TO CALL",
+  "tapToGetHelp": "TAP TO GET HELP",
   "findDonationCamps": "Find donation camps near you",
   "safeSentCount": "{count, plural, =1{Sent 'I'm safe' to 1 contact} other{Sent 'I'm safe' to {count} contacts}}",
   "@safeSentCount": {

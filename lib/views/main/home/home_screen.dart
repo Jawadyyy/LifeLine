@@ -423,7 +423,7 @@ class _SosDialState extends State<_SosDial> with SingleTickerProviderStateMixin 
                           color: Colors.white,
                           letterSpacing: 2)),
                   const SizedBox(height: 8),
-                  Text(AppLocalizations.of(context).holdToCall,
+                  Text(AppLocalizations.of(context).tapToGetHelp,
                       style: LL.body(11,
                           weight: FontWeight.w700,
                           color: Colors.white.withOpacity(0.85),

@@ -61,3 +61,4 @@ android/key.properties
 **/apiKeys.dart
 **/secrets.dart
 **/firebase_options.dart
+.vercel

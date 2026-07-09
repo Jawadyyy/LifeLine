@@ -20,7 +20,7 @@
   "call1122": "1122 کال کریں",
   "ambulance": "ایمبولینس",
   "viewCard": "کارڈ دیکھیں",
-  "holdToCall": "کال کے لیے دبائے رکھیں",
+  "tapToGetHelp": "مدد کے لیے ٹیپ کریں",
   "findDonationCamps": "اپنے قریب عطیہ کیمپ تلاش کریں",
   "safeSentCount": "{count, plural, =1{ایک رابطے کو 'میں محفوظ ہوں' بھیج دیا} other{{count} رابطوں کو 'میں محفوظ ہوں' بھیج دیا}}",
   "@safeSentCount": {

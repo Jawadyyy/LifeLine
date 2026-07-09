@@ -95,11 +95,19 @@ class ContactsScreenController {
       final Map<String, Map<String, dynamic>> registeredUsers =
           results[1] as Map<String, Map<String, dynamic>>;
 
+      // Phones already saved as emergency contacts — hide them from the
+      // picker so the same number can't be added twice.
+      final alreadyAdded = view.contacts
+          .map((c) => _normalizeTo10Digits((c['phone'] as String?) ?? ''))
+          .where((p) => p.length == 10)
+          .toSet();
+
       final filteredContacts = <Map<String, dynamic>>[];
 
       for (final contact in phoneContacts) {
         for (final phone in contact.phones) {
           final normalized = _normalizeTo10Digits(phone.number);
+          if (alreadyAdded.contains(normalized)) break;
           if (registeredUsers.containsKey(normalized)) {
             filteredContacts.add({
               'contact': contact,
@@ -224,6 +232,17 @@ class ContactsScreenController {
     if (_currentUser != null) {
       setStateFn(() => view.isLoading = true);
       try {
+        // Guard against duplicates even if the picker list was stale.
+        final normalized = _normalizeTo10Digits(matchedPhone);
+        final existing = await _contactsRef.get();
+        final alreadyExists = existing.docs.any((doc) =>
+            _normalizeTo10Digits((doc.data()['phone'] as String?) ?? '') ==
+            normalized);
+        if (alreadyExists) {
+          _showErrorSnackbar('This contact is already added');
+          return;
+        }
+
         final newContact = {
           'name': selectedContact.displayName,
           'phone': matchedPhone,

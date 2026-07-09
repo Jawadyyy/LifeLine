@@ -656,19 +656,22 @@ class _FullScreenImage extends StatelessWidget {
       body: Stack(
         children: [
           Positioned.fill(
+            // minScale must stay at 1.0: anything below lets a pinch-out
+            // shrink the child, and InteractiveViewer then clamps the
+            // translation so the image sticks to the top-left corner.
             child: InteractiveViewer(
-              minScale: 0.8,
               maxScale: 4,
-              child: Center(
+              child: SizedBox.expand(
                 child: CachedNetworkImage(
                   imageUrl: url,
                   fit: BoxFit.contain,
-                  placeholder: (_, __) => const CircularProgressIndicator(
-                      color: Colors.white),
-                  errorWidget: (_, __, ___) => const Icon(
-                      Icons.broken_image_outlined,
-                      color: Colors.white54,
-                      size: 48),
+                  placeholder: (_, __) => const Center(
+                    child: CircularProgressIndicator(color: Colors.white),
+                  ),
+                  errorWidget: (_, __, ___) => const Center(
+                    child: Icon(Icons.broken_image_outlined,
+                        color: Colors.white54, size: 48),
+                  ),
                 ),
               ),
             ),
