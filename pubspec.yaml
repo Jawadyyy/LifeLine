@@ -83,7 +83,9 @@ dev_dependencies:
 flutter_launcher_icons:
   android: true
   ios: false
-  image_path: "assets/images/main.jpg"
+  image_path: "assets/images/logos/LifeLine-app-icon-1024-rounded.png"
+  adaptive_icon_background: "#EE5C2B"
+  adaptive_icon_foreground: "assets/images/logos/LifeLine-app-icon-1024-rounded.png"
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

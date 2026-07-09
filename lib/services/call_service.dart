@@ -1,9 +1,12 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:agora_rtc_engine/agora_rtc_engine.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:http/http.dart' as http;
 import 'package:lifeline/services/chat_service.dart';
 import 'package:lifeline/services/push_service.dart';
 import 'package:lifeline/utils/logger.dart';
@@ -26,6 +29,11 @@ class CallService {
   RtcEngine? _engine;
   StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _incomingSub;
   String? _listeningUid;
+
+  /// Set by the active [CallScreen] so a fatal Agora join failure (e.g. the
+  /// project has an App Certificate enabled and we joined token-less) tears the
+  /// call down with an error instead of showing a fake "connected" timer.
+  void Function(String reason)? onEngineFailure;
 
   /// A ringing call older than this is stale (app was closed/killed while it
   /// rang) — don't resurrect it as a fresh incoming-call screen on launch.
@@ -56,8 +64,19 @@ class CallService {
       onUserJoined: (conn, uid, _) => logDebug('Agora: peer $uid joined'),
       onUserOffline: (conn, uid, reason) =>
           logDebug('Agora: peer $uid left ($reason)'),
-      onConnectionStateChanged: (conn, state, reason) =>
-          logDebug('Agora: connection $state ($reason)'),
+      onConnectionStateChanged: (conn, state, reason) {
+        logDebug('Agora: connection $state ($reason)');
+        if (state == ConnectionStateType.connectionStateFailed) {
+          final tokenIssue = reason ==
+                  ConnectionChangedReasonType.connectionChangedInvalidToken ||
+              reason ==
+                  ConnectionChangedReasonType.connectionChangedTokenExpired;
+          onEngineFailure?.call(tokenIssue
+              ? 'Call setup failed (Agora token). '
+                  'Disable the App Certificate or add a token server.'
+              : 'Call connection failed.');
+        }
+      },
     ));
     await engine.enableAudio();
     await engine.setChannelProfile(ChannelProfileType.channelProfileCommunication);
@@ -158,10 +177,47 @@ class CallService {
 
   // ---- In-call engine controls ---------------------------------------------
 
+  /// Fetches an RTC token from the relay's /api/agora-token endpoint. The
+  /// Agora project has an App Certificate enabled, so joins are rejected
+  /// without one. Returns '' when the relay isn't configured or the fetch
+  /// fails — the join then proceeds token-less and the engine failure handler
+  /// surfaces the real error to the call screen.
+  Future<String> _fetchRtcToken(String channelName) async {
+    final base =
+        (dotenv.env['PUSH_RELAY_URL'] ?? '').replaceAll(RegExp(r'/+$'), '');
+    if (base.isEmpty) {
+      logDebug('Agora: PUSH_RELAY_URL not set — joining token-less');
+      return '';
+    }
+    try {
+      final idToken = await FirebaseAuth.instance.currentUser?.getIdToken();
+      if (idToken == null || idToken.isEmpty) return '';
+      final resp = await http
+          .post(
+            Uri.parse('$base/api/agora-token'),
+            headers: {
+              'Authorization': 'Bearer $idToken',
+              'Content-Type': 'application/json',
+            },
+            body: jsonEncode({'channelName': channelName}),
+          )
+          .timeout(const Duration(seconds: 8));
+      if (resp.statusCode != 200) {
+        logDebug('Agora token fetch failed ${resp.statusCode}: ${resp.body}');
+        return '';
+      }
+      return (jsonDecode(resp.body)['token'] as String?) ?? '';
+    } catch (e) {
+      logDebug('Agora token fetch error: $e');
+      return '';
+    }
+  }
+
   Future<void> joinChannel(String channelName) async {
     final engine = await _ensureEngine();
+    final token = await _fetchRtcToken(channelName);
     await engine.joinChannel(
-      token: '',
+      token: token,
       channelId: channelName,
       uid: 0,
       options: const ChannelMediaOptions(

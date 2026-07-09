@@ -1,12 +1,6 @@
-import 'package:lifeline/utils/logger.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:lifeline/components/navigation.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:lifeline/constants/app_colors.dart';
-import 'package:lifeline/views/entry/welcome_screen.dart';
-import 'package:lifeline/views/main/profile/profile_setup_screen.dart';
+import 'package:lifeline/services/auth_wrapper.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -243,7 +237,7 @@ class _RippleDisc extends StatelessWidget {
             },
           ),
 
-          // Glass disc + heart.
+          // Glass disc + app logo.
           Container(
             width: 90,
             height: 90,
@@ -260,7 +254,12 @@ class _RippleDisc extends StatelessWidget {
                 ),
               ],
             ),
-            child: const Icon(Icons.favorite, color: Colors.white, size: 44),
+            padding: const EdgeInsets.all(16),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(14),
+              child: Image.asset(
+                  'assets/images/logos/LifeLine-app-icon-1024-rounded.png'),
+            ),
           ),
         ],
       ),
@@ -321,92 +320,6 @@ class _LoadBar extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-}
-
-// NEW: AuthWrapper - handles automatic navigation based on auth state
-class AuthWrapper extends StatelessWidget {
-  const AuthWrapper({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return StreamBuilder<User?>(
-      stream: FirebaseAuth.instance.authStateChanges(),
-      builder: (context, snapshot) {
-        // Show loading while checking auth state
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return Scaffold(
-            backgroundColor: AppColors.primary,
-            body: Center(
-              child: CircularProgressIndicator(
-                color: AppColors.textTertiary,
-              ),
-            ),
-          );
-        }
-
-        // Debug prints
-        logDebug('🔍 Auth State: ${snapshot.data != null ? "signed in" : "No user"}');
-        logDebug('🔍 User ID: ${snapshot.data?.uid ?? "null"}');
-
-        // Not logged in - show welcome screen
-        if (snapshot.data == null) {
-          logDebug('➡️ Navigating to WelcomeScreen');
-          return const WelcomeScreen();
-        }
-
-        // Logged in - use StreamBuilder to listen to profile changes
-        final userId = snapshot.data!.uid;
-        logDebug('➡️ User logged in, listening to profile changes...');
-
-        return StreamBuilder<DocumentSnapshot>(
-          stream: FirebaseFirestore.instance
-              .collection('users')
-              .doc(userId)
-              .snapshots(),
-          builder: (context, profileSnapshot) {
-            if (profileSnapshot.connectionState == ConnectionState.waiting) {
-              return Scaffold(
-                backgroundColor: AppColors.primary,
-                body: Center(
-                  child: CircularProgressIndicator(
-                    color: AppColors.textTertiary,
-                  ),
-                ),
-              );
-            }
-
-            // Handle case where document doesn't exist yet
-            if (!profileSnapshot.hasData || !profileSnapshot.data!.exists) {
-              logDebug(
-                  '⚠️ User document does not exist, showing ProfileSetupScreen');
-              return ProfileSetupScreen(
-                key: ValueKey(userId),
-              );
-            }
-
-            // Check profile completion status
-            final data = profileSnapshot.data!.data() as Map<String, dynamic>?;
-            final isProfileComplete = data?['isProfileComplete'] == true;
-
-            logDebug('📋 Profile complete: $isProfileComplete');
-            logDebug('📋 User data: ${data != null ? "loaded" : "null"}');
-
-            if (isProfileComplete) {
-              logDebug('➡️ Navigating to MainNavigationScreen');
-              return MainNavigationScreen(
-                key: ValueKey(userId),
-              );
-            } else {
-              logDebug('➡️ Navigating to ProfileSetupScreen');
-              return ProfileSetupScreen(
-                key: ValueKey(userId),
-              );
-            }
-          },
-        );
-      },
     );
   }
 }

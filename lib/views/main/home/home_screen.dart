@@ -138,7 +138,13 @@ class _HomeScreenState extends State<HomeScreen> {
       padding: const EdgeInsets.fromLTRB(24, 12, 24, 0),
       child: Row(
         children: [
-          Image.asset('assets/images/logos/logo1.png', height: 26, width: 26),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(7),
+            child: Image.asset(
+                'assets/images/logos/LifeLine-app-icon-1024-rounded.png',
+                height: 28,
+                width: 28),
+          ),
           const SizedBox(width: 9),
           Text('LifeLine',
               style: LL.display(20, weight: FontWeight.w800, letterSpacing: 0.2)),

@@ -61,12 +61,17 @@ function sortedChatId(a, b) {
   return [a, b].sort().join('_');
 }
 
-async function authorize({ db, callerUid, recipientUid, kind, chatId }) {
+async function authorize({ db, callerUid, recipientUid, kind, chatId, payload }) {
   if (kind === 'emergency' || kind === 'safe') {
     // Membership is provable from the deterministic chat id alone.
     const expected = sortedChatId(callerUid, recipientUid);
     if (chatId && chatId !== expected) return false;
     return true; // caller is, by construction, a participant of expected
+  }
+  if (kind === 'incoming_call') {
+    // Direct user-to-user ring. The payload's callerUid must be the verified
+    // caller so the recipient's app trusts the routing data it receives.
+    return !payload || !payload.callerUid || payload.callerUid === callerUid;
   }
   if (kind === 'donation_accept') {
     // recipientUid is the post owner; caller must be the donor who accepted
@@ -104,6 +109,11 @@ function buildNotification(kind, payload) {
         title: '🩸 Donation request accepted',
         body: name + ' offered to donate blood.',
       };
+    case 'incoming_call':
+      return {
+        title: '📞 Incoming call',
+        body: ((payload && payload.callerName) || 'Someone') + ' is calling you…',
+      };
     default:
       return { title: 'LifeLine', body: 'You have a new notification.' };
   }
@@ -118,6 +128,11 @@ function buildData(kind, chatId, payload) {
   if (p.senderUid) data.senderUid = String(p.senderUid);
   if (p.senderName) data.senderName = String(p.senderName);
   if (p.route) data.route = String(p.route);
+  // incoming_call routing (PushService.routeFor reads these).
+  if (p.callId) data.callId = String(p.callId);
+  if (p.channelName) data.channelName = String(p.channelName);
+  if (p.callerUid) data.callerUid = String(p.callerUid);
+  if (p.callerName) data.callerName = String(p.callerName);
   return data;
 }
 
@@ -170,7 +185,7 @@ export default async function handler(req, res) {
   const db = getFirestore();
 
   // 2. AuthZ — is the caller allowed to ping this recipient for this kind?
-  const allowed = await authorize({ db, callerUid, recipientUid, kind, chatId });
+  const allowed = await authorize({ db, callerUid, recipientUid, kind, chatId, payload });
   if (!allowed) {
     res.status(403).json({ error: 'Not allowed to notify this recipient' });
     return;
@@ -189,7 +204,9 @@ export default async function handler(req, res) {
     notification: buildNotification(kind, payload),
     data: buildData(kind, chatId, payload),
     android: {
-      priority: kind === 'emergency' ? 'high' : 'normal',
+      priority: kind === 'emergency' || kind === 'incoming_call' ? 'high' : 'normal',
+      // A ring is worthless once the caller gives up (30 s ring timeout).
+      ...(kind === 'incoming_call' ? { ttl: 45_000 } : {}),
       notification: { channelId: 'lifeline_alerts' },
     },
     tokens,

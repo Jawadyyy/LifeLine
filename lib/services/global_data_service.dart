@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:lifeline/utils/logger.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -17,6 +19,7 @@ class GlobalDataService extends ChangeNotifier {
 
   // Data storage
   List<Map<String, dynamic>> _contacts = [];
+  StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _contactsSub;
   UserModel? _currentUser;
   String _currentAddress = 'Fetching location...';
   bool _isLocationFetched = false;
@@ -110,21 +113,28 @@ class GlobalDataService extends ChangeNotifier {
     }
   }
 
-  // Load contacts data once
+  // Attaches a live Firestore listener to the user's contacts subcollection,
+  // so additions made by other users (reciprocal adds) show up instantly
+  // instead of only after an app restart. The returned future completes when
+  // the first snapshot has been applied, preserving the old await semantics.
   Future<void> loadContactsData({bool forceReload = false}) async {
     final currentAuthUser = FirebaseAuth.instance.currentUser;
 
     // Check if user has changed
     if (_currentUserId != null && _currentUserId != currentAuthUser?.uid) {
       logDebug('GlobalDataService: User changed, clearing contacts data');
+      await _contactsSub?.cancel();
+      _contactsSub = null;
       _contacts.clear();
       _hasLoadedContacts = false;
       _currentUserId = currentAuthUser?.uid;
     }
 
-    if (_hasLoadedContacts && !forceReload) {
+    // Listener already attached and streaming — nothing to do. forceReload
+    // re-attaches, which immediately re-delivers the current snapshot.
+    if (_contactsSub != null && !forceReload) {
       logDebug(
-          'GlobalDataService: Contacts data already loaded, skipping...');
+          'GlobalDataService: Contacts listener already active, skipping...');
       return;
     }
 
@@ -133,43 +143,53 @@ class GlobalDataService extends ChangeNotifier {
     _isLoadingContacts = true;
     notifyListeners();
 
-    try {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user != null) {
-        final querySnapshot = await FirebaseFirestore.instance
-            .collection('users')
-            .doc(user.uid)
-            .collection('contacts')
-            .get();
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      logDebug(
+          'GlobalDataService: No authenticated user, cannot load contacts');
+      _contacts.clear();
+      _hasLoadedContacts = false;
+      _isLoadingContacts = false;
+      notifyListeners();
+      return;
+    }
 
-        _contacts = querySnapshot.docs.map((doc) {
-          final data = doc.data();
-          data['id'] = doc.id;
-          return data;
-        }).toList();
+    await _contactsSub?.cancel();
+    final firstSnapshot = Completer<void>();
 
-        // The profileImageUrl stored on a contact is only a snapshot from when
-        // the contact was added. If that app-user later sets/changes their
-        // picture, the snapshot goes stale. Refresh it live from users/{uid}.
-        await _refreshContactImages();
+    _contactsSub = FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .collection('contacts')
+        .snapshots()
+        .listen((querySnapshot) async {
+      _contacts = querySnapshot.docs.map((doc) {
+        final data = doc.data();
+        data['id'] = doc.id;
+        return data;
+      }).toList();
 
-        _hasLoadedContacts = true;
-        logDebug(
-            'GlobalDataService: Contacts data loaded successfully (${_contacts.length} contacts)');
-      } else {
-        logDebug(
-            'GlobalDataService: No authenticated user, cannot load contacts');
-        _contacts.clear();
-        _hasLoadedContacts = false;
-      }
-    } catch (e) {
+      // The profileImageUrl stored on a contact is only a snapshot from when
+      // the contact was added. If that app-user later sets/changes their
+      // picture, the snapshot goes stale. Refresh it live from users/{uid}.
+      await _refreshContactImages();
+
+      _hasLoadedContacts = true;
+      _isLoadingContacts = false;
+      logDebug(
+          'GlobalDataService: Contacts snapshot applied (${_contacts.length} contacts)');
+      notifyListeners();
+      if (!firstSnapshot.isCompleted) firstSnapshot.complete();
+    }, onError: (e) {
       logDebug('Error loading contacts: $e');
       _contacts.clear();
       _hasLoadedContacts = false;
-    } finally {
       _isLoadingContacts = false;
       notifyListeners();
-    }
+      if (!firstSnapshot.isCompleted) firstSnapshot.complete();
+    });
+
+    await firstSnapshot.future;
   }
 
   // The profileImageUrl on a contact is only a snapshot from add-time and goes
@@ -330,6 +350,8 @@ class GlobalDataService extends ChangeNotifier {
     logDebug(
         'GlobalDataService: Clearing all data for user: $_currentUserId');
 
+    await _contactsSub?.cancel();
+    _contactsSub = null;
     _contacts.clear();
     _currentUser = null;
     _currentAddress = 'Fetching location...';

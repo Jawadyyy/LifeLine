@@ -180,13 +180,6 @@ class ChatHeader extends StatelessWidget {
                                       .callingComingSoon)),
                         ),
               ),
-              IconButton(
-                icon: const Icon(Icons.more_vert_rounded,
-                    color: Color(0xFF6B655F), size: 22),
-                onPressed: () {},
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
-              ),
             ],
           ),
         ),
@@ -1450,16 +1443,10 @@ class _ChatInputBarState extends State<ChatInputBar>
   DateTime? _recordStart;
   Duration _recordElapsed = Duration.zero;
   Timer? _recordTimer;
-  double _dragDx = 0;
 
-  /// True while the long-press gesture is actually held. `_startRecording` is
-  /// async (permission dialog, temp dir); the finger can lift before the
-  /// recorder starts — most commonly on first use, lifting to tap "Allow" on
-  /// the mic permission dialog. Without this flag the recorder then starts
-  /// with no gesture attached and nothing ever stops it.
-  bool _pressActive = false;
-
-  static const double _cancelThreshold = -110;
+  /// Guards against a second tap while the async startup (permission dialog,
+  /// temp dir) of the first is still running, which would start two recorders.
+  bool _startingRecording = false;
 
   @override
   void initState() {
@@ -1558,43 +1545,47 @@ class _ChatInputBarState extends State<ChatInputBar>
   }
 
   // ── Voice recording ──
+  // Tap-to-record: a tap on the mic starts the recorder; the recording row
+  // then offers a cross (discard) and a send button to end it.
   Future<void> _startRecording() async {
-    if (!await _recorder.hasPermission()) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Microphone permission denied')));
+    if (_recording || _startingRecording) return;
+    _startingRecording = true;
+    try {
+      if (!await _recorder.hasPermission()) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Microphone permission denied')));
+        }
+        return;
       }
-      return;
-    }
-    _focus.unfocus();
-    final dir = await getTemporaryDirectory();
-    final path =
-        '${dir.path}/voice_${DateTime.now().millisecondsSinceEpoch}.m4a';
-    // The press may have been released while the awaits above ran (e.g. the
-    // finger lifted to answer the permission dialog). Starting now would leave
-    // an orphaned recording no gesture can stop — bail out instead.
-    if (!_pressActive) return;
-    await _recorder.start(
-        const RecordConfig(encoder: AudioEncoder.aacLc), path: path);
-    if (!_pressActive) {
-      // Released during recorder startup: discard immediately.
-      try {
-        final p = await _recorder.stop();
-        if (p != null) File(p).deleteSync();
-      } catch (_) {}
-      return;
-    }
-    _recordStart = DateTime.now();
-    _dragDx = 0;
-    setState(() {
-      _recording = true;
-      _recordElapsed = Duration.zero;
-    });
-    _recordTimer = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (mounted && _recordStart != null) {
-        setState(() => _recordElapsed = DateTime.now().difference(_recordStart!));
+      _focus.unfocus();
+      if (_emojiOpen && mounted) setState(() => _emojiOpen = false);
+      final dir = await getTemporaryDirectory();
+      final path =
+          '${dir.path}/voice_${DateTime.now().millisecondsSinceEpoch}.m4a';
+      await _recorder.start(
+          const RecordConfig(encoder: AudioEncoder.aacLc), path: path);
+      if (!mounted) {
+        try {
+          final p = await _recorder.stop();
+          if (p != null) File(p).deleteSync();
+        } catch (_) {}
+        return;
       }
-    });
+      _recordStart = DateTime.now();
+      setState(() {
+        _recording = true;
+        _recordElapsed = Duration.zero;
+      });
+      _recordTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+        if (mounted && _recordStart != null) {
+          setState(
+              () => _recordElapsed = DateTime.now().difference(_recordStart!));
+        }
+      });
+    } finally {
+      _startingRecording = false;
+    }
   }
 
   Future<void> _stopRecording({required bool cancel}) async {
@@ -1609,10 +1600,7 @@ class _ChatInputBarState extends State<ChatInputBar>
       path = null;
     }
     if (mounted) {
-      setState(() {
-        _recording = false;
-        _dragDx = 0;
-      });
+      setState(() => _recording = false);
     }
     // Discard on cancel or a too-short tap (< 800 ms) to avoid empty clips.
     if (cancel || path == null || elapsed.inMilliseconds < 800) {
@@ -1787,37 +1775,17 @@ class _ChatInputBarState extends State<ChatInputBar>
     if (_hasText) {
       return GestureDetector(onTap: _send, child: circle);
     }
-    // Empty text ⇒ press-and-hold to record, slide left to cancel. A plain
-    // tap can't record, so surface the gesture instead of doing nothing.
+    // Empty text ⇒ tap the mic to start recording. The recording row that
+    // replaces the input offers a cross (discard) and a send button.
     return GestureDetector(
-      onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Hold the mic to record a voice note'),
-          duration: Duration(seconds: 2),
-          behavior: SnackBarBehavior.floating,
-        ),
-      ),
-      onLongPressStart: (_) {
-        _pressActive = true;
-        _startRecording();
-      },
-      onLongPressMoveUpdate: (d) {
-        setState(() => _dragDx = d.offsetFromOrigin.dx);
-      },
-      onLongPressEnd: (_) {
-        _pressActive = false;
-        if (_recording) _stopRecording(cancel: _dragDx < _cancelThreshold);
-      },
-      onLongPressCancel: () => _pressActive = false,
+      onTap: _startRecording,
       child: circle,
     );
   }
 
   Widget _recordingRow() {
-    final cancelling = _dragDx < _cancelThreshold;
     return Row(children: [
-      Icon(Icons.mic_rounded,
-          color: cancelling ? AppColors.textLight : Colors.red, size: 24),
+      const Icon(Icons.mic_rounded, color: Colors.red, size: 24),
       const SizedBox(width: 10),
       Text(_fmtElapsed(_recordElapsed),
           style: const TextStyle(
@@ -1825,23 +1793,35 @@ class _ChatInputBarState extends State<ChatInputBar>
               fontSize: 15,
               fontWeight: FontWeight.w600)),
       const SizedBox(width: 16),
-      Expanded(
+      const Expanded(
         child: Text(
-          cancelling ? 'Release to cancel' : '‹ Slide to cancel',
-          style: TextStyle(
-              color: cancelling ? Colors.red : AppColors.textLight,
-              fontSize: 13),
+          'Recording…',
+          style: TextStyle(color: AppColors.textLight, fontSize: 13),
         ),
       ),
-      // Tap-to-send fallback: if the hold gesture is ever lost (stuck
-      // recording), this still ends the recording cleanly.
+      // Cross: stop and discard the recording.
+      GestureDetector(
+        onTap: () => _stopRecording(cancel: true),
+        child: Container(
+          width: 46,
+          height: 46,
+          decoration: const BoxDecoration(
+            color: AppColors.textLight,
+            shape: BoxShape.circle,
+          ),
+          child: const Center(
+              child: Icon(Icons.close_rounded, color: Colors.white, size: 24)),
+        ),
+      ),
+      const SizedBox(width: 10),
+      // Send: stop and send the voice note.
       GestureDetector(
         onTap: () => _stopRecording(cancel: false),
         child: Container(
           width: 46,
           height: 46,
-          decoration: BoxDecoration(
-            color: cancelling ? AppColors.textLight : Colors.red,
+          decoration: const BoxDecoration(
+            color: Colors.red,
             shape: BoxShape.circle,
           ),
           child: const Center(

@@ -84,6 +84,12 @@ class _CallScreenState extends State<CallScreen>
   }
 
   Future<void> _init() async {
+    // A fatal Agora join failure (bad/expired token) must end the call rather
+    // than leave a fake "connected" timer running with no audio.
+    CallService.instance.onEngineFailure = (reason) {
+      if (mounted) _finish(reason);
+    };
+
     final micStatus = await Permission.microphone.request();
     if (!micStatus.isGranted) {
       if (mounted) _finish(AppLocalizations.of(context).micPermissionRequired);
@@ -207,6 +213,7 @@ class _CallScreenState extends State<CallScreen>
   void _finish(String? reason) {
     if (_resolved) return;
     _resolved = true;
+    CallService.instance.onEngineFailure = null;
     _ringTimeoutTimer?.cancel();
     _durationTicker?.cancel();
     _callSub?.cancel();
