@@ -61,22 +61,22 @@ class ChatHeader extends StatelessWidget {
     return DateTime.now().difference(ts.toDate()) < PresenceService.onlineWindow;
   }
 
-  static String _statusText(Map<String, dynamic>? data) {
-    if (_isOnline(data)) return 'Online';
+  static String _statusText(AppLocalizations loc, Map<String, dynamic>? data) {
+    if (_isOnline(data)) return loc.statusOnline;
     final ts = data?['lastActive'];
-    if (ts is! Timestamp) return 'Offline';
-    return _lastSeenText(ts.toDate());
+    if (ts is! Timestamp) return loc.statusOffline;
+    return _lastSeenText(loc, ts.toDate());
   }
 
-  static String _lastSeenText(DateTime t) {
+  static String _lastSeenText(AppLocalizations loc, DateTime t) {
     final diff = DateTime.now().difference(t);
-    if (diff.inMinutes < 1) return 'last seen just now';
-    if (diff.inMinutes < 60) return 'last seen ${diff.inMinutes}m ago';
+    if (diff.inMinutes < 1) return loc.lastSeenJustNow;
+    if (diff.inMinutes < 60) return loc.lastSeenMinutesAgo(diff.inMinutes);
     if (diff.inHours < 24) {
-      return 'last seen ${DateFormat('h:mm a').format(t)}';
+      return loc.lastSeenAt(DateFormat('h:mm a').format(t));
     }
-    if (diff.inDays == 1) return 'last seen yesterday';
-    return 'last seen ${DateFormat('MMM d').format(t)}';
+    if (diff.inDays == 1) return loc.lastSeenYesterday;
+    return loc.lastSeenAt(DateFormat('MMM d').format(t));
   }
 
   @override
@@ -104,7 +104,7 @@ class ChatHeader extends StatelessWidget {
         return _build(
           context,
           online: _isOnline(data),
-          statusText: _statusText(data),
+          statusText: _statusText(AppLocalizations.of(context), data),
           imageUrl:
               pick(data?['profileImageUrl'] as String?) ?? pick(contactImageUrl),
         );
@@ -445,15 +445,15 @@ class MessageBubble extends StatelessWidget {
                       Icon(Icons.error_outline_rounded,
                           color: Colors.red.shade400, size: 13),
                       const SizedBox(width: 3),
-                      Text('Failed · Tap to retry',
+                      Text(AppLocalizations.of(context).failedTapRetry,
                           style: TextStyle(
                               color: Colors.red.shade400, fontSize: 11)),
                       const SizedBox(width: 6),
                     ]),
                   ),
                 if (message.edited)
-                  const Text('edited · ',
-                      style: TextStyle(
+                  Text('${AppLocalizations.of(context).editedLabel} · ',
+                      style: const TextStyle(
                           color: _metaGray,
                           fontSize: 11,
                           fontStyle: FontStyle.italic)),
@@ -1007,13 +1007,13 @@ class _EmergencyBubble extends StatelessWidget {
                     top: Radius.circular(13)),
               ),
               child: Row(
-                children: const [
-                  Icon(Icons.emergency_share_rounded,
+                children: [
+                  const Icon(Icons.emergency_share_rounded,
                       color: Colors.white, size: 18),
-                  SizedBox(width: 8),
+                  const SizedBox(width: 8),
                   Text(
-                    'EMERGENCY ALERT',
-                    style: TextStyle(
+                    AppLocalizations.of(context).emergencyAlert,
+                    style: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
                       fontSize: 13,
@@ -1041,7 +1041,7 @@ class _EmergencyBubble extends StatelessWidget {
                   onPressed: _openMap,
                   icon: Icon(Icons.location_on, color: Colors.red.shade700),
                   label: Text(
-                    'Open location in Maps',
+                    AppLocalizations.of(context).openLocationInMaps,
                     style: TextStyle(
                       color: Colors.red.shade700,
                       fontWeight: FontWeight.w600,
@@ -1063,7 +1063,7 @@ class _EmergencyBubble extends StatelessWidget {
                   icon: Icon(Icons.share_location_rounded,
                       color: Colors.red.shade700),
                   label: Text(
-                    'Follow live location',
+                    AppLocalizations.of(context).followLiveLocation,
                     style: TextStyle(
                       color: Colors.red.shade700,
                       fontWeight: FontWeight.w600,
@@ -1082,7 +1082,7 @@ class _EmergencyBubble extends StatelessWidget {
                   ),
                   if (message.isSent) ...[
                     const Spacer(),
-                    _receiptLabel(message.status),
+                    _receiptLabel(AppLocalizations.of(context), message.status),
                   ],
                 ],
               ),
@@ -1094,28 +1094,28 @@ class _EmergencyBubble extends StatelessWidget {
   }
 
   /// Delivery receipt shown to the SOS sender so they know help received it.
-  Widget _receiptLabel(MessageStatus status) {
+  Widget _receiptLabel(AppLocalizations loc, MessageStatus status) {
     late final String text;
     late final IconData icon;
     switch (status) {
       case MessageStatus.sending:
-        text = 'Sending…';
+        text = loc.receiptSending;
         icon = Icons.schedule;
         break;
       case MessageStatus.delivered:
-        text = 'Delivered';
+        text = loc.receiptDelivered;
         icon = Icons.done_all_rounded;
         break;
       case MessageStatus.read:
-        text = 'Seen';
+        text = loc.receiptSeen;
         icon = Icons.done_all_rounded;
         break;
       case MessageStatus.failed:
-        text = 'Failed';
+        text = loc.receiptFailed;
         icon = Icons.error_outline_rounded;
         break;
       case MessageStatus.sent:
-        text = 'Sent';
+        text = loc.receiptSent;
         icon = Icons.done_rounded;
         break;
     }
@@ -1521,13 +1521,13 @@ class _ChatInputBarState extends State<ChatInputBar>
           ListTile(
             leading: const Icon(Icons.photo_camera_rounded,
                 color: AppColors.primary),
-            title: const Text('Camera'),
+            title: Text(AppLocalizations.of(ctx).camera),
             onTap: () => Navigator.pop(ctx, ImageSource.camera),
           ),
           ListTile(
             leading:
                 const Icon(Icons.photo_library_rounded, color: AppColors.primary),
-            title: const Text('Gallery'),
+            title: Text(AppLocalizations.of(ctx).gallery),
             onTap: () => Navigator.pop(ctx, ImageSource.gallery),
           ),
           const SizedBox(height: 8),
@@ -1541,8 +1541,9 @@ class _ChatInputBarState extends State<ChatInputBar>
       if (file != null) widget.onSendImage(file.path);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Could not open image picker')));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content:
+                Text(AppLocalizations.of(context).couldNotOpenImagePicker)));
       }
     }
   }
@@ -1556,8 +1557,9 @@ class _ChatInputBarState extends State<ChatInputBar>
     try {
       if (!await _recorder.hasPermission()) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Microphone permission denied')));
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+              content:
+                  Text(AppLocalizations.of(context).micPermissionDenied)));
         }
         return;
       }
@@ -1706,12 +1708,13 @@ class _ChatInputBarState extends State<ChatInputBar>
               controller: _controller,
               focusNode: _focus,
               style: const TextStyle(color: _incomingText, fontSize: 15),
-              decoration: const InputDecoration(
-                hintText: 'Type a message…',
-                hintStyle: TextStyle(color: Color(0xFF8C857E), fontSize: 15),
+              decoration: InputDecoration(
+                hintText: AppLocalizations.of(context).typeMessageHint,
+                hintStyle:
+                    const TextStyle(color: Color(0xFF8C857E), fontSize: 15),
                 border: InputBorder.none,
                 isDense: true,
-                contentPadding: EdgeInsets.symmetric(vertical: 12),
+                contentPadding: const EdgeInsets.symmetric(vertical: 12),
               ),
               onSubmitted: (_) => _send(),
               textInputAction: TextInputAction.send,
@@ -1796,10 +1799,10 @@ class _ChatInputBarState extends State<ChatInputBar>
               fontSize: 15,
               fontWeight: FontWeight.w600)),
       const SizedBox(width: 16),
-      const Expanded(
+      Expanded(
         child: Text(
-          'Recording…',
-          style: TextStyle(color: AppColors.textLight, fontSize: 13),
+          AppLocalizations.of(context).recordingLabel,
+          style: const TextStyle(color: AppColors.textLight, fontSize: 13),
         ),
       ),
       // Cross: stop and discard the recording.

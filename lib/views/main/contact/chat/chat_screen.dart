@@ -235,7 +235,7 @@ class _ChatBodyState extends State<_ChatBody> {
               ListTile(
                 leading: const Icon(Icons.copy_rounded,
                     color: AppColors.textGrey),
-                title: const Text('Copy'),
+                title: Text(AppLocalizations.of(sheetContext).copy),
                 onTap: () {
                   Clipboard.setData(ClipboardData(text: msg.text));
                   Navigator.pop(sheetContext);
@@ -245,7 +245,7 @@ class _ChatBodyState extends State<_ChatBody> {
               ListTile(
                 leading:
                     const Icon(Icons.edit_rounded, color: AppColors.textGrey),
-                title: const Text('Edit'),
+                title: Text(AppLocalizations.of(sheetContext).edit),
                 onTap: () {
                   Navigator.pop(sheetContext);
                   _showEditDialog(provider, msg);
@@ -255,7 +255,7 @@ class _ChatBodyState extends State<_ChatBody> {
               ListTile(
                 leading: Icon(Icons.delete_outline_rounded,
                     color: AppColors.error),
-                title: Text('Delete',
+                title: Text(AppLocalizations.of(sheetContext).delete,
                     style: TextStyle(color: AppColors.error)),
                 onTap: () {
                   Navigator.pop(sheetContext);
@@ -285,14 +285,13 @@ class _ChatBodyState extends State<_ChatBody> {
         backgroundColor: Colors.white,
         shape:
             RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Delete message?',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
-        content: const Text(
-            'This message will be removed for everyone in the chat.'),
+        title: Text(AppLocalizations.of(dialogContext).deleteMessageTitle,
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+        content: Text(AppLocalizations.of(dialogContext).deleteMessageBody),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('CANCEL'),
+            child: Text(AppLocalizations.of(dialogContext).cancelAction),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(dialogContext, true),
@@ -301,8 +300,8 @@ class _ChatBodyState extends State<_ChatBody> {
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8)),
             ),
-            child:
-                const Text('DELETE', style: TextStyle(color: Colors.white)),
+            child: Text(AppLocalizations.of(dialogContext).deleteCaps,
+                style: const TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -454,8 +453,8 @@ class _EditMessageDialogState extends State<_EditMessageDialog> {
     return AlertDialog(
       backgroundColor: Colors.white,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      title: const Text('Edit message',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+      title: Text(AppLocalizations.of(context).editMessageTitle,
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
       content: TextField(
         controller: _controller,
         autofocus: true,
@@ -471,7 +470,7 @@ class _EditMessageDialogState extends State<_EditMessageDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('CANCEL'),
+          child: Text(AppLocalizations.of(context).cancelAction),
         ),
         ElevatedButton(
           onPressed: () => Navigator.pop(context, _controller.text.trim()),
@@ -480,7 +479,8 @@ class _EditMessageDialogState extends State<_EditMessageDialog> {
             shape:
                 RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           ),
-          child: const Text('SAVE', style: TextStyle(color: Colors.white)),
+          child: Text(AppLocalizations.of(context).saveCaps,
+              style: const TextStyle(color: Colors.white)),
         ),
       ],
     );

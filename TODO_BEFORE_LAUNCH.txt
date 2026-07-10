@@ -1,53 +1,55 @@
 LIFELINE - PLAY STORE LAUNCH TODO
-(generated 2026-07-04)
+(updated 2026-07-10 - post third audit)
 
 === BLOCKERS ===
-1. Privacy Policy MISSING - Play Store requires a URL. App collects location,
-   contacts, health data, chat messages. No policy = instant rejection.
-   -> Write + host privacy policy, add link in Play Console listing + app settings.
+(none - all resolved)
 
+1. [DONE] Privacy Policy - live at https://lifeline-relay.vercel.app/privacy.html
+   (hosted on the Vercel relay, relay/public/privacy.html).
+   -> Remaining manual step: paste URL into Play Console -> App content -> Privacy policy.
 2. [DONE] iOS bundle ID fixed to com.lifeline.app.
+3. [DONE] debugPrint calls replaced with logDebug() (kDebugMode-gated).
+4. [DONE] Calls implemented end-to-end: Agora RTC + Firestore signaling +
+   FCM ring-when-closed via relay + token endpoint (/api/agora-token).
+   Callee ring timeout + busy guard added.
+5. [DONE] Chat complete: emoji, images, voice notes, call log entries,
+   edit/delete/copy, presence, typing indicator. All media on Supabase.
+   ImgBB + firebase_storage removed.
+6. [DONE] Push relay deployed (https://lifeline-relay.vercel.app), PUSH_RELAY_URL set.
+7. [DONE] Chat UI fully localized (EN/UR parity, ~30 new keys 2026-07-10).
+8. [DECIDED 2026-07-10] GEMINI_KEY + GEOAPIFY_KEY ship in APK (.env is a bundled
+   asset). Accepted for v1: both are free-tier keys with no billing attached -
+   worst case is quota burn, no cost. Gemini key restricted to Generative
+   Language API; Geoapify capped at 3k req/day by plan.
 
-3. Firebase SDKs multiple major versions behind:
-   - firebase_core: 3.15.2 -> 4.11.0
-   - firebase_auth: 5.7.0 -> 6.5.4
-   - cloud_firestore: 5.6.12 -> 6.6.0
-   - firebase_crashlytics: 4.3.10 -> 5.2.4
-   - firebase_messaging: 15.2.10 -> 16.4.1
-   - firebase_storage: 12.4.10 -> 13.4.3
-   -> Test upgrade path before shipping, or consciously accept staying on old majors.
+=== LAUNCH CHECKLIST (manual, before submission) ===
+- Build AAB for upload: flutter build appbundle --release (NOT the apk).
+- Ensure key.properties + upload keystore present at build time (release build
+  silently falls back to DEBUG signing without it - Play rejects).
+- Play Console: privacy policy URL (see #1), data safety form (declare:
+  location, contacts, health info, messages, audio; all encrypted in transit;
+  deletion via email), content rating, target audience 13+.
+- Smoke test on 2 physical devices: SOS flow, call (app open + app killed),
+  voice note, image, profile pic change, Urdu locale.
 
-4. [DONE] debugPrint calls (138) replaced with logDebug() (lib/utils/logger.dart,
-   no-op in release). PII trimmed from auth_service.dart, auth_wrapper.dart,
-   login_screen.dart, splash_screen.dart, contacts_screen_controller.dart along the way.
+=== V1.1 BACKLOG ===
+- Proxy Gemini + Geoapify through the Vercel relay so keys leave the APK
+  (same pattern as /api/send; decided to defer 2026-07-10).
+- Firebase SDK major upgrades (core 3->4, auth 5->6, firestore 5->6, etc).
+  Works fine on current majors; upgrade + test post-launch.
+- Terms of Service page (privacy policy covers the hard requirement).
+- Call feature tests (zero coverage; service+screen).
+- Reciprocal contacts: when A adds B, B should see A automatically
+  (add lightweight entry with addedByPeer flag; discussed 2026-07-09).
+- Fix known-flaky ChatEmptyState/medical_id widget tests (missing l10n
+  delegate in test harness; pre-existing).
+- Add About screen with version + privacy policy link in-app.
+- Navbar accent #FF6F61 doesn't match brand #EF5A2A (one-line fix).
+- Verify WRITE_CONTACTS permission still needed.
+- Phone number OTP verification (deferred for cost; Truecaller SDK is the
+  $0 option if ever needed).
 
-5. No Terms of Service. Recommended given health/location data collection.
-
-6. PUSH_RELAY_URL empty in .env - verify push notifications actually work end-to-end.
-
-7. Chat calls button is a stub ("Calling - coming soon" snackbar,
-   chat_widgets.dart:155-160). No Agora/calling SDK integrated yet.
-   -> Either implement (Agora, ~3-5 days) or hide/remove the button before launch.
-
-8. Chat header "more" (vertical dots) menu button is an empty stub
-   (chat_widgets.dart:162-165, onPressed: () {}).
-   -> Implement or remove.
-
-=== SECONDARY / RECOMMENDED ===
-- Test coverage thin: 10 test files, ~775 lines total. No widget/integration tests.
-  No UI test on the SOS emergency critical path.
-- State management inconsistent: Provider used in only 5 files, rest of app uses
-  raw setState. Not blocking, but messy long-term.
-- Review empty-state UI/messaging for clarity across screens.
-- Add "About" screen with version info + privacy/terms links.
-- Minor: signup_screen.dart has one placeholder profile image URL
-  (via.placeholder.com) - fine as temp default, confirm intended.
-
-=== NOT AN ISSUE (checked, false alarm) ===
-- Firebase API keys hardcoded in firebase_options.dart (web/android/ios/macos/windows)
-  -> normal, these are public client keys, not secrets. No action needed.
-- Third-party keys (Geoapify, ImgBB, Gemini) properly loaded via .env, git-ignored.
-- Release signing config, proguard/minify, app icons, permissions - all properly set up.
-
-=== ESTIMATE ===
-2-3 days to close blockers (privacy policy + debug log cleanup + smoke test) before submission.
+=== NOT AN ISSUE (checked) ===
+- Firebase client keys in firebase_options.dart: public by design.
+- SUPABASE_ANON_KEY / AGORA_APP_ID in APK: public by design.
+- No secrets committed to git (.env untracked, relay secrets in Vercel env only).

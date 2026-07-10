@@ -35,6 +35,12 @@ class CallService {
   /// call down with an error instead of showing a fake "connected" timer.
   void Function(String reason)? onEngineFailure;
 
+  /// True while a [CallScreen] is on screen (set from its initState/dispose).
+  /// Guards against a second incoming call stacking another CallScreen over
+  /// the active one — both would share the single [_engine] and either's
+  /// teardown would kill the other's audio.
+  bool callScreenActive = false;
+
   /// A ringing call older than this is stale (app was closed/killed while it
   /// rang) — don't resurrect it as a fresh incoming-call screen on launch.
   static const _staleAfter = Duration(seconds: 45);
@@ -149,6 +155,12 @@ class CallService {
         final createdAt = (data['createdAt'] as Timestamp?)?.toDate();
         if (createdAt == null ||
             DateTime.now().difference(createdAt) > _staleAfter) {
+          continue;
+        }
+        // Busy: already in a call (or ringing) — decline instead of stacking
+        // a second CallScreen over the active one.
+        if (callScreenActive) {
+          unawaited(setStatus(change.doc.id, 'declined'));
           continue;
         }
         _showIncomingCall(change.doc.id, data);

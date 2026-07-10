@@ -76,6 +76,7 @@ class _CallScreenState extends State<CallScreen>
   @override
   void initState() {
     super.initState();
+    CallService.instance.callScreenActive = true;
     _pulse = AnimationController(
         vsync: this, duration: const Duration(milliseconds: 2400))
       ..repeat();
@@ -131,6 +132,19 @@ class _CallScreenState extends State<CallScreen>
       _callId = widget.callId;
       _channelName = widget.channelName;
       _listenToCall();
+      // Callee-side safety net: normally the caller's 30s timer marks the
+      // call missed, but if the caller's app died mid-ring the doc stays
+      // 'ringing' forever and this screen would hang. Slightly longer than
+      // the caller's timeout so theirs wins when both are alive.
+      _ringTimeoutTimer = Timer(const Duration(seconds: 45), () {
+        if (_phase == _Phase.incoming) {
+          final id = _callId;
+          if (id != null) {
+            unawaited(CallService.instance.setStatus(id, 'missed'));
+          }
+          _finish(AppLocalizations.of(context).callMissed);
+        }
+      });
     }
   }
 
@@ -236,6 +250,7 @@ class _CallScreenState extends State<CallScreen>
 
   @override
   void dispose() {
+    CallService.instance.callScreenActive = false;
     _pulse.dispose();
     _ringTimeoutTimer?.cancel();
     _durationTicker?.cancel();
