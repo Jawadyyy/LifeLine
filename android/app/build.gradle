@@ -66,7 +66,10 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.lifeline.app"
+        // Play Store identity. com.lifeline.app was already taken on Play by
+        // another developer; the namespace below stays unchanged (internal
+        // code identifier only, not visible to Play).
+        applicationId = "com.jdev.lifeline"
         minSdk = 23
         targetSdk = 35
         versionCode = flutterVersionCode.toInteger()
