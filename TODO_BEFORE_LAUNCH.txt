@@ -32,6 +32,27 @@ LIFELINE - PLAY STORE LAUNCH TODO
 - Smoke test on 2 physical devices: SOS flow, call (app open + app killed),
   voice note, image, profile pic change, Urdu locale.
 
+=== REQUIRED BEFORE PRODUCTION (Play policy, do during closed test) ===
+- In-app "Delete account" option (Play account-deletion policy requires BOTH
+  the web link AND an in-app path when the app allows account creation).
+  Web page done: https://lifeline-relay.vercel.app/delete-account.html
+  In-app: profile screen entry -> confirm dialog -> delete users/{uid} doc +
+  contacts subcollection + user's donation posts + FCM tokens -> Firebase
+  user.delete() (handle requires-recent-login -> reauth -> retry) -> sign out.
+  Risk if skipped: review rejection at production stage.
+- First-login-after-signup doesn't navigate (see BUGS below) - reviewer-facing,
+  fix before production review.
+
+=== BUGS OBSERVED (2026-07-10, during reviewer-account setup) ===
+- BMI wrong: profile stores weight in lbs but BMI calc appears to treat it as
+  kg (180cm / 70lbs -> BMI "9.8"). Medical ID displays this value. Check
+  profile_controller.calculateBMI unit handling.
+- First login after signup doesn't navigate: "Login successful" snackbar shows
+  but screen stays on login; logging in a second time navigates correctly.
+  Likely a race between auth state emission and the login screen's navigation
+  (AuthWrapper vs manual navigation). Reproduce: fresh signup -> log out ->
+  log in.
+
 === V1.1 BACKLOG ===
 - Proxy Gemini + Geoapify through the Vercel relay so keys leave the APK
   (same pattern as /api/send; decided to defer 2026-07-10).
