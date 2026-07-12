@@ -87,14 +87,17 @@ class ProfileWidgets {
     );
   }
 
-  // Build menu card for profile screen
+  // Build menu card for profile screen. Pass [accentColor] to tint the icon
+  // and title (e.g. red for destructive actions like account deletion).
   static Widget buildMenuCard({
     required IconData icon,
     required String title,
     required String subtitle,
     required VoidCallback onTap,
     required DynamicColors colors,
+    Color? accentColor,
   }) {
+    final Color iconColor = accentColor ?? colors.primary;
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -116,10 +119,10 @@ class ProfileWidgets {
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: colors.primary.withOpacity(0.1),
+                color: iconColor.withOpacity(0.1),
                 shape: BoxShape.circle,
               ),
-              child: Icon(icon, color: colors.primary, size: 24),
+              child: Icon(icon, color: iconColor, size: 24),
             ),
             const SizedBox(width: 15),
             Expanded(
@@ -131,7 +134,7 @@ class ProfileWidgets {
                     style: GoogleFonts.poppins(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
-                        color: colors.textPrimary),
+                        color: accentColor ?? colors.textPrimary),
                   ),
                   const SizedBox(height: 3),
                   Text(

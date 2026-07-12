@@ -79,10 +79,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
       _showSnackbar(l.accountRegistered, isSuccess: true);
 
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const LoginScreen()),
-      );
+      // Signup also signs the user in, so return to the root route where
+      // AuthWrapper is already showing the profile-setup screen. Pushing a
+      // LoginScreen here left duplicate login routes covering AuthWrapper.
+      Navigator.of(context).popUntil((route) => route.isFirst);
     } catch (e) {
       _showSnackbar(l.errorGeneric(e.toString()));
     } finally {

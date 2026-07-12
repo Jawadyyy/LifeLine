@@ -259,18 +259,17 @@ class ProfileController extends ChangeNotifier {
     }
   }
 
-  // Calculate BMI
-  double? calculateBMI(String heightCm, String weightLbs) {
+  // Calculate BMI (weight is stored in kilograms)
+  double? calculateBMI(String heightCm, String weightKg) {
     try {
       final double height = double.parse(heightCm.trim());
-      final double weight = double.parse(weightLbs.trim());
+      final double weight = double.parse(weightKg.trim());
 
       if (height <= 0 || weight <= 0) return null;
 
       final double heightM = height / 100;
-      final double weightKg = weight * 0.453592;
 
-      return weightKg / (heightM * heightM);
+      return weight / (heightM * heightM);
     } catch (e) {
       return null;
     }

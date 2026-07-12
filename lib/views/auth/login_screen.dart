@@ -90,8 +90,10 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
       );
 
-      // ✅ NEW: Pop the login screen so AuthWrapper can show the correct screen
-      Navigator.of(context).pop();
+      // Pop back to the root route. AuthWrapper lives there and has already
+      // swapped its child for the signed-in screen; a single pop() is not
+      // enough because signup leaves a second LoginScreen on the stack.
+      Navigator.of(context).popUntil((route) => route.isFirst);
     } catch (e) {
       if (!mounted) return;
 
@@ -141,8 +143,9 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
       );
 
-      // ✅ NEW: Pop the login screen so AuthWrapper can show the correct screen
-      Navigator.of(context).pop();
+      // Pop back to the root route so AuthWrapper's signed-in child is visible
+      // (see _validateAndLogin for why popUntil instead of a single pop).
+      Navigator.of(context).popUntil((route) => route.isFirst);
     } catch (e) {
       if (!mounted) return;
 

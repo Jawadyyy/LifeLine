@@ -76,9 +76,8 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen>
   double? _calculateBMI() {
     try {
       final double heightCm = double.parse(_heightController.text.trim());
-      final double weightLbs = double.parse(_weightController.text.trim());
+      final double weightKg = double.parse(_weightController.text.trim());
       final double heightM = heightCm / 100;
-      final double weightKg = weightLbs * 0.453592;
 
       if (heightM <= 0 || weightKg <= 0) return null;
 
@@ -499,7 +498,7 @@ class _ProfileSettingScreenState extends State<ProfileSettingScreen>
               controller: _weightController,
               label: l.weight,
               icon: Icons.monitor_weight,
-              hint: l.hintLbs,
+              hint: l.hintKg,
               keyboardType: TextInputType.number,
             ),
           ),

@@ -191,6 +191,139 @@ class AuthService {
     }
   }
 
+  /// Sentinel message returned by [deleteAccount] when Firebase requires a
+  /// recent sign-in before the auth user can be deleted. The caller should
+  /// re-authenticate ([reauthenticateWithPassword] / [reauthenticateWithGoogle])
+  /// and call [deleteAccount] again.
+  static const String requiresRecentLogin = 'requires-recent-login';
+
+  /// Sentinel message returned by [reauthenticateWithPassword] when the
+  /// entered password is wrong (as opposed to a network/other failure).
+  static const String wrongPasswordCode = 'wrong-password';
+
+  /// Whether the current user signed in with Google (drives which
+  /// re-authentication flow to offer before account deletion).
+  bool get isGoogleUser =>
+      _auth.currentUser?.providerData
+          .any((p) => p.providerId == 'google.com') ??
+      false;
+
+  /// Permanently deletes the signed-in user's account: their Firestore data
+  /// (contacts, donation posts, live-location sessions, user doc) and the
+  /// Firebase Auth user. Chat messages are intentionally kept, and Supabase
+  /// media is left in place — both documented on the delete-account page.
+  ///
+  /// Safe to call again after a [requiresRecentLogin] failure: the service
+  /// shutdown and data purge are idempotent.
+  Future<AuthResult<void>> deleteAccount() async {
+    final user = _auth.currentUser;
+    if (user == null) {
+      return AuthResult.failure('No user is currently logged in.');
+    }
+    final uid = user.uid;
+
+    try {
+      // Stop services BEFORE deleting the user doc, mirroring signOut():
+      // presence/push merge-writes would otherwise recreate it.
+      await PushService().clearForUser(uid);
+      await PresenceService.instance.stop();
+      ChatProviderCache.instance.clear();
+      CallService.instance.stopListening();
+      await CallService.instance.releaseEngine();
+
+      await _purgeUserData(uid);
+
+      await user.delete();
+      await _googleSignIn.signOut();
+      logDebug('✅ Account deleted for $uid');
+      return AuthResult.success(null, 'Account deleted');
+    } on FirebaseAuthException catch (e) {
+      logDebug('Account deletion auth error: ${e.code}');
+      if (e.code == 'requires-recent-login') {
+        return AuthResult.failure(requiresRecentLogin);
+      }
+      return AuthResult.failure('Failed to delete account.');
+    } catch (e) {
+      logDebug('Account deletion error: $e');
+      return AuthResult.failure('Failed to delete account.');
+    }
+  }
+
+  /// Deletes the Firestore documents owned by [uid]. Subcollections are not
+  /// removed by deleting the parent doc, so contacts and donation posts are
+  /// deleted explicitly before the user doc itself.
+  Future<void> _purgeUserData(String uid) async {
+    final userRef = _firestore.collection('users').doc(uid);
+
+    final contacts = await userRef.collection('contacts').get();
+    for (final doc in contacts.docs) {
+      await doc.reference.delete();
+    }
+
+    final posts = await userRef.collection('donation_posts').get();
+    for (final doc in posts.docs) {
+      await doc.reference.delete();
+    }
+
+    final sessions = await _firestore
+        .collection('live_locations')
+        .where('ownerUid', isEqualTo: uid)
+        .get();
+    for (final doc in sessions.docs) {
+      await doc.reference.delete();
+    }
+
+    await userRef.delete();
+  }
+
+  /// Re-authenticates an email/password user (needed before account deletion
+  /// when the session is too old).
+  Future<AuthResult<void>> reauthenticateWithPassword(String password) async {
+    final user = _auth.currentUser;
+    final email = user?.email;
+    if (user == null || email == null) {
+      return AuthResult.failure('No user is currently logged in.');
+    }
+    try {
+      await user.reauthenticateWithCredential(
+        EmailAuthProvider.credential(email: email, password: password),
+      );
+      return AuthResult.success();
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'wrong-password' || e.code == 'invalid-credential') {
+        return AuthResult.failure(wrongPasswordCode);
+      }
+      return AuthResult.failure('Re-authentication failed.');
+    } catch (e) {
+      return AuthResult.failure('Re-authentication failed.');
+    }
+  }
+
+  /// Re-authenticates a Google user via a fresh Google sign-in.
+  Future<AuthResult<void>> reauthenticateWithGoogle() async {
+    final user = _auth.currentUser;
+    if (user == null) {
+      return AuthResult.failure('No user is currently logged in.');
+    }
+    try {
+      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+      if (googleUser == null) {
+        return AuthResult.failure('Sign-in cancelled');
+      }
+      final googleAuth = await googleUser.authentication;
+      await user.reauthenticateWithCredential(
+        GoogleAuthProvider.credential(
+          accessToken: googleAuth.accessToken,
+          idToken: googleAuth.idToken,
+        ),
+      );
+      return AuthResult.success();
+    } catch (e) {
+      logDebug('Google re-authentication error: $e');
+      return AuthResult.failure('Re-authentication failed.');
+    }
+  }
+
   Future<void> signOut() async {
     try {
       logDebug('🚪 Signing out...');

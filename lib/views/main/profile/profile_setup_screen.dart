@@ -320,10 +320,10 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                         Expanded(
                           child: ProfileWidgets.buildInputField(
                             controller: _weightController,
-                            label: l.weightLbs,
+                            label: l.weightKg,
                             icon: Icons.monitor_weight,
                             keyboardType: TextInputType.number,
-                            requiredMessage: l.pleaseEnter(l.weightLbs),
+                            requiredMessage: l.pleaseEnter(l.weightKg),
                           ),
                         ),
                       ],
