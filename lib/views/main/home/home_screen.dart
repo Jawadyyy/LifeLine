@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:firebase_auth/firebase_auth.dart';
@@ -488,9 +489,42 @@ class _DashedRingPainter extends CustomPainter {
 }
 
 /// Persistent banner shown while a live location share is active, with a one-tap
-/// stop. Listens to the process-global [LiveLocationService.activeSession].
-class _LiveShareBanner extends StatelessWidget {
+/// stop and a ticking "shared for mm:ss" duration. Listens to the process-global
+/// [LiveLocationService.activeSession] / [LiveLocationService.shareStartedAt].
+class _LiveShareBanner extends StatefulWidget {
   const _LiveShareBanner();
+
+  @override
+  State<_LiveShareBanner> createState() => _LiveShareBannerState();
+}
+
+class _LiveShareBannerState extends State<_LiveShareBanner> {
+  Timer? _ticker;
+
+  @override
+  void initState() {
+    super.initState();
+    // Rebuild once a second to advance the elapsed-time label while sharing.
+    _ticker = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted && LiveLocationService.activeSession.value != null) {
+        setState(() {});
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _ticker?.cancel();
+    super.dispose();
+  }
+
+  String _elapsed(DateTime start) {
+    final d = DateTime.now().difference(start);
+    final h = d.inHours;
+    final m = d.inMinutes.remainder(60).toString().padLeft(2, '0');
+    final s = d.inSeconds.remainder(60).toString().padLeft(2, '0');
+    return h > 0 ? '$h:$m:$s' : '$m:$s';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -499,6 +533,7 @@ class _LiveShareBanner extends StatelessWidget {
       builder: (context, sessionId, _) {
         if (sessionId == null) return const SizedBox.shrink();
         final loc = AppLocalizations.of(context);
+        final start = LiveLocationService.shareStartedAt.value;
         return Material(
           color: AppColors.primary,
           child: Padding(
@@ -509,12 +544,32 @@ class _LiveShareBanner extends StatelessWidget {
                     color: Colors.white, size: 20),
                 const SizedBox(width: 10),
                 Expanded(
-                  child: Text(
-                    loc.sharingLiveLocation,
-                    style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        loc.sharingLiveLocation,
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600),
+                      ),
+                      if (start != null)
+                        Row(
+                          children: [
+                            const Icon(Icons.timer_outlined,
+                                color: Colors.white70, size: 12),
+                            const SizedBox(width: 4),
+                            Text(
+                              _elapsed(start),
+                              style: const TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 11.5,
+                                  fontFeatures: [FontFeature.tabularFigures()]),
+                            ),
+                          ],
+                        ),
+                    ],
                   ),
                 ),
                 TextButton(
@@ -573,6 +628,9 @@ class _SafeFollowupBanner extends StatelessWidget {
                     // fire best-effort pushes to the same contacts.
                     final recipients =
                         List<String>.from(SosFollowup.alertedContacts.value);
+                    // Resolving the emergency also ends any live-location share
+                    // started by the SOS, so the foreground notification stops.
+                    await LiveLocationService.instance.stopBroadcast();
                     final count = await SosFollowup.sendSafe(currentUid: uid);
                     final push = PushService();
                     for (final r in recipients) {

@@ -46,14 +46,46 @@ class HomeController {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const CircularProgressIndicator(),
-            const SizedBox(height: 16),
-            Text(AppLocalizations.of(context).sendingAlerts),
-          ],
+      barrierColor: Colors.black.withOpacity(0.55),
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 30),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.primary.withOpacity(0.25),
+                blurRadius: 34,
+                spreadRadius: 2,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const _PulsingSirenLoader(),
+              const SizedBox(height: 20),
+              Text(
+                AppLocalizations.of(context).sendingAlerts,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF1B1E26),
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                AppLocalizations.of(context).sosLocationShared,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                    fontSize: 12.5, height: 1.4, color: AppColors.textGrey),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -647,6 +679,78 @@ class HomeController {
                 size: 16, color: AppColors.textGrey),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Animated red siren/alert loader for the "sending emergency alerts" dialog:
+/// concentric pulsing rings behind a warning badge.
+class _PulsingSirenLoader extends StatefulWidget {
+  const _PulsingSirenLoader();
+
+  @override
+  State<_PulsingSirenLoader> createState() => _PulsingSirenLoaderState();
+}
+
+class _PulsingSirenLoaderState extends State<_PulsingSirenLoader>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _c;
+  static const _red = AppColors.primary; // brand orange
+
+  @override
+  void initState() {
+    super.initState();
+    _c = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 1400))
+      ..repeat();
+  }
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 96,
+      height: 96,
+      child: AnimatedBuilder(
+        animation: _c,
+        builder: (_, __) {
+          return Stack(
+            alignment: Alignment.center,
+            children: [
+              // Two expanding/fading rings, offset in phase.
+              _ring((_c.value) % 1.0),
+              _ring((_c.value + 0.5) % 1.0),
+              Container(
+                width: 56,
+                height: 56,
+                decoration: const BoxDecoration(
+                  color: _red,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.notifications_active_rounded,
+                    color: Colors.white, size: 30),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _ring(double t) {
+    final size = 56 + t * 40;
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: _red.withOpacity((1 - t) * 0.35),
       ),
     );
   }

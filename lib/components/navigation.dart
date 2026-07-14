@@ -12,6 +12,7 @@ import 'package:lifeline/views/main/profile/profile_screen.dart';
 import 'package:lifeline/services/global_data_service.dart';
 import 'package:lifeline/services/live_location_service.dart';
 import 'package:lifeline/services/push_service.dart';
+import 'package:lifeline/services/sos_followup.dart';
 import 'package:lifeline/views/entry/permission_priming_screen.dart';
 
 class MainNavigationScreen extends StatefulWidget {
@@ -57,6 +58,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     if (_currentUserId != null) {
       LiveLocationService.instance.restoreActiveSession(_currentUserId!);
     }
+    // Bring back the "I'm safe" follow-up banner if an SOS was active when the
+    // app was last killed.
+    SosFollowup.restore();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) PermissionPrimingScreen.showIfFirstRun(context);
     });

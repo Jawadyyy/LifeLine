@@ -3,6 +3,7 @@ import 'dart:async';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:lifeline/models/live_location_session.dart';
 import 'package:lifeline/services/location_handler.dart';
@@ -27,6 +28,10 @@ class LiveLocationService {
   /// UI (e.g. the home "stop sharing" banner) listens to this.
   static final ValueNotifier<String?> activeSession = ValueNotifier(null);
 
+  /// When the current share started, so the banner can show elapsed time.
+  /// Null when nothing is being shared.
+  static final ValueNotifier<DateTime?> shareStartedAt = ValueNotifier(null);
+
   /// How often the device pushes a new position while broadcasting.
   static const broadcastInterval = Duration(seconds: 10);
 
@@ -36,6 +41,54 @@ class LiveLocationService {
   StreamSubscription<Position>? _positionSub;
   Timer? _expiryTimer;
   String? _activeSessionId;
+  bool _fgtInitialised = false;
+
+  /// One-time init of the foreground-task plugin (channel + options). The
+  /// service itself only starts when a share begins.
+  void _ensureForegroundTaskInit() {
+    if (_fgtInitialised) return;
+    FlutterForegroundTask.init(
+      androidNotificationOptions: AndroidNotificationOptions(
+        channelId: 'lifeline_live_location',
+        channelName: 'Live location sharing',
+        channelImportance: NotificationChannelImportance.LOW,
+        priority: NotificationPriority.LOW,
+      ),
+      iosNotificationOptions: const IOSNotificationOptions(),
+      foregroundTaskOptions: ForegroundTaskOptions(
+        eventAction: ForegroundTaskEventAction.nothing(),
+        allowWakeLock: true,
+        autoRunOnBoot: false,
+      ),
+    );
+    _fgtInitialised = true;
+  }
+
+  /// Shows the ongoing "sharing your location" notification via our own
+  /// foreground service (so [_stopForegroundNotification] reliably clears it).
+  Future<void> _startForegroundNotification() async {
+    _ensureForegroundTaskInit();
+    if (await FlutterForegroundTask.isRunningService) return;
+    await FlutterForegroundTask.startService(
+      serviceId: 261,
+      serviceTypes: const [ForegroundServiceTypes.location],
+      notificationTitle: 'LifeLine is sharing your location',
+      notificationText: 'Your live location is being shared with contacts.',
+      notificationIcon: const NotificationIcon(
+        metaDataName: 'com.jdev.lifeline.LIVE_LOCATION_NOTIFICATION_ICON',
+      ),
+    );
+  }
+
+  Future<void> _stopForegroundNotification() async {
+    try {
+      if (await FlutterForegroundTask.isRunningService) {
+        await FlutterForegroundTask.stopService();
+      }
+    } catch (e) {
+      logDebug('stopService failed: $e');
+    }
+  }
 
   /// The session id currently being broadcast, if any.
   String? get activeSessionId => _activeSessionId;
@@ -56,6 +109,7 @@ class LiveLocationService {
       'ownerUid': ownerUid,
       'lat': lat,
       'lng': lng,
+      'startedAt': FieldValue.serverTimestamp(),
       'updatedAt': FieldValue.serverTimestamp(),
       'expiresAt': Timestamp.fromDate(DateTime.now().add(ttl)),
       'active': true,
@@ -102,7 +156,9 @@ class LiveLocationService {
     );
     _activeSessionId = sessionId;
     activeSession.value = sessionId;
+    shareStartedAt.value = DateTime.now();
 
+    await _startForegroundNotification();
     _positionSub = Geolocator.getPositionStream(
       locationSettings: _broadcastSettings(),
     ).listen(
@@ -141,8 +197,11 @@ class LiveLocationService {
       final sessionId = doc.id;
       _activeSessionId = sessionId;
       activeSession.value = sessionId;
+      shareStartedAt.value =
+          (doc.data()['startedAt'] as Timestamp?)?.toDate() ?? DateTime.now();
 
       // Resume the foreground broadcast on the existing session id.
+      await _startForegroundNotification();
       _positionSub = Geolocator.getPositionStream(
         locationSettings: _broadcastSettings(),
       ).listen(
@@ -168,6 +227,8 @@ class LiveLocationService {
     _expiryTimer = null;
     _activeSessionId = null;
     activeSession.value = null;
+    shareStartedAt.value = null;
+    await _stopForegroundNotification();
     if (id != null) {
       try {
         await stopSession(id);
@@ -179,20 +240,13 @@ class LiveLocationService {
 
   LocationSettings _broadcastSettings() {
     if (defaultTargetPlatform == TargetPlatform.android) {
+      // No foregroundNotificationConfig here: the ongoing notification is owned
+      // by our flutter_foreground_task service (reliable stop). This stream
+      // just supplies positions while that service keeps the process alive.
       return AndroidSettings(
         accuracy: LocationAccuracy.high,
         distanceFilter: 10,
         intervalDuration: broadcastInterval,
-        foregroundNotificationConfig: const ForegroundNotificationConfig(
-          notificationTitle: 'LifeLine is sharing your location',
-          notificationText: 'Your live location is being shared with contacts.',
-          enableWakeLock: true,
-          // Without an explicit icon geolocator falls back to the full-colour
-          // launcher icon, which Android masks to a plain white square. Point
-          // it at the monochrome status-bar icon instead.
-          notificationIcon:
-              AndroidResource(name: 'ic_notification', defType: 'drawable'),
-        ),
       );
     }
     return const LocationSettings(

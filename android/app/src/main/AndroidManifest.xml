@@ -49,6 +49,20 @@
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_color"
             android:resource="@color/notification_color" />
+
+        <!-- Live-location sharing foreground service (flutter_foreground_task).
+             We own this service so stopping it reliably removes the ongoing
+             notification (geolocator's built-in FGS notification would not
+             dismiss on some devices). -->
+        <service
+            android:name="com.pravera.flutter_foreground_task.service.ForegroundService"
+            android:foregroundServiceType="location"
+            android:exported="false" />
+        <!-- Monochrome icon for that service's notification, referenced by name
+             from Dart (NotificationIcon.metaDataName). -->
+        <meta-data
+            android:name="com.jdev.lifeline.LIVE_LOCATION_NOTIFICATION_ICON"
+            android:resource="@drawable/ic_notification" />
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and
