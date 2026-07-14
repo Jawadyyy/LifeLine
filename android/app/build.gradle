@@ -127,6 +127,15 @@ flutter {
     source = "../.."
 }
 
+// agora_rtc_engine pulls in the screen-sharing module, which declares a
+// media-projection foreground service + activity. LifeLine only does voice
+// calls (no screen sharing), and that service makes Play require a
+// media-projection foreground-service declaration for a feature the app never
+// uses. Exclude the module so the service/activity/permission are gone.
+configurations.all {
+    exclude group: 'io.agora.rtc', module: 'full-screen-sharing'
+}
+
 dependencies {
     implementation(platform("com.google.firebase:firebase-bom:34.8.0"))
     implementation("com.google.firebase:firebase-analytics")

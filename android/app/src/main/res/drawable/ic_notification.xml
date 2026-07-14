@@ -1,5 +1,7 @@
-<!-- Monochrome (white) status-bar notification icon. Android tints it; only
-     alpha matters. A medical cross inside a rounded badge. -->
+<!-- Status-bar notification icon. Android masks this to a white silhouette on
+     the notification accent colour, so only the shape (alpha) matters — use a
+     transparent background with a clean white medical cross, NOT a filled
+     shape (a filled shape renders as a white square/blob). -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="24dp"
@@ -8,5 +10,5 @@
     android:tint="#FFFFFF">
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M12,2C6.48,2 2,6.48 2,12s4.48,10 10,10 10,-4.48 10,-10S17.52,2 12,2zM16,13h-3v3h-2v-3H8v-2h3V8h2v3h3v2z" />
+        android:pathData="M14,3h-4v7H3v4h7v7h4v-7h7v-4h-7z" />
 </vector>

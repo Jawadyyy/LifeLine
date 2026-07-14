@@ -10,6 +10,7 @@ import 'package:lifeline/views/main/home/home_screen.dart';
 import 'package:lifeline/views/main/map/map_screen.dart';
 import 'package:lifeline/views/main/profile/profile_screen.dart';
 import 'package:lifeline/services/global_data_service.dart';
+import 'package:lifeline/services/live_location_service.dart';
 import 'package:lifeline/services/push_service.dart';
 import 'package:lifeline/views/entry/permission_priming_screen.dart';
 
@@ -50,6 +51,12 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     _initializeGlobalData();
     _listenForAcceptedDonations();
     _initPush();
+    // If the app was killed mid live-location-share, bring back the "stop
+    // sharing" banner so the user can end it in-app (not only from the
+    // system notification).
+    if (_currentUserId != null) {
+      LiveLocationService.instance.restoreActiveSession(_currentUserId!);
+    }
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) PermissionPrimingScreen.showIfFirstRun(context);
     });

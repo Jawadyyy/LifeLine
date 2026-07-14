@@ -115,6 +115,50 @@ class LiveLocationService {
     return sessionId;
   }
 
+  /// Re-attaches to a session this user was still broadcasting when the app was
+  /// killed (the in-memory [activeSession] resets on relaunch, but the Firestore
+  /// session and the OS foreground service can outlive the process). Restores
+  /// the "stop sharing" banner and resumes position updates so the user can see
+  /// and stop the share from the app. No-op if there is no live session or one
+  /// is already broadcasting. Expired/stale sessions are cleaned up.
+  Future<void> restoreActiveSession(String ownerUid) async {
+    if (isBroadcasting) return;
+    try {
+      final snap = await _col
+          .where('ownerUid', isEqualTo: ownerUid)
+          .where('active', isEqualTo: true)
+          .limit(1)
+          .get();
+      if (snap.docs.isEmpty) return;
+
+      final doc = snap.docs.first;
+      final expiresAt = (doc.data()['expiresAt'] as Timestamp?)?.toDate();
+      if (expiresAt == null || !expiresAt.isAfter(DateTime.now())) {
+        await stopSession(doc.id); // stale — mark inactive, don't resurface it
+        return;
+      }
+
+      final sessionId = doc.id;
+      _activeSessionId = sessionId;
+      activeSession.value = sessionId;
+
+      // Resume the foreground broadcast on the existing session id.
+      _positionSub = Geolocator.getPositionStream(
+        locationSettings: _broadcastSettings(),
+      ).listen(
+        (pos) => updatePosition(sessionId, pos.latitude, pos.longitude)
+            .catchError((Object e) => logDebug('live update failed: $e')),
+        onError: (Object e) => logDebug('live stream error: $e'),
+      );
+
+      // Re-arm expiry for whatever time is left on the session.
+      _expiryTimer = Timer(
+          expiresAt.difference(DateTime.now()), () => stopBroadcast());
+    } catch (e) {
+      logDebug('restoreActiveSession failed: $e');
+    }
+  }
+
   /// Stops the active broadcast and marks the session inactive.
   Future<void> stopBroadcast() async {
     final id = _activeSessionId;
@@ -143,6 +187,11 @@ class LiveLocationService {
           notificationTitle: 'LifeLine is sharing your location',
           notificationText: 'Your live location is being shared with contacts.',
           enableWakeLock: true,
+          // Without an explicit icon geolocator falls back to the full-colour
+          // launcher icon, which Android masks to a plain white square. Point
+          // it at the monochrome status-bar icon instead.
+          notificationIcon:
+              AndroidResource(name: 'ic_notification', defType: 'drawable'),
         ),
       );
     }

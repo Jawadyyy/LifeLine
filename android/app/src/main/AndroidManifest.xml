@@ -1,4 +1,11 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+    <!-- The Agora RTC "full-screen-sharing" library pulls in the media-projection
+         foreground-service permission for screen sharing, which LifeLine does not
+         use (voice calls only). Remove it so we don't declare a capability the app
+         never exercises, which Play flags at review. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION"
+        tools:node="remove" />
     <application
         android:label="LifeLine"
         android:name="${applicationName}"
